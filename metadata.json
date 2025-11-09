@@ -1,0 +1,5 @@
+{
+  "name": "CTT Project Management",
+  "description": "A collaborative project management and time tracking tool inspired by a user-provided design. It features a three-column layout for navigating projects, viewing task lists, and inspecting task details. Users can track time on tasks, manage subtasks, and view project progress.",
+  "requestFramePermissions": []
+}

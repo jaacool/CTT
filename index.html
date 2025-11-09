@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-g" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTT Projektmanagement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'c-bg': '#1a1b26',
+              'c-surface': '#24283b',
+              'c-overlay': '#3b4261',
+              'c-muted': '#545c7e',
+              'c-subtle': '#707a9c',
+              'c-text': '#a9b1d6',
+              'c-highlight': '#414868',
+              'c-blue': '#7aa2f7',
+              'c-cyan': '#7dcfff',
+              'c-green': '#9ece6a',
+              'c-yellow': '#e0af68',
+              'c-orange': '#ff9e64',
+              'c-red': '#f7768e',
+              'c-magenta': '#bb9af7',
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-c-bg text-c-text antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,187 @@
+import React, { useState } from 'react';
+import { TimeEntry } from '../types';
+
+interface TimerMenuProps {
+  timeEntry: TimeEntry;
+  elapsedSeconds: number;
+  onClose: () => void;
+  onUpdate: (entryId: string, startTime: string, endTime: string) => void;
+  onStop: () => void;
+}
+
+export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop }) => {
+  const [note, setNote] = useState('');
+  const [isBillable, setIsBillable] = useState(timeEntry.billable);
+  const [startTime, setStartTime] = useState(new Date(timeEntry.startTime).toTimeString().slice(0, 5));
+  const originalStartTime = new Date(timeEntry.startTime).toTimeString().slice(0, 5);
+
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  };
+
+  const handleFinish = () => {
+    // Berechne neue Startzeit falls geändert
+    if (startTime !== originalStartTime) {
+      const now = new Date();
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const newStartDate = new Date(now);
+      newStartDate.setHours(hours, minutes, 0, 0);
+      
+      // Wenn die neue Startzeit in der Zukunft liegt, setze auf gestern
+      if (newStartDate > now) {
+        newStartDate.setDate(newStartDate.getDate() - 1);
+      }
+      
+      // Update TimeEntry mit neuer Startzeit (aber kein endTime - Timer läuft weiter)
+      onUpdate(timeEntry.id, newStartDate.toISOString(), '');
+    }
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={onClose}
+      />
+      
+      {/* Menu */}
+      <div className="fixed bottom-24 right-8 w-[800px] bg-[#1a1d2e] rounded-2xl shadow-2xl z-50 p-6">
+        <h2 className="text-white text-xl font-bold mb-6">Timer</h2>
+        
+        {/* Search */}
+        <div className="mb-4">
+          <div className="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-c-subtle">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              placeholder="Nach Zeiterfassung, Projekt oder Aufgabe suchen"
+              className="w-full bg-[#0f1117] text-c-subtle placeholder-c-subtle/50 rounded-xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-c-blue"
+            />
+          </div>
+        </div>
+        
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex items-center space-x-2 bg-[#0f1117] px-4 py-2 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span className="text-c-subtle text-sm">{timeEntry.projectName}</span>
+            <button className="text-c-subtle hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-[#0f1117] px-4 py-2 rounded-lg">
+            <span className="text-xl">😊</span>
+            <span className="text-white text-sm font-semibold">{timeEntry.taskTitle}</span>
+            <button className="text-c-subtle hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-[#0f1117] px-4 py-2 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span className="text-c-subtle text-sm">CREATIVE-DIRECTOR</span>
+          </div>
+          
+          <button
+            onClick={() => setIsBillable(!isBillable)}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+              isBillable ? 'bg-red-500/20' : 'bg-c-green/20'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isBillable ? 'text-red-400' : 'text-c-green'}>
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span className={`text-sm font-bold ${isBillable ? 'text-red-400' : 'text-c-green'}`}>
+              {isBillable ? 'Nicht abrechenbar' : 'Abrechenbar'}
+            </span>
+          </button>
+        </div>
+        
+        {/* Note */}
+        <div className="mb-6">
+          <label className="text-c-subtle text-sm mb-2 block">Notiz</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Woran arbeitest du gerade?"
+            className="w-full bg-[#0f1117] text-white placeholder-c-subtle/50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-c-blue resize-none"
+            rows={4}
+          />
+        </div>
+        
+        {/* Time Controls */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="text-c-subtle text-sm mb-2 block">Timer Startzeit</label>
+            <div className="flex items-center space-x-3 bg-[#0f1117] rounded-xl px-4 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="bg-transparent text-white text-lg font-bold outline-none flex-1"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-c-subtle text-sm mb-2 block">Pausiert für</label>
+            <div className="flex items-center space-x-3 bg-[#0f1117] rounded-xl px-4 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              <span className="text-white text-lg font-bold">0h 00m</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-between">
+          <button className="text-c-subtle hover:text-white p-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+          
+          <button
+            onClick={handleFinish}
+            className="flex items-center space-x-3 bg-c-blue hover:bg-blue-600 text-white px-8 py-3 rounded-full font-bold transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Fertig</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
