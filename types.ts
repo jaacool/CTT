@@ -13,7 +13,10 @@ export enum ProjectStatus {
 export interface User {
   id: string;
   name: string;
+  email: string;
   avatarUrl: string;
+  pinnedTasks?: string[]; // IDs of pinned tasks for dashboard
+  dashboardNote?: string; // Personal note on dashboard
 }
 
 export interface Todo {

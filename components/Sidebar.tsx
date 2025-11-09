@@ -8,6 +8,7 @@ interface SidebarProps {
   onSelectProject: (projectId: string) => void;
   onAddNewProject: () => void;
   onRenameProject: (projectId: string, newName: string) => void;
+  onSelectDashboard: () => void;
 }
 
 const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, newName: string) => void }> = ({ project, onRename }) => {
@@ -72,7 +73,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onSelectProject, onAddNewProject, onRenameProject }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredProjects = useMemo(() => 
@@ -87,13 +88,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onS
     <aside className="w-64 bg-c-surface flex-shrink-0 p-4 flex flex-col space-y-4">
       <div className="flex-shrink-0">
         <nav className="space-y-1">
-          <NavItem icon={<PlannerIcon className="w-5 h-5" />} label="Planer" />
+          <button 
+                onClick={onSelectDashboard}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Mein Dashboard</span>
+            </button>
           <NavItem icon={<ClockIcon className="w-5 h-5" />} label="Zeiten" />
           <NavItem icon={<ChartIcon className="w-5 h-5" />} label="Zeitauswertungen" />
-          <a href="#" className="flex items-center space-x-3 px-3 py-2 text-c-subtle hover:text-c-text">
-            <ChevronDownIcon className="w-5 h-5" />
-            <span>Mehr anzeigen</span>
-          </a>
+            <a href="#" className="flex items-center space-x-3 px-3 py-2 text-c-subtle hover:text-c-text">
+                <ChevronDownIcon className="w-5 h-5" />
+                <span>Mehr anzeigen</span>
+            </a>
         </nav>
       </div>
 

@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { TaskArea } from './components/TaskArea';
 import { TaskDetailPanel } from './components/TaskDetailPanel';
 import { TimerMenu } from './components/TimerMenu';
+import { Dashboard } from './components/Dashboard';
 import { statusToText, formatTime } from './components/utils';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
@@ -49,6 +50,9 @@ const App: React.FC = () => {
   const [activeTimeEntryId, setActiveTimeEntryId] = useState<string | null>(null);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [timerHovered, setTimerHovered] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [pinnedTasks, setPinnedTasks] = useState<string[]>([]);
+  const [dashboardNote, setDashboardNote] = useState('');
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -120,10 +124,15 @@ const App: React.FC = () => {
     const project = projects.find(p => p.id === projectId) || null;
     setSelectedProject(project);
     setSelectedTask(null);
+    setShowDashboard(false);
   }, [projects]);
 
-  const handleSelectTask = useCallback((task: Task | Subtask) => {
-    setSelectedTask(prev => (prev?.id === task.id ? null : task));
+  const handleSelectTask = useCallback((task: Task | Subtask | null) => {
+    if (task === null) {
+      setSelectedTask(null);
+    } else {
+      setSelectedTask(prev => (prev?.id === task.id ? null : task));
+    }
   }, []);
 
   const handleToggleTimer = useCallback((taskId: string) => {
@@ -390,6 +399,18 @@ const App: React.FC = () => {
     })));
   };
 
+  const handlePinTask = useCallback((taskId: string) => {
+    setPinnedTasks(prev => 
+      prev.includes(taskId) 
+        ? prev.filter(id => id !== taskId)
+        : [...prev, taskId]
+    );
+  }, []);
+
+  const handleUpdateDashboardNote = useCallback((note: string) => {
+    setDashboardNote(note);
+  }, []);
+
   const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string) => {
     setProjects(prevProjects => prevProjects.map(p => ({
       ...p,
@@ -472,9 +493,25 @@ const App: React.FC = () => {
         onSelectProject={handleSelectProject}
         onAddNewProject={handleAddNewProject}
         onRenameProject={(id, newName) => handleRenameItem(id, newName, 'project')}
+        onSelectDashboard={() => {
+          setShowDashboard(true);
+          setSelectedProject(null);
+          setSelectedTask(null);
+        }}
       />
       <main className="flex-1 flex flex-col p-6 overflow-y-auto">
-        {selectedProject ? (
+        {showDashboard ? (
+          <Dashboard
+            user={MOCK_USER}
+            projects={projects}
+            pinnedTaskIds={pinnedTasks}
+            onUnpinTask={handlePinTask}
+            onUpdateNote={handleUpdateDashboardNote}
+            onToggleTimer={handleToggleTimer}
+            activeTimerTaskId={activeTimerTaskId}
+            taskTimers={taskTimers}
+          />
+        ) : selectedProject ? (
           <TaskArea 
             project={selectedProject} 
             selectedItem={selectedTask}
@@ -487,6 +524,8 @@ const App: React.FC = () => {
             onAddTask={handleAddTask}
             onRenameItem={handleRenameItem}
             onUpdateTimeEntry={handleUpdateTimeEntry}
+            onPinTask={handlePinTask}
+            pinnedTaskIds={pinnedTasks}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-c-muted">

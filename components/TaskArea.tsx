@@ -3,13 +3,14 @@ import { Project, Task, TaskList as ITaskList, TaskStatus, Subtask, User, TimeEn
 import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, CalendarIcon, PrinterIcon, ThumbsUpIcon, CheckIcon, ChevronDownIcon, PlayIcon, PauseIcon } from './Icons';
 import { formatTime } from './utils';
 import { TimeView } from './TimeView';
+import { TaskContextMenu } from './TaskContextMenu';
 
 type RenameFn = (id: string, newName: string, type: 'project' | 'list' | 'task' | 'subtask') => void;
 
 interface TaskAreaProps {
     project: Project;
     selectedItem: Task | Subtask | null;
-    onSelectItem: (item: Task | Subtask) => void;
+    onSelectItem: (item: Task | Subtask | null) => void;
     taskTimers: { [taskId: string]: number };
     activeTimerTaskId: string | null;
     onToggleTimer: (taskId: string) => void;
@@ -18,6 +19,8 @@ interface TaskAreaProps {
     onAddTask: (listId: string, title: string) => void;
     onRenameItem: RenameFn;
     onUpdateTimeEntry: (entryId: string, startTime: string, endTime: string) => void;
+    onPinTask?: (taskId: string) => void;
+    pinnedTaskIds?: string[];
 }
 
 const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]: number } }> = ({ project, taskTimers }) => {
@@ -190,6 +193,7 @@ const SubtaskItem: React.FC<{
     onRenameItem: RenameFn;
 }> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem }) => {
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+    const [timerHovered, setTimerHovered] = useState(false);
     
     const handleDirectClick = () => {
         if (clickTimer) {
@@ -225,9 +229,19 @@ const SubtaskItem: React.FC<{
             <div className="flex items-center space-x-4 text-c-subtle">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-overlay'}`}
+                    onMouseEnter={() => setTimerHovered(true)}
+                    onMouseLeave={() => setTimerHovered(false)}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-magenta hover:text-white'}`}
                 >
-                    <ClockIcon className="w-4 h-4" />
+                    {timerHovered ? (
+                        isActive ? (
+                            <PauseIcon className="w-4 h-4" />
+                        ) : (
+                            <PlayIcon className="w-4 h-4" />
+                        )
+                    ) : (
+                        <ClockIcon className="w-4 h-4" />
+                    )}
                     <span>{formatTime(elapsedSeconds)}</span>
                 </button>
                 <img src={subtask.assignee.avatarUrl} alt={subtask.assignee.name} className="w-6 h-6 rounded-full" />
@@ -239,7 +253,7 @@ const SubtaskItem: React.FC<{
 interface TaskItemProps {
     task: Task; 
     selectedItem: Task | Subtask | null;
-    onSelectItem: (item: Task | Subtask) => void; 
+    onSelectItem: (item: Task | Subtask | null) => void; 
     elapsedSeconds: number; 
     isActive: boolean; 
     onToggleTimer: (id: string) => void;
@@ -247,12 +261,18 @@ interface TaskItemProps {
     taskTimers: { [taskId: string]: number };
     activeTimerTaskId: string | null;
     onRenameItem: RenameFn;
+    project: Project;
+    onPinTask?: (taskId: string) => void;
+    pinnedTaskIds?: string[];
 }
 
 const TaskItem: React.FC<TaskItemProps> = (props) => {
-    const { task, selectedItem, onSelectItem, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, taskTimers, activeTimerTaskId, onRenameItem, project } = props;
+    const { task, selectedItem, onSelectItem, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, taskTimers, activeTimerTaskId, onRenameItem, project, onPinTask, pinnedTaskIds } = props;
     const isSelected = selectedItem?.id === task.id;
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+    const [timerHovered, setTimerHovered] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+    const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
     
     const handleDirectClick = () => {
         // Sofortiger Klick - kein Delay
@@ -279,10 +299,17 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
     };
     
     return (
+        <>
         <div className="pl-4">
             <div 
                 onClick={handleDirectClick}
-                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    // Positioniere Menü über der Aufgabe (y - 60px)
+                    setContextMenu({ x: e.clientX, y: e.clientY - 60 });
+                    setIsContextMenuOpen(true);
+                }}
+                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
             >
                 <TaskStatusControl status={task.status} onSetStatus={(newStatus) => onSetTaskStatus(task.id, newStatus)} />
                 <EditableTitle id={task.id} title={task.title} onRename={(newName) => onRenameItem(task.id, newName, 'task')} onNameClick={handleNameClick}>
@@ -292,9 +319,19 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     {task.subtasks.length > 0 && <span className="text-xs">{task.subtasks.length}</span>}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-overlay'}`}
+                        onMouseEnter={() => setTimerHovered(true)}
+                        onMouseLeave={() => setTimerHovered(false)}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-magenta hover:text-white'}`}
                     >
-                        <ClockIcon className="w-4 h-4" />
+                        {timerHovered ? (
+                            isActive ? (
+                                <PauseIcon className="w-4 h-4" />
+                            ) : (
+                                <PlayIcon className="w-4 h-4" />
+                            )
+                        ) : (
+                            <ClockIcon className="w-4 h-4" />
+                        )}
                         <span>{formatTime(elapsedSeconds)}</span>
                     </button>
                     <img src={task.assignee.avatarUrl} alt={task.assignee.name} className="w-6 h-6 rounded-full" />
@@ -324,6 +361,20 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                 );
             })}
         </div>
+        
+        {contextMenu && onPinTask && (
+            <TaskContextMenu
+                x={contextMenu.x}
+                y={contextMenu.y}
+                onClose={() => {
+                    setContextMenu(null);
+                    setIsContextMenuOpen(false);
+                }}
+                onPinToDashboard={() => onPinTask(task.id)}
+                isPinned={pinnedTaskIds?.includes(task.id) || false}
+            />
+        )}
+    </>
     );
 };
 
@@ -491,7 +542,13 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     Aufgaben
                 </button>
                 <button
-                    onClick={() => setActiveTab('time')}
+                    onClick={() => {
+                        setActiveTab('time');
+                        // Schließe Detail Panel beim Wechsel zur Zeit-Ansicht
+                        if (props.selectedItem) {
+                            props.onSelectItem(null);
+                        }
+                    }}
                     className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
                         activeTab === 'time'
                             ? 'bg-c-blue text-white'
