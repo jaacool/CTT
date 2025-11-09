@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry } from './types';
-import { MOCK_PROJECTS, MOCK_USER, MOCK_USER_2 } from './constants';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role } from './types';
+import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES } from './constants';
+import { hasPermission } from './utils/permissions';
 import { Sidebar } from './components/Sidebar';
 import { TaskArea } from './components/TaskArea';
 import { TaskDetailPanel } from './components/TaskDetailPanel';
@@ -9,6 +10,9 @@ import { Dashboard } from './components/Dashboard';
 import { ProjectsOverview } from './components/ProjectsOverview';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
+import { LoginScreen } from './components/LoginScreen';
+import { TopBar } from './components/TopBar';
+import { SettingsPage } from './components/SettingsPage';
 import { statusToText, formatTime } from './components/utils';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
@@ -62,6 +66,9 @@ const App: React.FC = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [pinnedTasks, setPinnedTasks] = useState<string[]>([]);
   const [dashboardNote, setDashboardNote] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -207,6 +214,7 @@ const App: React.FC = () => {
     setSelectedTask(null);
     setShowDashboard(false);
     setShowProjectsOverview(false);
+    setShowSettings(false);
   }, [projects]);
 
   const handleSelectTask = useCallback((task: Task | Subtask | null) => {
@@ -303,7 +311,7 @@ const App: React.FC = () => {
         startTime: now,
         endTime: null,
         duration: 0,
-        user: MOCK_USER,
+        user: currentUser!,
         billable: false,
       };
       
@@ -349,7 +357,7 @@ const App: React.FC = () => {
       
       if (oldStatus && newStatus && oldStatus !== newStatus) {
         const text = `hat den Status von "${statusToText(oldStatus)}" zu "${statusToText(newStatus)}" geändert.`;
-        return addActivity(updatedProjects, itemId, MOCK_USER, text);
+        if (currentUser) return addActivity(updatedProjects, itemId, currentUser, text);
       }
 
       return updatedProjects;
@@ -376,22 +384,26 @@ const App: React.FC = () => {
   
   const handleDescriptionUpdate = (itemId: string, description: string) => {
      updateProjects(prevProjects => {
-        const updatedProjects = prevProjects.map(p => ({
-        ...p,
-        taskLists: p.taskLists.map(list => ({
-            ...list,
-            tasks: list.tasks.map(t => {
-              if (t.id === itemId) {
-                return { ...t, description };
-              }
-              return {
-                ...t,
-                subtasks: t.subtasks.map(st => st.id === itemId ? { ...st, description } : st)
-              };
-            })
-        }))
-    }));
-        return addActivity(updatedProjects, itemId, MOCK_USER, "hat die Beschreibung aktualisiert.");
+        const updatedProjectsWithDesc = prevProjects.map(p => ({
+          ...p,
+          taskLists: p.taskLists.map(list => ({
+              ...list,
+              tasks: list.tasks.map(t => {
+                if (t.id === itemId) {
+                  return { ...t, description };
+                }
+                return {
+                  ...t,
+                  subtasks: t.subtasks.map(st => st.id === itemId ? { ...st, description } : st)
+                };
+              })
+          }))
+        }));
+
+        if (currentUser) {
+          return addActivity(updatedProjectsWithDesc, itemId, currentUser, "hat die Beschreibung aktualisiert.");
+        }
+        return updatedProjectsWithDesc;
      });
   };
 
@@ -410,7 +422,7 @@ const App: React.FC = () => {
       startDate: new Date().toISOString(),
       endDate: null,
       budgetHours: null,
-      members: [MOCK_USER],
+      members: [currentUser!],
     };
     updateProjects(prev => [...prev, newProject]);
     setSelectedProject(newProject);
@@ -445,7 +457,7 @@ const App: React.FC = () => {
         title,
         description: '',
         status: TaskStatus.Todo,
-        assignee: MOCK_USER,
+        assignee: currentUser!,
         timeTrackedSeconds: 0,
         timeBudgetHours: null,
         dueDate: null,
@@ -515,7 +527,7 @@ const App: React.FC = () => {
       title,
       description: '',
       status: TaskStatus.Todo,
-      assignee: MOCK_USER,
+      assignee: currentUser!,
       timeTrackedSeconds: 0,
       timeBudgetHours: null,
       dueDate: null,
@@ -607,6 +619,54 @@ const App: React.FC = () => {
     })));
   };
 
+  const handleAddUser = useCallback((userData: { name: string; title?: string; email: string; tags?: string[]; status: UserStatus }) => {
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      name: userData.name,
+      title: userData.title,
+      email: userData.email,
+      avatarUrl: `https://i.pravatar.cc/150?u=${userData.email}`,
+      tags: userData.tags,
+      status: userData.status,
+    };
+    setUsers(prev => [...prev, newUser]);
+  }, []);
+
+  const handleUpdateUser = useCallback((userId: string, userData: Partial<User>) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...userData } : u));
+  }, []);
+
+  const handleDeleteUser = useCallback((userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+  }, []);
+
+  const handleChangeRole = useCallback((userId: string, roleId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: roleId } : u));
+  }, []);
+
+  const handleChangeCurrentUserRole = useCallback((roleId: string) => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, role: roleId };
+      setCurrentUser(updatedUser);
+      setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    }
+  }, [currentUser]);
+
+  const handleLogin = (username: string) => {
+    if (username.toLowerCase() === 'admin') {
+      setCurrentUser(ADMIN_USER);
+    } else if (username.toLowerCase() === 'alex') {
+      setCurrentUser(MOCK_USER);
+    } else {
+      // For simplicity, any other user will be MOCK_USER_2
+      setCurrentUser(MOCK_USER_2);
+    }
+  };
+
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   const findItemContext = (itemId: string): { projectName: string; listTitle: string } | null => {
     for (const project of projects) {
       for (const list of project.taskLists) {
@@ -625,10 +685,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans text-sm">
-      <Sidebar 
+    <div className="flex flex-col h-screen font-sans text-sm">
+      <TopBar
+        user={currentUser}
+        roles={MOCK_ROLES}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        onChangeRole={handleChangeCurrentUserRole}
+      />
+      
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar 
         projects={projects}
         selectedProject={selectedProject}
+        currentUser={currentUser}
+        roles={MOCK_ROLES}
         onSelectProject={handleSelectProject}
         onAddNewProject={handleAddNewProject}
         onRenameProject={(id, newName) => handleRenameItem(id, newName, 'project')}
@@ -637,53 +710,28 @@ const App: React.FC = () => {
           setShowProjectsOverview(false);
           setSelectedProject(null);
           setSelectedTask(null);
+          setShowSettings(false);
         }}
         onSelectProjectsOverview={() => {
           setShowProjectsOverview(true);
           setShowDashboard(false);
           setSelectedProject(null);
           setSelectedTask(null);
+          setShowSettings(false);
+        }}
+        onSelectSettings={() => {
+          setShowSettings(true);
+          setShowDashboard(false);
+          setShowProjectsOverview(false);
+          setSelectedProject(null);
+          setSelectedTask(null);
         }}
       />
       
-      {/* Undo/Redo Buttons */}
-      <div className="fixed top-6 right-6 z-50 flex items-center space-x-2">
-        <button
-          onClick={undo}
-          disabled={!canUndo}
-          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
-            canUndo 
-              ? 'bg-c-surface hover:bg-c-highlight text-c-text cursor-pointer' 
-              : 'bg-c-surface/50 text-c-muted cursor-not-allowed'
-          }`}
-          title="Rückgängig (Strg+Z)"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-          </svg>
-        </button>
-        <button
-          onClick={redo}
-          disabled={!canRedo}
-          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
-            canRedo 
-              ? 'bg-c-surface hover:bg-c-highlight text-c-text cursor-pointer' 
-              : 'bg-c-surface/50 text-c-muted cursor-not-allowed'
-          }`}
-          title="Wiederherstellen (Strg+Y)"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-        </button>
-      </div>
-      
-      <main className="flex-1 flex flex-col p-6 overflow-y-auto">
+        <main className="flex-1 flex flex-col p-6 overflow-y-auto">
         {showDashboard ? (
           <Dashboard
-            user={MOCK_USER}
+            user={currentUser}
             projects={projects}
             pinnedTaskIds={pinnedTasks}
             onUnpinTask={handlePinTask}
@@ -720,13 +768,23 @@ const App: React.FC = () => {
             onOpenSearchProjects={() => setShowSearchModal(true)}
           />
         ) : (
+          showSettings ? (
+            <SettingsPage 
+              users={users}
+              roles={MOCK_ROLES}
+              onAddUser={handleAddUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              onChangeRole={handleChangeRole}
+            />
+          ) :
           <div className="flex items-center justify-center h-full text-c-muted">
             <p>Wählen Sie ein Projekt aus, um Aufgaben anzuzeigen.</p>
           </div>
         )}
-      </main>
+        </main>
 
-      <TaskDetailPanel 
+        <TaskDetailPanel 
         item={selectedTask}
         onItemUpdate={handleTaskUpdate}
         onDescriptionUpdate={handleDescriptionUpdate}
@@ -765,14 +823,14 @@ const App: React.FC = () => {
               )}
               
               <button
-                onClick={() => setShowTimerMenu(!showTimerMenu)}
+                onClick={() => hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') ? setShowTimerMenu(!showTimerMenu) : null}
                 className="flex items-center space-x-3 px-4 py-3 rounded-full shadow-lg text-white font-bold transition-all bg-c-magenta hover:bg-purple-600"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span onClick={(e) => { e.stopPropagation(); setShowTimerMenu(true); }}>
+                <span onClick={(e) => { e.stopPropagation(); if (hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten')) setShowTimerMenu(true); }}>
                   {formatTime(taskTimers[activeTimerTaskId] || 0)}
                 </span>
                 <svg 
@@ -794,7 +852,7 @@ const App: React.FC = () => {
               </button>
             </div>
             
-            {showTimerMenu && (
+            {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (
               <TimerMenu
                 timeEntry={activeEntry}
                 elapsedSeconds={taskTimers[activeTimerTaskId] || 0}
@@ -822,6 +880,7 @@ const App: React.FC = () => {
           onSelectProject={handleSelectProject}
         />
       )}
+      </div>
     </div>
   );
 };

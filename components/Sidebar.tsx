@@ -1,15 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { Project } from '../types';
+import { Project, User, Role } from '../types';
 import { PlannerIcon, ClockIcon, ChartIcon, ChevronDownIcon, SearchIcon, StarIcon, PlusIcon } from './Icons';
+import { hasPermission } from '../utils/permissions';
 
 interface SidebarProps {
   projects: Project[];
   selectedProject: Project | null;
+  currentUser: User | null;
+  roles: Role[];
   onSelectProject: (projectId: string) => void;
   onAddNewProject: () => void;
   onRenameProject: (projectId: string, newName: string) => void;
   onSelectDashboard: () => void;
   onSelectProjectsOverview: () => void;
+  onSelectSettings: () => void;
 }
 
 const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, newName: string) => void }> = ({ project, onRename }) => {
@@ -74,7 +78,8 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectSettings }) => {
+  const canAccessSettings = hasPermission(currentUser, roles, 'Einstellungen');
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredProjects = useMemo(() => 
@@ -162,13 +167,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onS
       
       {/* Settings Button - Fixed at Bottom */}
       <div className="flex-shrink-0 border-t border-c-highlight pt-4">
-        <button className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"></path>
-          </svg>
-          <span>Einstellungen</span>
-        </button>
+        {canAccessSettings && (
+          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"></path>
+            </svg>
+            <span>Einstellungen</span>
+          </button>
+        )}
       </div>
     </aside>
   );

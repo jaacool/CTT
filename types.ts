@@ -4,6 +4,34 @@ export enum TaskStatus {
   Done = 'DONE',
 }
 
+export enum Gender {
+  Male = 'Herr',
+  Female = 'Frau',
+  Diverse = 'Divers',
+}
+
+export enum PermissionStatus {
+  Granted = 'granted',
+  Denied = 'denied',
+  Partial = 'partial',
+}
+
+export interface Permission {
+  name: string;
+  status: PermissionStatus;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  permissions: Permission[];
+}
+
+export enum UserStatus {
+  Active = 'Aktiv',
+  Inactive = 'Deaktiviert',
+}
+
 export enum ProjectStatus {
   Active = 'AKTIV',
   Planned = 'GEPLANT',
@@ -13,8 +41,19 @@ export enum ProjectStatus {
 export interface User {
   id: string;
   name: string;
+  title?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   avatarUrl: string;
+  teams?: string[];
+  tags?: string[];
+  status: UserStatus;
+  role?: string; // Role ID
+  gender?: Gender;
+  position?: string;
+  birthday?: string;
+  password?: string;
   pinnedTasks?: string[]; // IDs of pinned tasks for dashboard
   dashboardNote?: string; // Personal note on dashboard
 }
