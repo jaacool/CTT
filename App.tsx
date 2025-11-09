@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -652,6 +653,8 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   const handleLogin = (username: string) => {
     if (username.toLowerCase() === 'admin') {
       setCurrentUser(ADMIN_USER);
@@ -694,16 +697,25 @@ const App: React.FC = () => {
         onUndo={undo}
         onRedo={redo}
         onChangeRole={handleChangeCurrentUserRole}
+        onToggleSidebar={toggleSidebar}
       />
       
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
+        isOpen={isSidebarOpen}
+        onClose={toggleSidebar}
         projects={projects}
         selectedProject={selectedProject}
         currentUser={currentUser}
         roles={MOCK_ROLES}
-        onSelectProject={handleSelectProject}
-        onAddNewProject={handleAddNewProject}
+        onSelectProject={(projectId) => {
+          handleSelectProject(projectId);
+          setIsSidebarOpen(false); // Close sidebar on selection
+        }}
+        onAddNewProject={() => {
+          handleAddNewProject();
+          setIsSidebarOpen(false); // Close sidebar
+        }}
         onRenameProject={(id, newName) => handleRenameItem(id, newName, 'project')}
         onSelectDashboard={() => {
           setShowDashboard(true);
@@ -711,6 +723,7 @@ const App: React.FC = () => {
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
+          setIsSidebarOpen(false); // Close sidebar
         }}
         onSelectProjectsOverview={() => {
           setShowProjectsOverview(true);
@@ -718,6 +731,7 @@ const App: React.FC = () => {
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
+          setIsSidebarOpen(false); // Close sidebar
         }}
         onSelectSettings={() => {
           setShowSettings(true);
@@ -725,10 +739,11 @@ const App: React.FC = () => {
           setShowProjectsOverview(false);
           setSelectedProject(null);
           setSelectedTask(null);
+          setIsSidebarOpen(false); // Close sidebar
         }}
       />
       
-        <main className="flex-1 flex flex-col p-6 overflow-y-auto">
+        <main className={`flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300 ${selectedTask ? 'md:mr-96' : ''}`}>
         {showDashboard ? (
           <Dashboard
             user={currentUser}
@@ -784,20 +799,22 @@ const App: React.FC = () => {
         )}
         </main>
 
-        <TaskDetailPanel 
-        item={selectedTask}
-        onItemUpdate={handleTaskUpdate}
-        onDescriptionUpdate={handleDescriptionUpdate}
-        onRenameItem={(id, newName) => handleRenameItem(id, newName, 'task')}
-        trackedTime={selectedTask ? taskTimers[selectedTask.id] : 0}
-        activeTimerTaskId={activeTimerTaskId}
-        onToggleTimer={handleToggleTimer}
-        onAddSubtask={handleAddSubtask}
-        onAddTodo={handleAddTodo}
-        itemContext={selectedTask ? findItemContext(selectedTask.id) : null}
-        onSelectItem={handleSelectTask}
-        onBillableChange={handleBillableChange}
-      />
+        <div className={`md:block ${selectedTask ? 'block' : 'hidden'}`}>
+          <TaskDetailPanel 
+            item={selectedTask}
+            onItemUpdate={handleTaskUpdate}
+            onDescriptionUpdate={handleDescriptionUpdate}
+            onRenameItem={(id, newName) => handleRenameItem(id, newName, 'task')}
+            trackedTime={selectedTask ? taskTimers[selectedTask.id] : 0}
+            activeTimerTaskId={activeTimerTaskId}
+            onToggleTimer={handleToggleTimer}
+            onAddSubtask={handleAddSubtask}
+            onAddTodo={handleAddTodo}
+            itemContext={selectedTask ? findItemContext(selectedTask.id) : null}
+            onSelectItem={handleSelectTask}
+            onBillableChange={handleBillableChange}
+          />
+        </div>
 
       {activeTimerTaskId && (() => {
         const activeEntry = projects

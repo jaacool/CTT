@@ -14,7 +14,7 @@ interface TaskDetailPanelProps {
   onAddSubtask: (taskId: string, title: string) => void;
   onAddTodo: (itemId: string, text: string) => void;
   itemContext: { projectName: string; listTitle: string } | null;
-  onSelectItem?: (item: Subtask) => void;
+  onSelectItem?: (item: Subtask | null) => void;
   onBillableChange: (itemId: string, billable: boolean) => void;
 }
 
@@ -104,9 +104,18 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
   const isTimerActive = activeTimerTaskId === item.id;
 
   return (
-    <aside className="w-96 bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto">
+    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto 
+      fixed inset-0 z-50 md:relative md:w-96 md:inset-auto md:z-auto transition-transform duration-300 ease-in-out 
+      ${item ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
+
       {/* Sticky Header with Title, Info and Billable Toggle */}
-      <div className="sticky top-0 bg-c-surface z-10 border-b border-c-highlight pb-3">
+      <div className="sticky top-0 bg-c-surface z-10 border-b border-c-highlight pb-3 -mx-6 px-6">
+        <button onClick={() => onSelectItem?.(null)} className="md:hidden absolute top-3 right-4 p-2 text-c-muted hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div className="mb-3">
           {isEditingTitle ? (
               <input

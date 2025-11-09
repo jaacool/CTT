@@ -4,6 +4,8 @@ import { PlannerIcon, ClockIcon, ChartIcon, ChevronDownIcon, SearchIcon, StarIco
 import { hasPermission } from '../utils/permissions';
 
 interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
   projects: Project[];
   selectedProject: Project | null;
   currentUser: User | null;
@@ -78,7 +80,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectSettings }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectSettings }) => {
   const canAccessSettings = hasPermission(currentUser, roles, 'Einstellungen');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -91,7 +93,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, cur
   const myProjects = filteredProjects.slice(3);
 
   return (
-    <aside className="w-64 bg-c-surface flex-shrink-0 p-4 flex flex-col space-y-4">
+    <>
+      {/* Overlay for mobile */}
+      <div 
+        className={`fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+      ></div>
+
+      <aside className={`w-64 bg-c-surface p-4 flex flex-col space-y-4 
+        fixed top-0 left-0 h-full z-40 transform transition-transform md:relative md:translate-x-0 md:flex-shrink-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+
       <div className="flex-shrink-0">
         <nav className="space-y-1">
           <button 
@@ -178,5 +190,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, cur
         )}
       </div>
     </aside>
+    </>
   );
 };

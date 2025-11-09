@@ -253,7 +253,7 @@ const SubtaskItem: React.FC<{
     return (
         <div 
             onClick={handleDirectClick}
-            className={`flex items-center space-x-4 p-2 pl-14 rounded-lg cursor-pointer ${isSelected ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
+            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
         >
             <TaskStatusControl status={subtask.status} onSetStatus={(newStatus) => onSetTaskStatus(subtask.id, newStatus)} />
              <EditableTitle id={subtask.id} title={subtask.title} onRename={(newName) => onRenameItem(subtask.id, newName, 'subtask')} onNameClick={handleNameClick}>
@@ -275,7 +275,7 @@ const SubtaskItem: React.FC<{
                     ) : (
                         <ClockIcon className="w-4 h-4" />
                     )}
-                    <span>{formatTime(elapsedSeconds)}</span>
+                    <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                 </button>
                 <img src={subtask.assignee.avatarUrl} alt={subtask.assignee.name} className="w-6 h-6 rounded-full" />
             </div>
@@ -366,7 +366,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         ) : (
                             <ClockIcon className="w-4 h-4" />
                         )}
-                        <span>{formatTime(elapsedSeconds)}</span>
+                        <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                     </button>
                     <img src={task.assignee.avatarUrl} alt={task.assignee.name} className="w-6 h-6 rounded-full" />
                 </div>
