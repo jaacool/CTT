@@ -19,11 +19,18 @@ interface TaskAreaProps {
     onAddTask: (listId: string, title: string) => void;
     onRenameItem: RenameFn;
     onUpdateTimeEntry: (entryId: string, startTime: string, endTime: string) => void;
+    onBillableChange: (taskId: string, billable: boolean) => void;
+    defaultBillable: boolean;
+    onToggleDefaultBillable: () => void;
     onPinTask?: (taskId: string) => void;
     pinnedTaskIds?: string[];
+    onDeleteTask?: (taskId: string) => void;
+    onOpenCreateProject?: () => void;
+    onOpenSearchProjects?: () => void;
 }
 
-const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]: number } }> = ({ project, taskTimers }) => {
+const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
+    
     const allTasks = project.taskLists.flatMap(list => list.tasks);
     const totalTasks = allTasks.length;
     const completedTasks = allTasks.filter(task => task.status === TaskStatus.Done).length;
@@ -70,7 +77,33 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
                 </div>
                  <div className="flex-1">
                     <div className="text-xs text-c-subtle">Geplantes Budget</div>
-                    <div className="text-white font-bold">{project.budgetHours} Stunden</div>
+                    <div className="text-white font-bold">{project.budgetHours || ''} Stunden</div>
+                </div>
+                <div className="flex-1">
+                    <div className="text-xs text-c-subtle mb-1">Standard</div>
+                    <button
+                        onClick={onToggleDefaultBillable}
+                        className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-opacity cursor-pointer ${
+                            defaultBillable 
+                                ? 'bg-green-500/20 text-green-500 hover:opacity-90' 
+                                : 'bg-red-500/20 text-red-400 hover:opacity-90'
+                        }`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {defaultBillable ? (
+                                <>
+                                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                                  <polyline points="5 12 12 5 19 12"></polyline>
+                                </>
+                            ) : (
+                                <>
+                                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                                  <polyline points="19 12 12 19 5 12"></polyline>
+                                </>
+                            )}
+                        </svg>
+                        <span>{defaultBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
+                    </button>
                 </div>
             </div>
         </header>
@@ -264,10 +297,11 @@ interface TaskItemProps {
     project: Project;
     onPinTask?: (taskId: string) => void;
     pinnedTaskIds?: string[];
+    onDeleteTask?: (taskId: string) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = (props) => {
-    const { task, selectedItem, onSelectItem, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, taskTimers, activeTimerTaskId, onRenameItem, project, onPinTask, pinnedTaskIds } = props;
+    const { task, selectedItem, onSelectItem, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, taskTimers, activeTimerTaskId, onRenameItem, project, onPinTask, pinnedTaskIds, onDeleteTask } = props;
     const isSelected = selectedItem?.id === task.id;
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
     const [timerHovered, setTimerHovered] = useState(false);
@@ -371,7 +405,12 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     setIsContextMenuOpen(false);
                 }}
                 onPinToDashboard={() => onPinTask(task.id)}
+                onDeleteTask={onDeleteTask ? (moveToTaskId) => onDeleteTask(task.id) : undefined}
                 isPinned={pinnedTaskIds?.includes(task.id) || false}
+                task={task}
+                projects={[project]}
+                timeEntriesCount={project.timeEntries.filter(te => te.taskId === task.id).length}
+                totalHours={project.timeEntries.filter(te => te.taskId === task.id).reduce((sum, te) => sum + te.duration, 0) / 3600}
             />
         )}
     </>
@@ -527,7 +566,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
     
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <ProjectHeader project={props.project} taskTimers={props.taskTimers} />
+            <ProjectHeader project={props.project} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
             
             {/* Tab Navigation */}
             <div className="flex space-x-1 mb-6 bg-c-surface rounded-lg p-1">
@@ -569,8 +608,10 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                 </div>
             ) : (
                 <TimeView 
+                    project={props.project}
                     timeEntries={props.project.timeEntries}
                     onUpdateEntry={props.onUpdateTimeEntry}
+                    onBillableChange={props.onBillableChange}
                 />
             )}
             
@@ -579,12 +620,18 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                      ? (props.activeTimerTaskId ? 'right-[580px]' : 'right-[370px]')
                      : (props.activeTimerTaskId ? 'right-[220px]' : 'right-8')
              }`}>
-                 <button className="bg-c-surface p-3 rounded-full shadow-lg hover:bg-c-highlight transition-all">
-                     <SearchIcon className="w-6 h-6 text-c-text" />
-                 </button>
-                 <button className="bg-c-blue p-3 rounded-full shadow-lg hover:bg-blue-600 transition-all">
-                     <PlusIcon className="w-6 h-6 text-white" />
-                 </button>
+                <button
+                    onClick={props.onOpenSearchProjects}
+                    className="bg-c-surface p-3 rounded-full shadow-lg hover:bg-c-highlight transition-all"
+                >
+                    <SearchIcon className="w-6 h-6 text-c-text" />
+                </button>
+                <button
+                    onClick={props.onOpenCreateProject}
+                    className="bg-c-blue p-3 rounded-full shadow-lg hover:bg-blue-600 transition-all"
+                >
+                    <PlusIcon className="w-6 h-6 text-white" />
+                </button>
             </div>
         </div>
     );

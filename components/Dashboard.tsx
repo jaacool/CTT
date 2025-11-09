@@ -42,13 +42,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   });
 
-  // Hole heute's TimeEntries
+  // Hole heute's TimeEntries - sortiert nach Startzeit (neueste zuerst)
   const today = new Date().toLocaleDateString('de-DE');
   const todayEntries = projects.flatMap(p => 
     p.timeEntries.filter(entry => 
       new Date(entry.startTime).toLocaleDateString('de-DE') === today
     )
-  );
+  ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   const totalTodaySeconds = todayEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
@@ -99,21 +99,70 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Heute's Einträge */}
             <div className="space-y-2" data-testid="today-entries">
-              {todayEntries.map(entry => (
-                <div key={entry.id} className="flex items-center justify-between p-3 bg-c-bg rounded-lg" data-testid={`time-entry-${entry.id}`}>
-                  <div className="flex items-center space-x-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-magenta">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <div>
-                      <div className="text-white text-sm font-semibold">{entry.taskTitle}</div>
-                      <div className="text-c-subtle text-xs">{entry.projectName}</div>
+              {todayEntries.map(entry => {
+                const isActive = activeTimerTaskId === entry.taskId;
+                const currentSeconds = taskTimers[entry.taskId] || 0;
+                
+                // Finde Projekt für Icon
+                const project = projects.find(p => p.id === entry.projectId);
+                
+                return (
+                  <div key={entry.id} className="flex items-center justify-between p-3 bg-c-bg rounded-lg hover:bg-c-highlight transition-colors group" data-testid={`time-entry-${entry.id}`}>
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {/* Projekt Icon */}
+                      <span className="w-8 h-8 rounded-full bg-c-yellow flex items-center justify-center text-xl flex-shrink-0">
+                        {project?.icon || '📋'}
+                      </span>
+                      <div className="flex-1 min-w-0" title={entry.taskTitle}>
+                        <div className="text-white text-sm font-semibold truncate">{entry.taskTitle}</div>
+                        <div className="text-c-subtle text-xs truncate">{entry.projectName}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      {/* Zeit - nur sichtbar wenn nicht gehovert */}
+                      <div className="text-c-magenta font-bold group-hover:hidden">{formatDuration(entry.duration)}</div>
+                      
+                      {/* Buttons - nur sichtbar beim Hover */}
+                      <div className="hidden group-hover:flex items-center space-x-1">
+                        {/* Timer Button */}
+                        <button
+                          onClick={() => onToggleTimer(entry.taskId)}
+                          className={`p-1.5 rounded transition-colors ${
+                            isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-magenta hover:text-white text-c-subtle'
+                          }`}
+                        >
+                          {isActive ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="6" y="4" width="4" height="16"></rect>
+                              <rect x="14" y="4" width="4" height="16"></rect>
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                          )}
+                        </button>
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Zeiteintrag wirklich löschen?')) {
+                              // TODO: onDeleteTimeEntry(entry.id)
+                            }
+                          }}
+                          className="p-1.5 rounded transition-colors hover:bg-red-500/20 hover:text-red-500 text-c-subtle"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-c-magenta font-bold">{formatDuration(entry.duration)}</div>
-                </div>
-              ))}
+                );
+              })}
               {todayEntries.length === 0 && (
                 <div className="text-center text-c-subtle py-8">
                   Noch keine Zeiteinträge heute
@@ -201,6 +250,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   });
                 });
                 
+                // Finde Projekt-Icon
+                const project = projects.find(p => p.id === task.id || 
+                  p.taskLists.some(list => 
+                    list.tasks.some(t => t.id === task.id || t.subtasks.some(st => st.id === task.id))
+                  )
+                );
+                
                 return (
                   <div 
                     key={task.id} 
@@ -209,7 +265,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     data-testid={`shortcut-task-${task.id}`}
                   >
                     <span className="w-8 h-8 rounded-full bg-c-yellow flex items-center justify-center text-xl">
-                      😊
+                      {project?.icon || '📋'}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-semibold truncate">{task.title}</div>

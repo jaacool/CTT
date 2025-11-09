@@ -1,16 +1,30 @@
-import React, { useState } from 'react';
-import { TimeEntry } from '../types';
+import React, { useMemo, useState } from 'react';
+import { Project, TimeEntry } from '../types';
 import { formatTime } from './utils';
 
 interface TimeViewProps {
+  project: Project;
   timeEntries: TimeEntry[];
   onUpdateEntry: (entryId: string, startTime: string, endTime: string) => void;
+  onBillableChange: (taskId: string, billable: boolean) => void;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ timeEntries, onUpdateEntry }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+
+  // Build a lookup for billable by taskId from current project tasks/subtasks
+  const billableByTaskId = useMemo(() => {
+    const map = new Map<string, boolean>();
+    project.taskLists.forEach(list => {
+      list.tasks.forEach(t => {
+        map.set(t.id, t.billable ?? true);
+        t.subtasks.forEach(st => map.set(st.id, st.billable ?? t.billable ?? true));
+      });
+    });
+    return map;
+  }, [project]);
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -73,7 +87,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ timeEntries, onUpdateEntry }
       {Object.entries(entriesByDate).reverse().map(([date, entries]: [string, TimeEntry[]]) => (
         <div key={date} className="space-y-2">
           <div className="text-xs text-c-subtle font-bold uppercase px-2">{date}</div>
-          {entries.reverse().map((entry) => (
+          {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
             <div
               key={entry.id}
               className="bg-c-surface rounded-lg p-4 hover:bg-c-highlight transition-colors"
@@ -150,11 +164,36 @@ export const TimeView: React.FC<TimeViewProps> = ({ timeEntries, onUpdateEntry }
                     <span className="truncate">{entry.projectName}</span>
                   </div>
                   
-                  <div className={`px-3 py-1 rounded text-xs font-bold ${
-                    entry.billable ? 'bg-c-green text-black' : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {entry.billable ? 'Abrechenbar' : 'Nicht abrechenbar'}
-                  </div>
+                  {(() => {
+                    const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
+                    return (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onBillableChange(entry.taskId, !isBillable);
+                        }}
+                        className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
+                          isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
+                        } hover:opacity-90 transition-opacity cursor-pointer`}
+                        title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {isBillable ? (
+                            <>
+                              <line x1="12" y1="19" x2="12" y2="5"></line>
+                              <polyline points="5 12 12 5 19 12"></polyline>
+                            </>
+                          ) : (
+                            <>
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <polyline points="19 12 12 19 5 12"></polyline>
+                            </>
+                          )}
+                        </svg>
+                        <span>{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
+                      </button>
+                    );
+                  })()}
                   
                   <div className="flex items-center space-x-2 text-xs text-c-subtle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

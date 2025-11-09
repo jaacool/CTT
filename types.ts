@@ -57,6 +57,7 @@ export interface Subtask {
   timeBudgetHours: number | null;
   dueDate: string | null;
   activity: Activity[];
+  billable: boolean;
 }
 
 export interface Task {
@@ -71,6 +72,7 @@ export interface Task {
   timeBudgetHours: number | null;
   dueDate: string | null;
   activity: Activity[];
+  billable: boolean;
 }
 
 export interface TaskList {

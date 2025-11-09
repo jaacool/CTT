@@ -15,6 +15,7 @@ interface TaskDetailPanelProps {
   onAddTodo: (itemId: string, text: string) => void;
   itemContext: { projectName: string; listTitle: string } | null;
   onSelectItem?: (item: Subtask) => void;
+  onBillableChange: (itemId: string, billable: boolean) => void;
 }
 
 const InfoCard: React.FC<{ label: string; value: string; color: string, icon: React.ReactNode }> = ({ label, value, color, icon }) => (
@@ -28,7 +29,7 @@ const InfoCard: React.FC<{ label: string; value: string; color: string, icon: Re
 );
 
 const Section: React.FC<{ title: string, icon: React.ReactNode, children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="border-t border-c-highlight pt-4">
+    <div className="pt-4">
         <h4 className="flex items-center space-x-2 text-sm font-bold text-white mb-2">
             {icon}
             <span>{title}</span>
@@ -38,7 +39,7 @@ const Section: React.FC<{ title: string, icon: React.ReactNode, children: React.
 );
 
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUpdate, onDescriptionUpdate, onRenameItem, trackedTime, activeTimerTaskId, onToggleTimer, onAddSubtask, onAddTodo, itemContext, onSelectItem }) => {
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUpdate, onDescriptionUpdate, onRenameItem, trackedTime, activeTimerTaskId, onToggleTimer, onAddSubtask, onAddTodo, itemContext, onSelectItem, onBillableChange }) => {
   const [description, setDescription] = useState(item?.description || '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(item?.title || '');
@@ -46,11 +47,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
   const [newTodoText, setNewTodoText] = useState('');
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [isBillable, setIsBillable] = useState(item?.billable ?? true);
 
 
   useEffect(() => {
     setDescription(item?.description || '');
     setTitle(item?.title || '');
+    setIsBillable(item?.billable ?? true);
     setIsAddingTodo(false);
     setNewTodoText('');
     setIsAddingSubtask(false);
@@ -102,25 +105,59 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
 
   return (
     <aside className="w-96 bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto">
-      <div>
-        {isEditingTitle ? (
-            <input
-                type="text"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                onBlur={handleTitleBlur}
-                onKeyDown={handleTitleKeyDown}
-                className="w-full bg-c-highlight text-lg font-bold text-white border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-1 -ml-1"
-                autoFocus
-            />
-        ) : (
-            <h3 onDoubleClick={() => setIsEditingTitle(true)} className="text-lg font-bold text-white mb-1">{item.title}</h3>
-        )}
-        {itemContext && (
-          <p className="text-xs text-c-subtle">
-            In Projekt: <span className="font-semibold">{itemContext.projectName}</span> → Liste: <span className="font-semibold">{itemContext.listTitle}</span>
-          </p>
-        )}
+      {/* Sticky Header with Title, Info and Billable Toggle */}
+      <div className="sticky top-0 bg-c-surface z-10 border-b border-c-highlight pb-3">
+        <div className="mb-3">
+          {isEditingTitle ? (
+              <input
+                  type="text"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  onBlur={handleTitleBlur}
+                  onKeyDown={handleTitleKeyDown}
+                  className="w-full bg-c-highlight text-lg font-bold text-white border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-1 -ml-1"
+                  autoFocus
+              />
+          ) : (
+              <h3 onDoubleClick={() => setIsEditingTitle(true)} className="text-lg font-bold text-white mb-1">{item.title}</h3>
+          )}
+          {itemContext && (
+            <p className="text-xs text-c-subtle">
+              In Projekt: <span className="font-semibold">{itemContext.projectName}</span> → Liste: <span className="font-semibold">{itemContext.listTitle}</span>
+            </p>
+          )}
+        </div>
+        
+        {/* Billable Toggle */}
+        <div>
+        <button
+          onClick={() => {
+            const newBillable = !isBillable;
+            setIsBillable(newBillable);
+            onBillableChange(item.id, newBillable);
+          }}
+          className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-opacity cursor-pointer ${
+            isBillable 
+              ? 'bg-green-500/20 text-green-500 hover:opacity-90' 
+              : 'bg-red-500/20 text-red-400 hover:opacity-90'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {isBillable ? (
+              <>
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+              </>
+            ) : (
+              <>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <polyline points="19 12 12 19 5 12"></polyline>
+              </>
+            )}
+          </svg>
+          <span className="flex-1 text-left">{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
+        </button>
+        </div>
       </div>
       
       <Section title="Beschreibung" icon={<MessageSquareIcon className="w-4 h-4"/>}>

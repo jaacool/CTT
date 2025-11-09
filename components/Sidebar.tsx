@@ -9,6 +9,7 @@ interface SidebarProps {
   onAddNewProject: () => void;
   onRenameProject: (projectId: string, newName: string) => void;
   onSelectDashboard: () => void;
+  onSelectProjectsOverview: () => void;
 }
 
 const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, newName: string) => void }> = ({ project, onRename }) => {
@@ -73,7 +74,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredProjects = useMemo(() => 
@@ -102,10 +103,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onS
             </button>
           <NavItem icon={<ClockIcon className="w-5 h-5" />} label="Zeiten" />
           <NavItem icon={<ChartIcon className="w-5 h-5" />} label="Zeitauswertungen" />
-            <a href="#" className="flex items-center space-x-3 px-3 py-2 text-c-subtle hover:text-c-text">
-                <ChevronDownIcon className="w-5 h-5" />
-                <span>Mehr anzeigen</span>
-            </a>
+            <button 
+                onClick={onSelectProjectsOverview}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Projekte</span>
+            </button>
         </nav>
       </div>
 
@@ -152,6 +158,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ projects, selectedProject, onS
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Settings Button - Fixed at Bottom */}
+      <div className="flex-shrink-0 border-t border-c-highlight pt-4">
+        <button className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"></path>
+          </svg>
+          <span>Einstellungen</span>
+        </button>
       </div>
     </aside>
   );

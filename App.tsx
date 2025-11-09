@@ -6,6 +6,9 @@ import { TaskArea } from './components/TaskArea';
 import { TaskDetailPanel } from './components/TaskDetailPanel';
 import { TimerMenu } from './components/TimerMenu';
 import { Dashboard } from './components/Dashboard';
+import { ProjectsOverview } from './components/ProjectsOverview';
+import { CreateProjectModal } from './components/CreateProjectModal';
+import { SearchProjectModal } from './components/SearchProjectModal';
 import { statusToText, formatTime } from './components/utils';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
@@ -43,6 +46,9 @@ const addActivity = (projects: Project[], itemId: string, user: User, text: stri
 
 const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [defaultBillableByProject, setDefaultBillableByProject] = useState<Record<string, boolean>>({});
+  const [history, setHistory] = useState<Project[][]>([MOCK_PROJECTS]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [selectedProject, setSelectedProject] = useState<Project | null>(MOCK_PROJECTS.find(p => p.name === 'AARON') || null);
   const [selectedTask, setSelectedTask] = useState<Task | Subtask | null>(null);
   const [taskTimers, setTaskTimers] = useState<{ [taskId: string]: number }>({});
@@ -51,8 +57,83 @@ const App: React.FC = () => {
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [timerHovered, setTimerHovered] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showProjectsOverview, setShowProjectsOverview] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [pinnedTasks, setPinnedTasks] = useState<string[]>([]);
   const [dashboardNote, setDashboardNote] = useState('');
+
+  // Undo/Redo system
+  const saveToHistory = useCallback((newProjects: Project[]) => {
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(newProjects);
+      // Limit history to 50 states
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        setHistoryIndex(prev => prev);
+        return newHistory;
+      }
+      setHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
+  }, [historyIndex]);
+
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setProjects(history[newIndex]);
+    }
+  }, [historyIndex, history]);
+
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setProjects(history[newIndex]);
+    }
+  }, [historyIndex, history]);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  const getProjectDefaultBillable = useCallback((projectId: string) => {
+    return (defaultBillableByProject[projectId] ?? true);
+  }, [defaultBillableByProject]);
+
+  const toggleProjectDefaultBillable = useCallback((projectId: string) => {
+    setDefaultBillableByProject(prev => ({
+      ...prev,
+      [projectId]: !(prev[projectId] ?? true),
+    }));
+  }, []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
+
+  // Wrapper for setProjects that saves to history
+  const updateProjects = useCallback((updater: Project[] | ((prev: Project[]) => Project[]), skipHistory = false) => {
+    setProjects(prev => {
+      const newProjects = typeof updater === 'function' ? updater(prev) : updater;
+      if (!skipHistory) {
+        saveToHistory(newProjects);
+      }
+      return newProjects;
+    });
+  }, [saveToHistory]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -125,6 +206,7 @@ const App: React.FC = () => {
     setSelectedProject(project);
     setSelectedTask(null);
     setShowDashboard(false);
+    setShowProjectsOverview(false);
   }, [projects]);
 
   const handleSelectTask = useCallback((task: Task | Subtask | null) => {
@@ -134,6 +216,38 @@ const App: React.FC = () => {
       setSelectedTask(prev => (prev?.id === task.id ? null : task));
     }
   }, []);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    updateProjects(prev => prev.map(p => ({
+      ...p,
+      taskLists: p.taskLists.map(list => ({
+        ...list,
+        tasks: list.tasks.filter(t => t.id !== taskId)
+      })),
+      // optional: remove time entries linked to the deleted task
+      timeEntries: p.timeEntries.filter(te => te.taskId !== taskId),
+    })));
+    setSelectedTask(prev => (prev && 'id' in prev && prev.id === taskId ? null : prev));
+  }, [updateProjects]);
+
+  const handleBillableChange = useCallback((taskId: string, billable: boolean) => {
+    updateProjects(prev => prev.map(p => ({
+      ...p,
+      taskLists: p.taskLists.map(list => ({
+        ...list,
+        tasks: list.tasks.map(t => 
+          t.id === taskId 
+            ? { ...t, billable }
+            : {
+                ...t,
+                subtasks: t.subtasks.map(st => 
+                  st.id === taskId ? { ...st, billable } : st
+                )
+              }
+        )
+      }))
+    })));
+  }, [updateProjects]);
 
   const handleToggleTimer = useCallback((taskId: string) => {
     if (activeTimerTaskId === taskId) {
@@ -206,7 +320,7 @@ const App: React.FC = () => {
   }, [activeTimerTaskId, activeTimeEntryId, projects]);
 
   const handleSetTaskStatus = useCallback((itemId: string, newStatus: TaskStatus) => {
-    setProjects(prevProjects => {
+    updateProjects(prevProjects => {
       let oldStatus: TaskStatus | undefined;
 
       const updatedProjects = prevProjects.map(p => ({
@@ -240,10 +354,10 @@ const App: React.FC = () => {
 
       return updatedProjects;
     });
-  }, []);
+  }, [updateProjects]);
 
   const handleTaskUpdate = (updatedItem: Task | Subtask) => {
-    setProjects(prevProjects => prevProjects.map(p => ({
+    updateProjects(prevProjects => prevProjects.map(p => ({
         ...p,
         taskLists: p.taskLists.map(list => ({
             ...list,
@@ -261,7 +375,7 @@ const App: React.FC = () => {
   };
   
   const handleDescriptionUpdate = (itemId: string, description: string) => {
-     setProjects(prevProjects => {
+     updateProjects(prevProjects => {
         const updatedProjects = prevProjects.map(p => ({
         ...p,
         taskLists: p.taskLists.map(list => ({
@@ -282,22 +396,27 @@ const App: React.FC = () => {
   };
 
   const handleAddNewProject = () => {
-    const newProject: Project = {
-      id: `proj-${Date.now()}`,
-      name: 'Neues Projekt',
-      icon: '💡',
-      taskLists: [],
-      status: ProjectStatus.Planned,
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      budgetHours: 0,
-      members: [MOCK_USER],
-      timeEntries: [],
-    };
-    setProjects(prev => [...prev, newProject]);
-    setSelectedProject(newProject);
-    setSelectedTask(null);
+    setShowCreateProjectModal(true);
   };
+
+  const handleCreateProject = useCallback((projectData: any) => {
+    const newProject: Project = {
+      id: `project-${Date.now()}`,
+      name: projectData.name,
+      icon: projectData.icon || '📁',
+      status: ProjectStatus.Active,
+      taskLists: [],
+      timeEntries: [],
+      startDate: new Date().toISOString(),
+      endDate: null,
+      budgetHours: null,
+      members: [MOCK_USER],
+    };
+    updateProjects(prev => [...prev, newProject]);
+    setSelectedProject(newProject);
+    setShowDashboard(false);
+    setShowProjectsOverview(false);
+  }, [updateProjects]);
 
   const handleAddNewList = (projectId: string, title: string) => {
     const newList: TaskList = {
@@ -305,7 +424,7 @@ const App: React.FC = () => {
       title,
       tasks: [],
     };
-    setProjects(prev => prev.map(p => {
+    updateProjects(prev => prev.map(p => {
       if (p.id === projectId) {
         return { ...p, taskLists: [...p.taskLists, newList] };
       }
@@ -314,6 +433,13 @@ const App: React.FC = () => {
   };
 
   const handleAddTask = (listId: string, title: string) => {
+     // Find the project for this list to pick default billable
+     let parentProjectId: string | null = null;
+     projects.forEach(p => {
+       p.taskLists.forEach(l => { if (l.id === listId) parentProjectId = p.id; });
+     });
+     const projectDefault = parentProjectId ? getProjectDefaultBillable(parentProjectId) : true;
+
      const newTask: Task = {
         id: `task-${Date.now()}`,
         title,
@@ -326,8 +452,9 @@ const App: React.FC = () => {
         activity: [],
         subtasks: [],
         todos: [],
+        billable: projectDefault,
      };
-     setProjects(prev => prev.map(p => ({
+     updateProjects(prev => prev.map(p => ({
          ...p,
          taskLists: p.taskLists.map(list => {
              if (list.id === listId) {
@@ -339,7 +466,7 @@ const App: React.FC = () => {
   };
 
   const handleRenameItem = (id: string, newName: string, type: 'project' | 'list' | 'task' | 'subtask') => {
-      setProjects(prev => prev.map(p => {
+      updateProjects(prev => prev.map(p => {
           if (type === 'project' && p.id === id) {
               return { ...p, name: newName };
           }
@@ -372,6 +499,17 @@ const App: React.FC = () => {
   };
 
   const handleAddSubtask = (taskId: string, title: string) => {
+    // Find parent project for default billable
+    let parentProjectId: string | null = null;
+    projects.forEach(p => {
+      p.taskLists.forEach(list => {
+        list.tasks.forEach(t => {
+          if (t.id === taskId) parentProjectId = p.id;
+        });
+      });
+    });
+    const projectDefault = parentProjectId ? getProjectDefaultBillable(parentProjectId) : true;
+
     const newSubtask: Subtask = {
       id: `subtask-${Date.now()}`,
       title,
@@ -383,9 +521,10 @@ const App: React.FC = () => {
       dueDate: null,
       activity: [],
       todos: [],
+      billable: projectDefault,
     };
     
-    setProjects(prev => prev.map(p => ({
+    updateProjects(prev => prev.map(p => ({
       ...p,
       taskLists: p.taskLists.map(list => ({
         ...list,
@@ -444,7 +583,7 @@ const App: React.FC = () => {
       completed: false,
     };
     
-    setProjects(prev => prev.map(p => ({
+    updateProjects(prev => prev.map(p => ({
       ...p,
       taskLists: p.taskLists.map(list => ({
         ...list,
@@ -495,10 +634,52 @@ const App: React.FC = () => {
         onRenameProject={(id, newName) => handleRenameItem(id, newName, 'project')}
         onSelectDashboard={() => {
           setShowDashboard(true);
+          setShowProjectsOverview(false);
+          setSelectedProject(null);
+          setSelectedTask(null);
+        }}
+        onSelectProjectsOverview={() => {
+          setShowProjectsOverview(true);
+          setShowDashboard(false);
           setSelectedProject(null);
           setSelectedTask(null);
         }}
       />
+      
+      {/* Undo/Redo Buttons */}
+      <div className="fixed top-6 right-6 z-50 flex items-center space-x-2">
+        <button
+          onClick={undo}
+          disabled={!canUndo}
+          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
+            canUndo 
+              ? 'bg-c-surface hover:bg-c-highlight text-c-text cursor-pointer' 
+              : 'bg-c-surface/50 text-c-muted cursor-not-allowed'
+          }`}
+          title="Rückgängig (Strg+Z)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </button>
+        <button
+          onClick={redo}
+          disabled={!canRedo}
+          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
+            canRedo 
+              ? 'bg-c-surface hover:bg-c-highlight text-c-text cursor-pointer' 
+              : 'bg-c-surface/50 text-c-muted cursor-not-allowed'
+          }`}
+          title="Wiederherstellen (Strg+Y)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+      </div>
+      
       <main className="flex-1 flex flex-col p-6 overflow-y-auto">
         {showDashboard ? (
           <Dashboard
@@ -510,6 +691,11 @@ const App: React.FC = () => {
             onToggleTimer={handleToggleTimer}
             activeTimerTaskId={activeTimerTaskId}
             taskTimers={taskTimers}
+          />
+        ) : showProjectsOverview ? (
+          <ProjectsOverview
+            projects={projects}
+            onSelectProject={handleSelectProject}
           />
         ) : selectedProject ? (
           <TaskArea 
@@ -524,8 +710,14 @@ const App: React.FC = () => {
             onAddTask={handleAddTask}
             onRenameItem={handleRenameItem}
             onUpdateTimeEntry={handleUpdateTimeEntry}
+            onBillableChange={handleBillableChange}
+            defaultBillable={getProjectDefaultBillable(selectedProject.id)}
+            onToggleDefaultBillable={() => toggleProjectDefaultBillable(selectedProject.id)}
             onPinTask={handlePinTask}
             pinnedTaskIds={pinnedTasks}
+            onDeleteTask={handleDeleteTask}
+            onOpenCreateProject={() => setShowCreateProjectModal(true)}
+            onOpenSearchProjects={() => setShowSearchModal(true)}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-c-muted">
@@ -533,6 +725,7 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
       <TaskDetailPanel 
         item={selectedTask}
         onItemUpdate={handleTaskUpdate}
@@ -545,8 +738,9 @@ const App: React.FC = () => {
         onAddTodo={handleAddTodo}
         itemContext={selectedTask ? findItemContext(selectedTask.id) : null}
         onSelectItem={handleSelectTask}
+        onBillableChange={handleBillableChange}
       />
-      
+
       {activeTimerTaskId && (() => {
         const activeEntry = projects
           .flatMap(p => p.timeEntries)
@@ -612,6 +806,22 @@ const App: React.FC = () => {
           </>
         );
       })()}
+      
+      {/* Modals */}
+      {showCreateProjectModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateProjectModal(false)}
+          onCreateProject={handleCreateProject}
+        />
+      )}
+      
+      {showSearchModal && (
+        <SearchProjectModal
+          projects={projects}
+          onClose={() => setShowSearchModal(false)}
+          onSelectProject={handleSelectProject}
+        />
+      )}
     </div>
   );
 };
