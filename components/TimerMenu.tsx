@@ -49,7 +49,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
       />
       
       {/* Menu */}
-      <div className="fixed bottom-24 right-8 w-[800px] bg-[#1a1d2e] rounded-2xl shadow-2xl z-50 p-6">
+      <div className="fixed inset-0 md:bottom-24 md:right-8 md:w-[800px] md:inset-auto bg-[#1a1d2e] rounded-none md:rounded-2xl shadow-2xl z-50 p-6">
         <h2 className="text-white text-xl font-bold mb-6">Timer</h2>
         
         {/* Search */}
