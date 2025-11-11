@@ -334,7 +334,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
     
     return (
         <>
-        <div className="pl-4">
+        <div>
             <div 
                 onClick={handleDirectClick}
                 onContextMenu={(e) => {
@@ -364,7 +364,11 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                                 <PlayIcon className="w-4 h-4" />
                             )
                         ) : (
-                            <ClockIcon className="w-4 h-4" />
+                            isActive ? (
+                                <ClockIcon className="w-4 h-4" />
+                            ) : (
+                                <PlayIcon className="w-4 h-4" />
+                            )
                         )}
                         <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                     </button>
@@ -500,6 +504,7 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
             </div>
             <div className="space-y-1">
                  <AddNewTask listId={taskList.id} onAddTask={props.onAddTask} />
+                 {taskList.tasks.length > 0 && <div className="border-t border-c-highlight my-2"></div>}
                 {taskList.tasks.map(task => {
                     // Summiere alle TimeEntries für diese Aufgabe
                     const timeEntriesSum = props.project.timeEntries
@@ -572,7 +577,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             <div className="flex space-x-1 mb-6 bg-c-surface rounded-lg p-1">
                 <button
                     onClick={() => setActiveTab('tasks')}
-                    className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                    className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'tasks'
                             ? 'bg-c-blue text-white'
                             : 'text-c-subtle hover:text-c-text'
@@ -588,7 +593,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                             props.onSelectItem(null);
                         }
                     }}
-                    className={`flex-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                    className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'time'
                             ? 'bg-c-blue text-white'
                             : 'text-c-subtle hover:text-c-text'

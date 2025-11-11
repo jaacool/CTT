@@ -66,7 +66,7 @@ const App: React.FC = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [pinnedTasks, setPinnedTasks] = useState<string[]>([]);
   const [dashboardNote, setDashboardNote] = useState('');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(ADMIN_USER);
   const [showSettings, setShowSettings] = useState(false);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -655,20 +655,7 @@ const App: React.FC = () => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const handleLogin = (username: string) => {
-    if (username.toLowerCase() === 'admin') {
-      setCurrentUser(ADMIN_USER);
-    } else if (username.toLowerCase() === 'alex') {
-      setCurrentUser(MOCK_USER);
-    } else {
-      // For simplicity, any other user will be MOCK_USER_2
-      setCurrentUser(MOCK_USER_2);
-    }
-  };
-
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
+  // Removed login screen - always logged in as admin
 
   const findItemContext = (itemId: string): { projectName: string; listTitle: string } | null => {
     for (const project of projects) {

@@ -104,7 +104,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
   const isTimerActive = activeTimerTaskId === item.id;
 
   return (
-    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto 
+    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto h-full
       fixed inset-0 z-50 md:relative md:w-96 md:inset-auto md:z-auto transition-transform duration-300 ease-in-out 
       ${item ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
 
@@ -179,116 +179,93 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
         />
       </Section>
 
-      <Section title="Checkliste" icon={<CheckSquareIcon className="w-4 h-4"/>}>
-        <div className="space-y-2">
+      <Section title="Checkliste" icon={<CheckSquareIcon className="w-5 h-5"/>}>
+        <div className="space-y-2.5">
           {item.todos.map(todo => (
-            <div key={todo.id} className="flex items-center space-x-3 group">
-              <input
-                type="checkbox"
-                checked={todo.completed}
-                onChange={() => toggleTodo(todo.id)}
-                className="w-4 h-4 rounded bg-c-highlight border-c-muted text-c-blue focus:ring-c-blue"
-              />
-              <span className={`flex-1 text-xs ${todo.completed ? 'line-through text-c-muted' : ''}`}>{todo.text}</span>
-              <button
-                onClick={() => deleteTodo(todo.id)}
-                className="opacity-0 group-hover:opacity-100 text-c-muted hover:text-red-500 text-xs transition-opacity"
-              >
-                ×
-              </button>
+            <div key={todo.id} onClick={() => toggleTodo(todo.id)} className="flex items-center space-x-3 group cursor-pointer">
+              {todo.completed ? (
+                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+              ) : (
+                <div className="w-5 h-5 rounded-full border-2 border-c-muted"></div>
+              )}
+              <span className={`flex-1 text-sm ${todo.completed ? 'text-c-muted' : 'text-c-text'}`}>{todo.text}</span>
             </div>
           ))}
           {isAddingTodo ? (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
               <input
                 type="text"
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
                 onBlur={() => {
-                  if (newTodoText.trim()) {
-                    onAddTodo(item.id, newTodoText.trim());
-                  }
-                  setIsAddingTodo(false);
-                  setNewTodoText('');
+                  if (newTodoText.trim()) onAddTodo(item.id, newTodoText.trim());
+                  setIsAddingTodo(false); setNewTodoText('');
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTodoText.trim()) {
-                    onAddTodo(item.id, newTodoText.trim());
-                    setIsAddingTodo(false);
-                    setNewTodoText('');
+                  if (e.key === 'Enter') {
+                    if (newTodoText.trim()) onAddTodo(item.id, newTodoText.trim());
+                    setIsAddingTodo(false); setNewTodoText('');
                   } else if (e.key === 'Escape') {
-                    setIsAddingTodo(false);
-                    setNewTodoText('');
+                    setIsAddingTodo(false); setNewTodoText('');
                   }
                 }}
-                placeholder="To-Do eingeben..."
-                className="flex-1 bg-c-bg border border-c-highlight rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-c-blue"
+                placeholder="Eintrag hinzufügen..."
+                className="flex-1 bg-transparent text-sm text-c-text placeholder-c-muted outline-none"
                 autoFocus
               />
             </div>
           ) : (
-            <div 
-              onClick={() => setIsAddingTodo(true)}
-              className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text text-xs"
-            >
-              <div className="w-4 h-4 border-2 border-dashed border-c-muted rounded"></div>
-              <span>Eintrag hinzufügen</span>
+            <div onClick={() => setIsAddingTodo(true)} className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text">
+              <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+              <span className="text-sm">Eintrag hinzufügen</span>
             </div>
           )}
         </div>
       </Section>
-      
+
       {isTask(item) && (
-         <Section title={`Unteraufgaben (${item.subtasks.length})`} icon={<PlannerIcon className="w-4 h-4"/>}>
-            <div className="space-y-2">
-                {item.subtasks.map(subtask => (
-                    <div 
-                      key={subtask.id} 
-                      onClick={() => onSelectItem?.(subtask)}
-                      className="flex items-center space-x-3 text-c-text text-xs cursor-pointer hover:bg-c-highlight p-1 rounded transition-colors"
-                    >
-                        <div className="w-4 h-4 rounded-full border-2 border-c-muted"></div>
-                        <span>{subtask.title}</span>
-                    </div>
-                ))}
-                {isAddingSubtask ? (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={newSubtaskTitle}
-                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                      onBlur={() => {
-                        if (newSubtaskTitle.trim()) {
-                          onAddSubtask(item.id, newSubtaskTitle.trim());
-                        }
-                        setIsAddingSubtask(false);
-                        setNewSubtaskTitle('');
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newSubtaskTitle.trim()) {
-                          onAddSubtask(item.id, newSubtaskTitle.trim());
-                          setIsAddingSubtask(false);
-                          setNewSubtaskTitle('');
-                        } else if (e.key === 'Escape') {
-                          setIsAddingSubtask(false);
-                          setNewSubtaskTitle('');
-                        }
-                      }}
-                      placeholder="Unteraufgabe eingeben..."
-                      className="flex-1 bg-c-bg border border-c-highlight rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-c-blue"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div 
-                    onClick={() => setIsAddingSubtask(true)}
-                    className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text text-xs"
-                  >
-                    <div className="w-4 h-4 border-2 border-dashed border-c-muted rounded"></div>
-                    <span>Neue Unteraufgabe</span>
-                  </div>
-                )}
-            </div>
+        <Section title={`Unteraufgaben (${item.subtasks.length})`} icon={<PlannerIcon className="w-5 h-5"/>}>
+          <div className="space-y-2.5">
+            {item.subtasks.map(subtask => (
+              <div key={subtask.id} onClick={() => onSelectItem?.(subtask)} className="flex items-center space-x-3 text-c-text text-sm cursor-pointer">
+                <div className="w-5 h-5 rounded-full border-2 border-c-muted"></div>
+                <span>{subtask.title}</span>
+              </div>
+            ))}
+            {isAddingSubtask ? (
+              <div className="flex items-center space-x-3">
+                <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+                <input
+                  type="text"
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onBlur={() => {
+                    if (newSubtaskTitle.trim()) onAddSubtask(item.id, newSubtaskTitle.trim());
+                    setIsAddingSubtask(false); setNewSubtaskTitle('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (newSubtaskTitle.trim()) onAddSubtask(item.id, newSubtaskTitle.trim());
+                      setIsAddingSubtask(false); setNewSubtaskTitle('');
+                    } else if (e.key === 'Escape') {
+                      setIsAddingSubtask(false); setNewSubtaskTitle('');
+                    }
+                  }}
+                  placeholder="Neue Unteraufgabe..."
+                  className="flex-1 bg-transparent text-sm text-c-text placeholder-c-muted outline-none"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div onClick={() => setIsAddingSubtask(true)} className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text">
+                <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+                <span className="text-sm">Neue Unteraufgabe</span>
+              </div>
+            )}
+          </div>
         </Section>
       )}
 

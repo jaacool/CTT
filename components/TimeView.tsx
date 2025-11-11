@@ -90,7 +90,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
           {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
             <div
               key={entry.id}
-              className="bg-c-surface rounded-lg p-4 hover:bg-c-highlight transition-colors"
+              className="bg-c-surface rounded-lg p-3 sm:p-4 hover:bg-c-highlight transition-colors"
             >
               {editingEntryId === entry.id ? (
                 <div className="space-y-3">
@@ -145,87 +145,137 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
               ) : (
                 <div
                   onClick={() => handleEditClick(entry)}
-                  className="cursor-pointer flex items-center space-x-3"
+                  className="cursor-pointer"
                 >
-                  <img
-                    src={entry.user.avatarUrl}
-                    alt={entry.user.name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 rounded-full bg-c-yellow"></span>
-                      <span className="text-white font-semibold truncate">{entry.taskTitle}</span>
+                  {/* Mobile: Compact Layout */}
+                  <div className="flex items-start justify-between gap-2 sm:hidden">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <img
+                        src={entry.user.avatarUrl}
+                        alt={entry.user.name}
+                        className="w-7 h-7 rounded-full flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-c-subtle truncate leading-tight">{entry.projectName}</div>
+                        <div className="text-white font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-end space-y-1 flex-shrink-0">
+                      <div className="flex items-center space-x-1.5">
+                        <div className={`px-1.5 py-0.5 rounded font-bold text-xs ${
+                          entry.endTime ? 'bg-c-magenta/20 text-c-magenta' : 'bg-c-blue/20 text-c-blue'
+                        }`}>
+                          {formatDuration(entry.duration)}
+                        </div>
+                        
+                        {(() => {
+                          const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
+                          return (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onBillableChange(entry.taskId, !isBillable);
+                              }}
+                              className={`p-1 rounded ${
+                                isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
+                              } hover:opacity-90 transition-opacity cursor-pointer`}
+                              title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {isBillable ? (
+                                  <>
+                                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                                    <polyline points="5 12 12 5 19 12"></polyline>
+                                  </>
+                                ) : (
+                                  <>
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <polyline points="19 12 12 19 5 12"></polyline>
+                                  </>
+                                )}
+                              </svg>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                      
+                      <div className="flex items-center space-x-1 text-c-subtle text-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>{formatTimeRange(entry.startTime, entry.endTime)}</span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 text-xs text-c-subtle">
-                    <span className="truncate">{entry.projectName}</span>
+                  {/* Tablet/Desktop: Horizontal Layout */}
+                  <div className="hidden sm:flex items-center space-x-3">
+                    <img
+                      src={entry.user.avatarUrl}
+                      alt={entry.user.name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-c-subtle truncate leading-tight mb-0.5">{entry.projectName}</div>
+                      <div className="text-white font-semibold truncate leading-tight">{entry.taskTitle}</div>
+                    </div>
+                    
+                    {(() => {
+                      const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onBillableChange(entry.taskId, !isBillable);
+                          }}
+                          className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
+                            isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
+                          } hover:opacity-90 transition-opacity cursor-pointer`}
+                          title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {isBillable ? (
+                              <>
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                              </>
+                            ) : (
+                              <>
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                              </>
+                            )}
+                          </svg>
+                          <span>{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
+                        </button>
+                      );
+                    })()}
+                    
+                    <div className="flex items-center space-x-2 text-xs text-c-subtle">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>{formatTimeRange(entry.startTime, entry.endTime)}</span>
+                    </div>
+                    
+                    <div className={`px-3 py-1 rounded font-bold text-sm ${
+                      entry.endTime ? 'bg-c-magenta/20 text-c-magenta' : 'bg-c-blue/20 text-c-blue'
+                    }`}>
+                      {formatDuration(entry.duration)}
+                    </div>
+                    
+                    <button className="text-c-subtle hover:text-c-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="12" cy="5" r="1"></circle>
+                        <circle cx="12" cy="19" r="1"></circle>
+                      </svg>
+                    </button>
                   </div>
-                  
-                  {(() => {
-                    const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
-                    return (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBillableChange(entry.taskId, !isBillable);
-                        }}
-                        className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
-                          isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
-                        } hover:opacity-90 transition-opacity cursor-pointer`}
-                        title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          {isBillable ? (
-                            <>
-                              <line x1="12" y1="19" x2="12" y2="5"></line>
-                              <polyline points="5 12 12 5 19 12"></polyline>
-                            </>
-                          ) : (
-                            <>
-                              <line x1="12" y1="5" x2="12" y2="19"></line>
-                              <polyline points="19 12 12 19 5 12"></polyline>
-                            </>
-                          )}
-                        </svg>
-                        <span>{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
-                      </button>
-                    );
-                  })()}
-                  
-                  <div className="flex items-center space-x-2 text-xs text-c-subtle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                      <line x1="16" y1="2" x2="16" y2="6"></line>
-                      <line x1="8" y1="2" x2="8" y2="6"></line>
-                      <line x1="3" y1="10" x2="21" y2="10"></line>
-                    </svg>
-                    <span>{formatDateTime(entry.startTime)}</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 text-xs text-c-subtle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span>{formatTimeRange(entry.startTime, entry.endTime)}</span>
-                  </div>
-                  
-                  <div className={`px-3 py-1 rounded font-bold text-sm ${
-                    entry.endTime ? 'bg-c-magenta/20 text-c-magenta' : 'bg-c-blue/20 text-c-blue'
-                  }`}>
-                    {formatDuration(entry.duration)}
-                  </div>
-                  
-                  <button className="text-c-subtle hover:text-c-text">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="1"></circle>
-                      <circle cx="12" cy="5" r="1"></circle>
-                      <circle cx="12" cy="19" r="1"></circle>
-                    </svg>
-                  </button>
                 </div>
               )}
             </div>
