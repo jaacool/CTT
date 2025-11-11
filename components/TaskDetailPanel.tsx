@@ -104,7 +104,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
   const isTimerActive = activeTimerTaskId === item.id;
 
   return (
-    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto h-full
+    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight p-6 flex flex-col space-y-6 overflow-y-auto overflow-x-hidden h-full
       fixed inset-0 z-50 md:relative md:w-96 md:inset-auto md:z-auto transition-transform duration-300 ease-in-out 
       ${item ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
 
