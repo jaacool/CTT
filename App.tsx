@@ -743,7 +743,7 @@ const App: React.FC = () => {
         }}
       />
       
-        <main className={`flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300 ${selectedTask ? 'md:mr-96' : ''}`}>
+        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300">
         {showDashboard ? (
           <Dashboard
             user={currentUser}
@@ -799,7 +799,7 @@ const App: React.FC = () => {
         )}
         </main>
 
-        <div className={`md:block ${selectedTask ? 'block' : 'hidden'}`}>
+        <div className={`fixed top-16 right-0 h-full w-96 bg-c-bg-primary shadow-2xl transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0 md:block`}>
           <TaskDetailPanel 
             item={selectedTask}
             onItemUpdate={handleTaskUpdate}
