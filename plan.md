@@ -38,37 +38,37 @@ Migration der aktuellen CTT React/Vite SPA zu einer Next.js/Supabase Full-Stack 
 ## 📦 Phase 2: Komponenten Migration
 
 ### 2.1 Grundlegende Komponenten übernehmen
-- [ ] `Icons.tsx` → `components/Icons.tsx`
-- [ ] `types.ts` → `types/index.ts`
-- [ ] `constants.ts` → `lib/constants.ts`
-- [ ] `utils/permissions.ts` → `lib/permissions.ts`
-- [ ] `components/utils.ts` → `lib/utils.ts`
+- [x] `Icons.tsx` → `components/Icons.tsx`
+- [x] `types.ts` → `types/index.ts`
+- [x] `constants.ts` → `lib/constants.ts`
+- [x] `utils/permissions.ts` → `lib/permissions.ts`
+- [x] `components/utils.ts` → `lib/utils.ts`
 
 ### 2.2 UI Komponenten migrieren
-- [ ] `TopBar.tsx` → `components/TopBar.tsx`
-- [ ] `Sidebar.tsx` → `components/Sidebar.tsx`
-- [ ] `LoginScreen.tsx` → `components/LoginScreen.tsx`
-- [ ] `SettingsPage.tsx` → `components/SettingsPage.tsx`
+- [x] `TopBar.tsx` → `components/TopBar.tsx`
+- [x] `Sidebar.tsx` → `components/Sidebar.tsx`
+- [x] `LoginScreen.tsx` → `components/LoginScreen.tsx`
+- [x] `SettingsPage.tsx` → `components/SettingsPage.tsx`
 
 ### 2.3 Core Feature Komponenten
-- [ ] `Dashboard.tsx` → `components/Dashboard.tsx`
-- [ ] `ProjectsOverview.tsx` → `components/ProjectsOverview.tsx`
-- [ ] `TaskArea.tsx` → `components/TaskArea.tsx`
-- [ ] `TaskDetailPanel.tsx` → `components/TaskDetailPanel.tsx`
+- [x] `Dashboard.tsx` → `components/Dashboard.tsx`
+- [x] `ProjectsOverview.tsx` → `components/ProjectsOverview.tsx`
+- [x] `TaskArea.tsx` → `components/TaskArea.tsx`
+- [x] `TaskDetailPanel.tsx` → `components/TaskDetailPanel.tsx`
 
 ### 2.4 Modal & Form Komponenten
-- [ ] `CreateProjectModal.tsx` → `components/CreateProjectModal.tsx`
-- [ ] `SearchProjectModal.tsx` → `components/SearchProjectModal.tsx`
-- [ ] `AddUserModal.tsx` → `components/AddUserModal.tsx`
-- [ ] `EditUserModal.tsx` → `components/EditUserModal.tsx`
-- [ ] `DeleteTaskModal.tsx` → `components/DeleteTaskModal.tsx`
+- [x] `CreateProjectModal.tsx` → `components/CreateProjectModal.tsx`
+- [x] `SearchProjectModal.tsx` → `components/SearchProjectModal.tsx`
+- [x] `AddUserModal.tsx` → `components/AddUserModal.tsx`
+- [x] `EditUserModal.tsx` → `components/EditUserModal.tsx`
+- [x] `DeleteTaskModal.tsx` → `components/DeleteTaskModal.tsx`
 
 ### 2.5 Spezialisierte Komponenten
-- [ ] `TimerMenu.tsx` → `components/TimerMenu.tsx`
-- [ ] `TimeView.tsx` → `components/TimeView.tsx`
-- [ ] `TaskContextMenu.tsx` → `components/TaskContextMenu.tsx`
-- [ ] `ClientSelector.tsx` → `components/ClientSelector.tsx`
-- [ ] `RolesPage.tsx` → `components/RolesPage.tsx`
+- [x] `TimerMenu.tsx` → `components/TimerMenu.tsx`
+- [x] `TimeView.tsx` → `components/TimeView.tsx`
+- [x] `TaskContextMenu.tsx` → `components/TaskContextMenu.tsx`
+- [x] `ClientSelector.tsx` → `components/ClientSelector.tsx`
+- [x] `RolesPage.tsx` → `components/RolesPage.tsx`
 
 ---
 
