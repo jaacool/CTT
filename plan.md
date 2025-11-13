@@ -75,6 +75,7 @@ Migration der aktuellen CTT React/Vite SPA zu einer Next.js/Supabase Full-Stack 
 ## 🛣️ Phase 3: Next.js Routing Setup
 
 ### 3.1 App Router Struktur erstellen
+- [x] Verzeichnisse erstellt (login, projects, settings, api)
 ```
 src/app/
 ├── layout.tsx          (Root Layout mit Tailwind)
@@ -89,16 +90,16 @@ src/app/
 ```
 
 ### 3.2 Layout Komponente erstellen
-- [ ] Root Layout mit Tailwind Body Classes
-- [ ] Navigation Provider
-- [ ] Auth Provider Setup
-- [ ] Supabase Client Provider
+- [x] Root Layout mit Tailwind Body Classes (globals.css)
+- [ ] Navigation Provider (folgt in Phase 3.3)
+- [ ] Auth Provider Setup (folgt in Phase 4)
+- [ ] Supabase Client Provider (folgt in Phase 4)
 
 ### 3.3 Seiten implementieren
-- [ ] `page.tsx` → Dashboard mit `Dashboard` Komponente
-- [ ] `login/page.tsx` → Login Screen
-- [ ] `projects/page.tsx` → Projects Overview
-- [ ] `settings/page.tsx` → Settings Page
+- [x] `page.tsx` → CTT Landing Page mit Navigation
+- [x] `login/page.tsx` → Login Screen mit Router
+- [x] `projects/page.tsx` → Projects Overview (vereinfacht)
+- [x] `settings/page.tsx` → Settings Page (vereinfacht)
 
 ---
 
