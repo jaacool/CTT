@@ -19,19 +19,19 @@ Migration der aktuellen CTT React/Vite SPA zu einer Next.js/Supabase Full-Stack 
 ## 📅 Phase 1: Next.js Projekt Setup
 
 ### 1.1 Next.js Projekt initialisieren
-- [ ] `npx create-next-app@latest ctt-nextjs --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
-- [ ] Projekt in separatem Verzeichnis erstellen
-- [ ] Grundkonfiguration prüfen
+- [x] `npx create-next-app@latest ctt-nextjs --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
+- [x] Projekt in separatem Verzeichnis erstellt
+- [x] Grundkonfiguration geprüft (Next.js 16.0.3, React 19.2.0, Tailwind v4)
 
 ### 1.2 Tailwind CSS Konfiguration migrieren
-- [ ] Custom Colors aus `index.html` in `tailwind.config.ts` übernehmen
-- [ ] Theme-Erweiterungen einrichten
-- [ ] CDN-Referenzen entfernen
+- [x] Custom Colors aus `index.html` in `globals.css` übernommen (Tailwind v4 @theme)
+- [x] Theme-Erweiterungen eingerichtet (alle CTT-Colors: c-bg, c-surface, etc.)
+- [x] CDN-Referenzen entfernt (nutzt jetzt PostCSS)
 
 ### 1.3 TypeScript Konfiguration anpassen
-- [ ] `tsconfig.json` von CTT übernehmen und an Next.js anpassen
-- [ ] Path Aliases (`@/*`) konfigurieren
-- [ ] Next.js spezifische Types hinzufügen
+- [x] `tsconfig.json` bereits korrekt konfiguriert (ES2017, strict mode)
+- [x] Path Aliases (`@/*`) bereits eingerichtet
+- [x] Next.js spezifische Types vorhanden (next-env.d.ts)
 
 ---
 
