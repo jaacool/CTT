@@ -780,13 +780,13 @@ const App: React.FC = () => {
               onChangeRole={handleChangeRole}
             />
           ) :
-          <div className="flex items-center justify-center h-full text-c-muted">
-            <p>Wählen Sie ein Projekt aus, um Aufgaben anzuzeigen.</p>
+          <div className="flex items-center justify-center h-full text-ai-text-muted">
+            <p className="text-gradient text-lg">Wählen Sie ein Projekt aus, um Aufgaben anzuzeigen.</p>
           </div>
         )}
         </main>
 
-        <div className={`fixed top-16 right-0 h-full w-96 bg-c-bg-primary shadow-2xl transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0 md:block`}>
+        <div className={`fixed top-16 right-0 h-full w-96 glass-strong border-l border-ai-border shadow-ai-card transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0 md:block`}>
           <TaskDetailPanel 
             item={selectedTask}
             onItemUpdate={handleTaskUpdate}
@@ -819,16 +819,16 @@ const App: React.FC = () => {
             >
               {/* Hover Tooltip */}
               {timerHovered && (
-                <div className="absolute bottom-full right-0 mb-3 bg-white text-black px-4 py-2 rounded-lg shadow-xl whitespace-nowrap">
-                  <div className="text-xs text-gray-500 mb-1">{activeEntry.projectName}</div>
-                  <div className="font-bold">{activeEntry.taskTitle}</div>
-                  <div className="absolute top-full right-8 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-white"></div>
+                <div className="absolute bottom-full right-0 mb-3 glass-strong border border-ai-border px-4 py-3 rounded-2xl shadow-ai-card whitespace-nowrap fade-in">
+                  <div className="text-xs text-ai-text-muted mb-1">{activeEntry.projectName}</div>
+                  <div className="font-bold text-ai-text">{activeEntry.taskTitle}</div>
+                  <div className="absolute top-full right-8 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-ai-surface-strong"></div>
                 </div>
               )}
               
               <button
                 onClick={() => hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') ? setShowTimerMenu(!showTimerMenu) : null}
-                className="flex items-center space-x-3 px-4 py-3 rounded-full shadow-lg text-white font-bold transition-all bg-c-magenta hover:bg-purple-600"
+                className="flex items-center space-x-3 px-5 py-3 rounded-full shadow-ai-glow text-ai-text font-bold transition-smooth glass-strong border border-ai-purple glow-rainbow hover-lift btn-glow"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <circle cx="12" cy="12" r="10"></circle>

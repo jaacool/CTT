@@ -48,7 +48,7 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
                 onChange={(e) => setName(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-c-highlight text-c-text border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-0 py-0"
+                className="w-full glass text-ai-text border-none outline-none focus:ring-2 focus:ring-ai-purple rounded-lg px-2 py-1"
                 autoFocus
             />
         );
@@ -63,8 +63,8 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
 const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: () => void; onRename: (id: string, newName: string) => void }> = ({ project, isSelected, onClick, onRename }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md transition-colors ${
-      isSelected ? 'bg-c-blue text-white' : 'hover:bg-c-highlight'
+    className={`w-full flex items-center space-x-3 px-3 py-2.5 text-left rounded-xl transition-smooth hover-lift ${
+      isSelected ? 'glass-strong border border-ai-purple shadow-ai-glow text-ai-text' : 'hover:glass-light text-ai-text-muted hover:text-ai-text'
     }`}
   >
     <span className="text-lg">{project.icon}</span>
@@ -73,7 +73,7 @@ const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: ()
 );
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
-  <a href="#" className="flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors">
+  <a href="#" className="flex items-center space-x-3 px-3 py-2.5 text-ai-text-muted hover:text-ai-text hover:glass-light rounded-xl transition-smooth hover-lift">
     {icon}
     <span>{label}</span>
   </a>
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
         onClick={onClose}
       ></div>
 
-      <aside className={`w-64 bg-c-surface p-4 flex flex-col space-y-4 
+      <aside className={`w-64 glass-strong border-r border-ai-border p-4 flex flex-col space-y-4 
         fixed top-0 left-0 h-full z-40 transform transition-transform md:relative md:translate-x-0 md:flex-shrink-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
         <nav className="space-y-1">
           <button 
                 onClick={onSelectDashboard}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors"
+                className="w-full flex items-center space-x-3 px-3 py-2.5 text-ai-text-muted hover:text-ai-text hover:glass-light rounded-xl transition-smooth hover-lift"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                     <rect x="3" y="3" width="7" height="7"></rect>
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
           <NavItem icon={<ChartIcon className="w-5 h-5" />} label="Zeitauswertungen" />
             <button 
                 onClick={onSelectProjectsOverview}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors"
+                className="w-full flex items-center space-x-3 px-3 py-2.5 text-ai-text-muted hover:text-ai-text hover:glass-light rounded-xl transition-smooth hover-lift"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -139,16 +139,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
           placeholder="Suchen..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-c-bg border border-c-highlight rounded-md pl-10 pr-4 py-2 outline-none focus:ring-2 focus:ring-c-blue"
+          className="w-full glass border border-ai-border rounded-xl pl-10 pr-4 py-2.5 outline-none text-ai-text placeholder-ai-text-subtle transition-smooth"
         />
       </div>
       
       <div className="flex-1 overflow-y-auto pr-1">
         <div className="space-y-4">
           <div>
-            <h3 className="flex items-center space-x-2 px-3 py-2 text-c-subtle text-xs font-bold uppercase">
+            <h3 className="flex items-center space-x-2 px-3 py-2 text-ai-text-subtle text-xs font-bold uppercase tracking-wider">
               <ChevronDownIcon className="w-4 h-4" />
-              <StarIcon className="w-4 h-4 text-c-yellow" />
+              <StarIcon className="w-4 h-4 text-ai-orange" />
               <span>Favoriten</span>
             </h3>
             <div className="space-y-1 mt-1">
@@ -159,12 +159,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
           </div>
           <div>
             <div className="flex justify-between items-center">
-                <h3 className="flex items-center space-x-2 px-3 py-2 text-c-subtle text-xs font-bold uppercase">
+                <h3 className="flex items-center space-x-2 px-3 py-2 text-ai-text-subtle text-xs font-bold uppercase tracking-wider">
                 <ChevronDownIcon className="w-4 h-4" />
                 <span>🙂</span>
                 <span>Meine Projekte</span>
                 </h3>
-                <button onClick={onAddNewProject} className="p-1 rounded-md hover:bg-c-highlight text-c-subtle hover:text-c-text">
+                <button onClick={onAddNewProject} className="p-1.5 rounded-lg hover:glass-light text-ai-text-subtle hover:text-ai-purple transition-smooth hover-lift">
                     <PlusIcon className="w-4 h-4" />
                 </button>
             </div>
@@ -178,9 +178,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
       </div>
       
       {/* Settings Button - Fixed at Bottom */}
-      <div className="flex-shrink-0 border-t border-c-highlight pt-4">
+      <div className="flex-shrink-0 border-t border-ai-border pt-4">
         {canAccessSettings && (
-          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2 text-c-text hover:bg-c-highlight rounded-md transition-colors">
+          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2.5 text-ai-text-muted hover:text-ai-text hover:glass-light rounded-xl transition-smooth hover-lift">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"></path>

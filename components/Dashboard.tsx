@@ -60,9 +60,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Linke Spalte: Zeiterfassung */}
-        <div className="space-y-6" data-testid="dashboard-left-column">
+        <div className="space-y-6 order-2 md:order-1" data-testid="dashboard-left-column">
           {/* Meine Zeiterfassung */}
           <div className="bg-c-surface rounded-xl p-6" data-testid="my-time-tracking">
             <h2 className="text-white text-xl font-bold mb-6">Meine Zeiterfassung</h2>
@@ -187,7 +187,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Rechte Spalte: Täglich */}
-        <div className="bg-c-surface rounded-xl p-6" data-testid="shortcuts-section">
+        <div className="bg-c-surface rounded-xl p-6 order-1 md:order-2" data-testid="shortcuts-section">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-white text-xl font-bold">Shortcuts</h2>
             <div className="flex items-center space-x-2">
