@@ -18,13 +18,13 @@ interface TaskDetailPanelProps {
   onBillableChange: (itemId: string, billable: boolean) => void;
 }
 
-const InfoCard: React.FC<{ label: string; value: string; color: string, icon: React.ReactNode }> = ({ label, value, color, icon }) => (
+const InfoCard: React.FC<{ label: string; value: string; color: string, textColor: string, icon: React.ReactNode }> = ({ label, value, color, textColor, icon }) => (
   <div className={`flex-1 p-3 rounded-lg ${color}`}>
-    <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
+    <div className={`flex items-center space-x-2 text-xs mb-1 ${textColor}`}>
         {icon}
         <span>{label}</span>
     </div>
-    <span className="text-xl font-bold text-text-primary">{value}</span>
+    <span className={`text-xl font-bold ${textColor}`}>{value}</span>
   </div>
 );
 
@@ -276,16 +276,16 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       </Section>
 
       <div className="grid grid-cols-2 gap-3">
-          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" textColor="text-red-500" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" textColor="text-yellow-500" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" textColor="text-green-500" icon={<ClockIcon className="w-3 h-3"/>}/>
           <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan-v5">
-              <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
+              <div className="flex items-center space-x-2 text-xs mb-1 text-cyan-500">
                   <ClockIcon className="w-3 h-3"/>
                   <span>Fortschritt</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-text-primary">{Math.min(100, Math.round(progress))}%</span>
+                <span className="text-xl font-bold text-cyan-500">{Math.min(100, Math.round(progress))}%</span>
                 <div className="w-1/2 bg-overlay rounded-full h-1.5">
                     <div className="bg-glow-cyan h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
                 </div>
