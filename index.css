@@ -189,11 +189,11 @@ body {
 .glow-button-highlight {
   position: relative;
   background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.25) 0%, 
-    rgba(147, 51, 234, 0.22) 25%,
-    rgba(168, 85, 247, 0.25) 50%,
-    rgba(126, 34, 206, 0.22) 75%,
-    rgba(168, 85, 247, 0.25) 100%);
+    rgba(168, 85, 247, 0.15) 0%, 
+    rgba(147, 51, 234, 0.13) 25%,
+    rgba(168, 85, 247, 0.15) 50%,
+    rgba(126, 34, 206, 0.13) 75%,
+    rgba(168, 85, 247, 0.15) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
   border: 1px solid rgba(168, 85, 247, 0.2);
