@@ -180,8 +180,6 @@ body {
   opacity: 0;
   z-index: -1;
   transition: opacity 0.3s ease;
-  mask: radial-gradient(circle at center, transparent 20%, #fff 60%);
-  -webkit-mask: radial-gradient(circle at center, transparent 20%, #fff 60%);
 }
 
 .glow-button:hover::before {
@@ -212,15 +210,8 @@ body {
     rgba(168, 85, 247, 0.3) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 10s ease infinite;
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0),
-    radial-gradient(circle at center, transparent 30%, #fff 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-  mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0),
-    radial-gradient(circle at center, transparent 30%, #fff 70%);
   mask-composite: exclude;
   filter: blur(4px);
   opacity: 0.4;
