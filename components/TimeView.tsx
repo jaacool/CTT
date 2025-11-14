@@ -164,7 +164,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     <div className="flex flex-col items-end space-y-1 flex-shrink-0">
                       <div className="flex items-center space-x-1.5">
                         <div className={`px-1.5 py-0.5 rounded font-bold text-xs ${
-                          entry.endTime ? 'glow-button-highlight-pink-v6 text-pink-500' : 'glow-button-highlight-cyan-v6 text-cyan-500'
+                          entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500' : 'glow-button-highlight-cyan-v5 text-cyan-500'
                         }`}>
                           {formatDuration(entry.duration)}
                         </div>
@@ -178,7 +178,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                                 onBillableChange(entry.taskId, !isBillable);
                               }}
                               className={`p-1 rounded ${
-                                isBillable ? 'glow-button-highlight-green-v6 text-green-500' : 'glow-button-highlight-red-v6 text-red-500'
+                                isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
                               } transition-all cursor-pointer`}
                               title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
                             >
@@ -232,7 +232,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                             onBillableChange(entry.taskId, !isBillable);
                           }}
                           className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
-                            isBillable ? 'glow-button-highlight-green-v6 text-green-500' : 'glow-button-highlight-red-v6 text-red-500'
+                            isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
                           } transition-all cursor-pointer`}
                           title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
                         >
@@ -263,7 +263,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     </div>
                     
                     <div className={`px-3 py-1 rounded font-bold text-sm ${
-                      entry.endTime ? 'glow-button-highlight-pink-v6 text-pink-500' : 'glow-button-highlight-cyan-v6 text-cyan-500'
+                      entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500' : 'glow-button-highlight-cyan-v5 text-cyan-500'
                     }`}>
                       {formatDuration(entry.duration)}
                     </div>
