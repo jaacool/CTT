@@ -704,12 +704,12 @@ body {
   background: rgba(20, 20, 20, 0.4);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.15);
   box-shadow: 
     inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 30px -10px rgba(168, 85, 247, 0.3),
-    inset 0 0 60px -20px rgba(236, 72, 153, 0.2),
-    0 0 20px -15px rgba(168, 85, 247, 0.1);
+    inset 0 0 30px -10px rgba(59, 130, 246, 0.105),
+    inset 0 0 60px -20px rgba(96, 165, 250, 0.07),
+    0 0 20px -15px rgba(59, 130, 246, 0.035);
 }
 
 .glow-card::before {
@@ -719,10 +719,10 @@ body {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.15) 0%, 
-    rgba(236, 72, 153, 0.15) 33%, 
-    rgba(59, 130, 246, 0.15) 66%, 
-    rgba(168, 85, 247, 0.15) 100%);
+    rgba(59, 130, 246, 0.15) 0%, 
+    rgba(96, 165, 250, 0.15) 33%, 
+    rgba(147, 197, 253, 0.15) 66%, 
+    rgba(59, 130, 246, 0.15) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 10s ease infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
