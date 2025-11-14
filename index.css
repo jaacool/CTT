@@ -125,16 +125,17 @@ body {
 
 .glow-text {
   background: linear-gradient(135deg, 
-    #00FFFF 0%, 
-    #FF00FF 50%, 
-    #00FFFF 100%);
+    #A855F7 0%, 
+    #EC4899 33%, 
+    #3B82F6 66%, 
+    #A855F7 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: gradient-shift 6s ease infinite;
-  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.5))
-          drop-shadow(0 0 16px rgba(255, 0, 255, 0.3));
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5))
+          drop-shadow(0 0 16px rgba(236, 72, 153, 0.3));
 }
 
 .glow-button {
