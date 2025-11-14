@@ -145,10 +145,10 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
             setIsBillable(newBillable);
             onBillableChange(item.id, newBillable);
           }}
-          className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-opacity cursor-pointer ${
+          className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
             isBillable 
-              ? 'bg-green-500/20 text-green-500 hover:opacity-90' 
-              : 'bg-red-500/20 text-red-400 hover:opacity-90'
+              ? 'glow-button-highlight-green text-green-400' 
+              : 'glow-button-highlight-red text-red-400'
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
