@@ -719,17 +719,17 @@ body {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.3) 0%, 
-    rgba(236, 72, 153, 0.3) 33%, 
-    rgba(59, 130, 246, 0.3) 66%, 
-    rgba(168, 85, 247, 0.3) 100%);
+    rgba(168, 85, 247, 0.15) 0%, 
+    rgba(236, 72, 153, 0.15) 33%, 
+    rgba(59, 130, 246, 0.15) 66%, 
+    rgba(168, 85, 247, 0.15) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 10s ease infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  filter: blur(4px);
-  opacity: 0.4;
+  filter: blur(6px);
+  opacity: 0.25;
   pointer-events: none;
 }
 
