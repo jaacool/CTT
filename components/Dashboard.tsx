@@ -293,7 +293,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => onToggleTimer(task.id)}
-                        className={`p-1.5 rounded transition-colors ${isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay text-text-primary'}`}
+                        className={`p-1.5 rounded transition-all ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay text-text-primary'}`}
                       >
                         {isActive ? (
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
