@@ -147,8 +147,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
           }}
           className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
             isBillable 
-              ? 'glow-button-highlight-green-v5 text-green-300' 
-              : 'glow-button-highlight-red-v5 text-red-300'
+              ? 'glow-button-highlight-green-v5 text-green-400' 
+              : 'glow-button-highlight-red-v5 text-red-400'
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

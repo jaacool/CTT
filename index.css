@@ -515,22 +515,22 @@ body {
 
 .glow-button-highlight-green-v5 {
   position: relative;
-  background: rgba(132, 204, 22, 0.35);
-  border: 1px solid rgba(132, 204, 22, 0.3);
+  background: rgba(74, 222, 128, 0.35);
+  border: 1px solid rgba(74, 222, 128, 0.3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.2),
-    0 0 15px -8px rgba(132, 204, 22, 0.4),
-    0 0 30px -15px rgba(101, 163, 13, 0.25);
+    0 0 15px -8px rgba(74, 222, 128, 0.4),
+    0 0 30px -15px rgba(34, 197, 94, 0.25);
   transition: all 0.3s ease;
 }
 
 .glow-button-highlight-green-v5:hover {
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.25),
-    0 0 20px -8px rgba(132, 204, 22, 0.5),
-    0 0 40px -15px rgba(101, 163, 13, 0.3);
+    0 0 20px -8px rgba(74, 222, 128, 0.5),
+    0 0 40px -15px rgba(34, 197, 94, 0.3);
   transform: translateY(-1px);
 }
 
@@ -557,22 +557,22 @@ body {
 
 .glow-button-highlight-red-v5 {
   position: relative;
-  background: rgba(239, 68, 68, 0.35);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(248, 113, 113, 0.35);
+  border: 1px solid rgba(248, 113, 113, 0.3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.2),
-    0 0 15px -8px rgba(239, 68, 68, 0.4),
-    0 0 30px -15px rgba(220, 38, 38, 0.25);
+    0 0 15px -8px rgba(248, 113, 113, 0.4),
+    0 0 30px -15px rgba(239, 68, 68, 0.25);
   transition: all 0.3s ease;
 }
 
 .glow-button-highlight-red-v5:hover {
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.25),
-    0 0 20px -8px rgba(239, 68, 68, 0.5),
-    0 0 40px -15px rgba(220, 38, 38, 0.3);
+    0 0 20px -8px rgba(248, 113, 113, 0.5),
+    0 0 40px -15px rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
 }
 
