@@ -273,7 +273,11 @@ const SubtaskItem: React.FC<{
                             <PlayIcon className="w-4 h-4" />
                         )
                     ) : (
-                        <ClockIcon className="w-4 h-4" />
+                        isActive ? (
+                            <ClockIcon className="w-4 h-4" />
+                        ) : (
+                            <PlayIcon className="w-4 h-4" />
+                        )
                     )}
                     <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                 </button>
