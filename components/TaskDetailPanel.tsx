@@ -19,7 +19,7 @@ interface TaskDetailPanelProps {
 }
 
 const InfoCard: React.FC<{ label: string; value: string; color: string, icon: React.ReactNode }> = ({ label, value, color, icon }) => (
-  <div className={`flex-1 p-3 rounded-lg bg-opacity-20 ${color}`}>
+  <div className={`flex-1 p-3 rounded-lg ${color}`}>
     <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
         {icon}
         <span>{label}</span>
@@ -276,11 +276,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       </Section>
 
       <div className="grid grid-cols-2 gap-3">
-          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="bg-red-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="bg-yellow-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="bg-green-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <div className={`flex-1 p-3 rounded-lg bg-opacity-20 bg-glow-cyan`}>
-              <div className="flex items-center space-x-2 text-xs text-c-subtle mb-1">
+          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan">
+              <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
                   <ClockIcon className="w-3 h-3"/>
                   <span>Fortschritt</span>
               </div>
