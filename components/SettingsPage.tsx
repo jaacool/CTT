@@ -174,7 +174,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance'>('users');
-  const { glowEnabled, toggleGlow } = useGlow();
+  const { themeMode, setThemeMode } = useGlow();
 
   return (
     <div className="p-8 w-full">
@@ -254,25 +254,46 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         <div>
           <h1 className="text-2xl font-bold glow-text mb-8">Erscheinungsbild</h1>
           <div className="glow-card rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-text-primary mb-1">Glow Glass</h3>
-                <p className="text-sm text-text-secondary">
-                  Aktiviert den Liquid Glass Glow-Effekt für Buttons, Cards und interaktive Elemente
-                </p>
-              </div>
-              <button
-                onClick={toggleGlow}
-                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                  glowEnabled ? 'bg-blue-500' : 'bg-gray-600'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                    glowEnabled ? 'translate-x-7' : 'translate-x-1'
+            <div>
+              <h3 className="text-lg font-semibold text-text-primary mb-3">Design-Modus</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Wähle zwischen verschiedenen visuellen Stilen
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setThemeMode('glow')}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                    themeMode === 'glow'
+                      ? 'border-purple-500 bg-purple-500/20 text-purple-400'
+                      : 'border-border bg-surface text-text-secondary hover:border-overlay'
                   }`}
-                />
-              </button>
+                >
+                  <div className="font-semibold mb-1">Glow Glass</div>
+                  <div className="text-xs opacity-75">Liquid Glass Effekte</div>
+                </button>
+                <button
+                  onClick={() => setThemeMode('blue')}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                    themeMode === 'blue'
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                      : 'border-border bg-surface text-text-secondary hover:border-overlay'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Blau</div>
+                  <div className="text-xs opacity-75">AI Design mit Orbs</div>
+                </button>
+                <button
+                  onClick={() => setThemeMode('original')}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                    themeMode === 'original'
+                      ? 'border-gray-500 bg-gray-500/20 text-gray-400'
+                      : 'border-border bg-surface text-text-secondary hover:border-overlay'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Original</div>
+                  <div className="text-xs opacity-75">Cleanes Design</div>
+                </button>
+              </div>
             </div>
           </div>
         </div>

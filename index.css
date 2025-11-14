@@ -782,13 +782,68 @@ textarea:focus {
   border-color: rgba(168, 85, 247, 0.5);
 }
 
-/* Restore original pre-AI Design appearance when glow-disabled class is present */
-
-.glow-disabled {
-  background: #0A0A0A;
+/* Theme: Blue - AI Design with animated background and RGB orbs */
+@keyframes blueGradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-.glow-disabled .glow-text {
+@keyframes blueFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes bluePulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.theme-blue {
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #0a0a0a 25%,
+    #000000 50%,
+    #0f0f0f 75%,
+    #000000 100%
+  );
+  background-size: 400% 400%;
+  animation: blueGradientShift 15s ease infinite;
+}
+
+.theme-blue::before,
+.theme-blue::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+  animation: blueFloat 20s ease-in-out infinite, bluePulse 8s ease-in-out infinite;
+}
+
+.theme-blue::before {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(88, 86, 214, 0.4) 0%, transparent 70%);
+  top: -10%;
+  right: -10%;
+  animation-delay: 0s;
+}
+
+.theme-blue::after {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 45, 85, 0.4) 0%, transparent 70%);
+  bottom: -10%;
+  left: -10%;
+  animation-delay: 5s;
+}
+
+.theme-blue .glow-text {
   background: none;
   -webkit-text-fill-color: var(--color-text-primary);
   color: var(--color-text-primary);
@@ -796,7 +851,24 @@ textarea:focus {
   animation: none;
 }
 
-/* Active buttons/tabs - old style with simple background */
+/* Theme: Original - Simple dark design without effects */
+.theme-original {
+  background: #0A0A0A;
+}
+
+.theme-original .glow-text {
+  background: none;
+  -webkit-text-fill-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+  filter: none;
+  animation: none;
+}
+
+/* Apply same styles to theme-blue and theme-original as glow-disabled */
+.theme-blue .glow-button,
+.theme-blue .glow-button-highlight,
+.theme-original .glow-button,
+.theme-original .glow-button-highlight,
 .glow-disabled .glow-button,
 .glow-disabled .glow-button-highlight {
   background: var(--color-overlay);
