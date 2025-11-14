@@ -26,13 +26,7 @@ export const GlowProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [glowEnabled]);
 
-  const toggleGlow = () => {
-    console.log('Toggle glow called, current state:', glowEnabled);
-    setGlowEnabled(prev => {
-      console.log('Setting glow to:', !prev);
-      return !prev;
-    });
-  };
+  const toggleGlow = () => setGlowEnabled(prev => !prev);
 
   return (
     <GlowContext.Provider value={{ glowEnabled, toggleGlow }}>
