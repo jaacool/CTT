@@ -253,7 +253,7 @@ const SubtaskItem: React.FC<{
     return (
         <div 
             onClick={handleDirectClick}
-            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-surface' : 'hover:bg-overlay'}`}
+            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-surface' : 'hover-glow'}`}
         >
             <TaskStatusControl status={subtask.status} onSetStatus={(newStatus) => onSetTaskStatus(subtask.id, newStatus)} />
              <EditableTitle id={subtask.id} title={subtask.title} onRename={(newName) => onRenameItem(subtask.id, newName, 'subtask')} onNameClick={handleNameClick}>
@@ -347,7 +347,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     setContextMenu({ x: e.clientX, y: e.clientY - 60 });
                     setIsContextMenuOpen(true);
                 }}
-                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-surface' : 'hover:bg-overlay'}`}
+                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-surface' : 'hover-glow'}`}
             >
                 <TaskStatusControl status={task.status} onSetStatus={(newStatus) => onSetTaskStatus(task.id, newStatus)} />
                 <EditableTitle id={task.id} title={task.title} onRename={(newName) => onRenameItem(task.id, newName, 'task')} onNameClick={handleNameClick}>
@@ -547,7 +547,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
     
     if (!isAdding) {
         return (
-            <button onClick={() => setIsAdding(true)} className="w-full bg-overlay/50 hover:bg-overlay p-3 rounded-lg text-text-secondary flex items-center justify-center space-x-2">
+            <button onClick={() => setIsAdding(true)} className="w-full bg-overlay/50 hover-glow p-3 rounded-lg text-text-secondary flex items-center justify-center space-x-2">
                 <PlusIcon className="w-5 h-5" />
                 <span>Neue Liste hinzufügen</span>
             </button>
@@ -631,7 +631,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
              }`}>
                 <button
                     onClick={props.onOpenSearchProjects}
-                    className="bg-surface p-3 rounded-full shadow-lg hover:bg-overlay transition-all"
+                    className="bg-surface p-3 rounded-full shadow-lg hover-glow"
                 >
                     <SearchIcon className="w-6 h-6 text-text-primary" />
                 </button>

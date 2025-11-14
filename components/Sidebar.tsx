@@ -63,8 +63,8 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
 const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: () => void; onRename: (id: string, newName: string) => void }> = ({ project, isSelected, onClick, onRename }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md transition-all ${
-      isSelected ? 'glow-button text-white' : 'hover:bg-overlay text-text-primary'
+    className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md ${
+      isSelected ? 'glow-button text-white' : 'hover-glow text-text-primary'
     }`}
   >
     <span className="text-lg">{project.icon}</span>
@@ -73,7 +73,7 @@ const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: ()
 );
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
-  <a href="#" className="flex items-center space-x-3 px-3 py-2 text-text-primary hover:bg-overlay rounded-md transition-colors">
+  <a href="#" className="flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md">
     {icon}
     <span>{label}</span>
   </a>
@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
         <nav className="space-y-1">
           <button 
                 onClick={onSelectDashboard}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover:bg-overlay rounded-md transition-colors"
+                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                     <rect x="3" y="3" width="7" height="7"></rect>
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
           <NavItem icon={<ChartIcon className="w-5 h-5" />} label="Zeitauswertungen" />
             <button 
                 onClick={onSelectProjectsOverview}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover:bg-overlay rounded-md transition-colors"
+                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
                 <span>🙂</span>
                 <span>Meine Projekte</span>
                 </h3>
-                <button onClick={onAddNewProject} className="p-1 rounded-md hover:bg-overlay text-text-secondary hover:text-text-primary">
+                <button onClick={onAddNewProject} className="p-1 rounded-md hover-glow text-text-secondary">
                     <PlusIcon className="w-4 h-4" />
                 </button>
             </div>
@@ -180,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
       {/* Settings Button - Fixed at Bottom */}
       <div className="flex-shrink-0 border-t border-border pt-4">
         {canAccessSettings && (
-          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover:bg-overlay rounded-md transition-colors">
+          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"></path>

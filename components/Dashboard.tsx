@@ -113,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const project = projects.find(p => p.id === entry.projectId);
                 
                 return (
-                  <div key={entry.id} className="flex items-center justify-between p-3 bg-background rounded-lg hover:bg-overlay transition-colors group" data-testid={`time-entry-${entry.id}`}>
+                  <div key={entry.id} className="flex items-center justify-between p-3 bg-background rounded-lg hover-glow group" data-testid={`time-entry-${entry.id}`}>
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       {/* Projekt Icon */}
                       <span className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xl flex-shrink-0">
@@ -134,8 +134,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {/* Timer Button */}
                         <button
                           onClick={() => onToggleTimer(entry.taskId)}
-                          className={`p-1.5 rounded transition-all ${
-                            isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay text-text-primary'
+                          className={`p-1.5 rounded ${
+                            isActive ? 'glow-button text-text-primary' : 'hover-glow text-text-primary'
                           }`}
                         >
                           {isActive ? (
@@ -197,13 +197,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center justify-between mb-6">
             <h2 className="glow-text text-xl font-bold">Shortcuts</h2>
             <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-overlay rounded-lg">
+              <button className="p-2 hover-glow rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
               </button>
-              <button className="p-2 hover:bg-overlay rounded-lg">
+              <button className="p-2 hover-glow rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                   <line x1="4" y1="21" x2="4" y2="14"></line>
                   <line x1="4" y1="10" x2="4" y2="3"></line>
@@ -216,7 +216,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <line x1="17" y1="16" x2="23" y2="16"></line>
                 </svg>
               </button>
-              <button className="p-2 hover:bg-overlay rounded-lg">
+              <button className="p-2 hover-glow rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -266,7 +266,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 return (
                   <div 
                     key={task.id} 
-                    className="relative flex items-center space-x-3 p-3 bg-background rounded-lg hover:bg-overlay transition-colors group"
+                    className="relative flex items-center space-x-3 p-3 bg-background rounded-lg hover-glow group"
                     title={listTitle}
                     data-testid={`shortcut-task-${task.id}`}
                   >
@@ -293,7 +293,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => onToggleTimer(task.id)}
-                        className={`p-1.5 rounded transition-all ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay text-text-primary'}`}
+                        className={`p-1.5 rounded ${isActive ? 'glow-button text-text-primary' : 'hover-glow text-text-primary'}`}
                       >
                         {isActive ? (
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
