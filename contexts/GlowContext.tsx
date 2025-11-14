@@ -38,7 +38,11 @@ export const GlowProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useGlow = () => {
   const context = useContext(GlowContext);
   if (!context) {
-    throw new Error('useGlow must be used within GlowProvider');
+    // Return default values if context is not available
+    return {
+      glowEnabled: true,
+      toggleGlow: () => console.warn('GlowProvider not found')
+    };
   }
   return context;
 };
