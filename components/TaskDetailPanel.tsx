@@ -147,8 +147,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
           }}
           className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
             isBillable 
-              ? 'glow-button-highlight-green text-green-400' 
-              : 'glow-button-highlight-red text-red-400'
+              ? 'glow-button-highlight-green-v5 text-green-400' 
+              : 'glow-button-highlight-red-v5 text-red-400'
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -276,10 +276,10 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       </Section>
 
       <div className="grid grid-cols-2 gap-3">
-          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan">
+          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan-v5">
               <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
                   <ClockIcon className="w-3 h-3"/>
                   <span>Fortschritt</span>
