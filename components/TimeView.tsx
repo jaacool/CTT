@@ -164,7 +164,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     <div className="flex flex-col items-end space-y-1 flex-shrink-0">
                       <div className="flex items-center space-x-1.5">
                         <div className={`px-1.5 py-0.5 rounded font-bold text-xs ${
-                          entry.endTime ? 'bg-glow-magenta/20 text-glow-magenta' : 'bg-glow-cyan/20 text-glow-cyan'
+                          entry.endTime ? 'glow-button-highlight-pink-v6 text-pink-500' : 'glow-button-highlight-cyan-v6 text-cyan-500'
                         }`}>
                           {formatDuration(entry.duration)}
                         </div>
@@ -178,8 +178,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                                 onBillableChange(entry.taskId, !isBillable);
                               }}
                               className={`p-1 rounded ${
-                                isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
-                              } hover:opacity-90 transition-opacity cursor-pointer`}
+                                isBillable ? 'glow-button-highlight-green-v6 text-green-500' : 'glow-button-highlight-red-v6 text-red-500'
+                              } transition-all cursor-pointer`}
                               title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -232,8 +232,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                             onBillableChange(entry.taskId, !isBillable);
                           }}
                           className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
-                            isBillable ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
-                          } hover:opacity-90 transition-opacity cursor-pointer`}
+                            isBillable ? 'glow-button-highlight-green-v6 text-green-500' : 'glow-button-highlight-red-v6 text-red-500'
+                          } transition-all cursor-pointer`}
                           title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -263,7 +263,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     </div>
                     
                     <div className={`px-3 py-1 rounded font-bold text-sm ${
-                      entry.endTime ? 'bg-glow-magenta/20 text-glow-magenta' : 'bg-glow-cyan/20 text-glow-cyan'
+                      entry.endTime ? 'glow-button-highlight-pink-v6 text-pink-500' : 'glow-button-highlight-cyan-v6 text-cyan-500'
                     }`}>
                       {formatDuration(entry.duration)}
                     </div>

@@ -83,10 +83,10 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
                     <div className="text-xs text-text-secondary mb-1">Standard</div>
                     <button
                         onClick={onToggleDefaultBillable}
-                        className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-opacity cursor-pointer ${
+                        className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
                             defaultBillable 
-                                ? 'bg-green-500/20 text-green-500 hover:opacity-90' 
-                                : 'bg-red-500/20 text-red-400 hover:opacity-90'
+                                ? 'glow-button-highlight-green-v6 text-green-500' 
+                                : 'glow-button-highlight-red-v6 text-red-500'
                         }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
