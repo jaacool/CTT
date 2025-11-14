@@ -828,7 +828,7 @@ const App: React.FC = () => {
               
               <button
                 onClick={() => hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') ? setShowTimerMenu(!showTimerMenu) : null}
-                className="flex items-center space-x-3 px-4 py-3 rounded-full glow-button text-text-primary font-bold"
+                className="flex items-center space-x-3 px-4 py-3 rounded-full glow-button-highlight text-text-primary font-bold"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <circle cx="12" cy="12" r="10"></circle>
