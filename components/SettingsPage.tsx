@@ -259,10 +259,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
               <p className="text-sm text-text-secondary mb-4">
                 Wähle zwischen verschiedenen visuellen Stilen
               </p>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setThemeMode('glow')}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                  className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'glow'
                       ? 'border-purple-500 bg-purple-500/20 text-purple-400'
                       : 'border-border bg-surface text-text-secondary hover:border-overlay'
@@ -273,9 +273,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
                 </button>
                 <button
                   onClick={() => setThemeMode('blue')}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                  className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'blue'
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                      ? 'border-blue-500 bg-blue-600 text-white'
                       : 'border-border bg-surface text-text-secondary hover:border-overlay'
                   }`}
                 >
@@ -284,7 +284,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
                 </button>
                 <button
                   onClick={() => setThemeMode('original')}
-                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                  className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'original'
                       ? 'border-gray-500 bg-gray-500/20 text-gray-400'
                       : 'border-border bg-surface text-text-secondary hover:border-overlay'
@@ -292,6 +292,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
                 >
                   <div className="font-semibold mb-1">Original</div>
                   <div className="text-xs opacity-75">Cleanes Design</div>
+                </button>
+                <button
+                  onClick={() => setThemeMode('light')}
+                  className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                    themeMode === 'light'
+                      ? 'border-blue-400 bg-blue-100 text-blue-600'
+                      : 'border-border bg-surface text-text-secondary hover:border-overlay'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Hell</div>
+                  <div className="text-xs opacity-75">Light Mode</div>
                 </button>
               </div>
             </div>

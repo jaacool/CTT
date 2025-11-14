@@ -782,73 +782,317 @@ textarea:focus {
   border-color: rgba(168, 85, 247, 0.5);
 }
 
-/* Theme: Blue - AI Design with animated background and RGB orbs */
-@keyframes blueGradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes blueFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-}
-
-@keyframes bluePulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
+/* Theme: Blue - Clean AI Design */
 .theme-blue {
-  background: linear-gradient(
-    135deg,
-    #000000 0%,
-    #0a0a0a 25%,
-    #000000 50%,
-    #0f0f0f 75%,
-    #000000 100%
-  );
-  background-size: 400% 400%;
-  animation: blueGradientShift 15s ease infinite;
+  --color-background: #0D1117;
+  --color-surface: #161B22;      /* e.g., Sidebar */
+  --color-overlay: #21262D;      /* e.g., Cards, Hover */
+  --color-border: #30363D;
+  --color-text-primary: #E6EDF3;
+  --color-text-secondary: #8B949E;
+  --color-accent-blue: #2F81F7;
+  --color-accent-blue-hover: #58A6FF;
+  --color-accent-green: #2DA44E;
+  --color-accent-red: #F85149;
+
+  /* Remap old glow colors to new theme colors */
+  --color-glow-cyan: var(--color-accent-blue);
+  --color-glow-lime: #F1E05A; /* Gold color for stars */
+
+  background-color: var(--color-background);
 }
 
-.theme-blue::before,
-.theme-blue::after {
-  content: '';
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
-  z-index: -1;
-  pointer-events: none;
-  animation: blueFloat 20s ease-in-out infinite, bluePulse 8s ease-in-out infinite;
+/* Remove all animations and special effects for the blue theme */
+.theme-blue .glow-text,
+.theme-blue .glow-button,
+.theme-blue .glow-card,
+.theme-blue .glow-border,
+.theme-blue .glow-input {
+  animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  background-image: none;
 }
 
-.theme-blue::before {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(88, 86, 214, 0.4) 0%, transparent 70%);
-  top: -10%;
-  right: -10%;
-  animation-delay: 0s;
+.theme-blue .glow-button::before,
+.theme-blue .glow-card::before,
+.theme-blue .glow-border::before {
+  display: none;
 }
 
-.theme-blue::after {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(255, 45, 85, 0.4) 0%, transparent 70%);
-  bottom: -10%;
-  left: -10%;
-  animation-delay: 5s;
+/* Component Styling for Blue Theme */
+.theme-blue .glow-card {
+  background-color: var(--color-overlay);
+  border: 1px solid var(--color-border);
 }
 
-.theme-blue .glow-text {
+.theme-blue .glow-button {
+  background-color: var(--color-accent-blue);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-blue .glow-button:hover {
+  background-color: var(--color-accent-blue-hover);
+}
+
+.theme-blue .glow-input {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+}
+
+.theme-blue .glow-input:focus {
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
+}
+
+.theme-blue .bg-surface {
+  background-color: var(--color-surface);
+}
+
+.theme-blue .hover-glow:hover {
+  background-color: var(--color-overlay);
+}
+
+.theme-blue .ProjectItem-selected {
+    background-color: var(--color-accent-blue);
+    color: white;
+}
+
+.theme-blue .ProjectItem-selected:hover {
+    background-color: var(--color-accent-blue-hover);
+}
+
+.theme-blue .bg-background {
+    background-color: var(--color-background);
+}
+
+/* Reset all highlight button variants for blue theme */
+.theme-blue .glow-button-highlight-pink-v5,
+.theme-blue .glow-button-highlight-red-v5,
+.theme-blue .glow-button-highlight-green-v5,
+.theme-blue .glow-button-highlight-cyan-v5 {
+  animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  background-image: none;
+  border: none;
+}
+
+.theme-blue .glow-button-highlight-green-v5 {
+  background-color: var(--color-accent-green);
+  color: white;
+}
+
+.theme-blue .glow-button-highlight-red-v5 {
+  background-color: var(--color-accent-red);
+  color: white;
+}
+
+.theme-blue .glow-button-highlight-pink-v5 {
+  background-color: #DB61A2; /* A suitable pink */
+  color: white;
+}
+
+.theme-blue .glow-button-highlight-cyan-v5 {
+  background-color: var(--color-accent-blue); /* Same blue as buttons */
+  color: white;
+}
+
+.theme-blue .glow-button-highlight-yellow-v5 {
+  background-color: #CA8A04; /* Bright yellow-gold */
+  border: 1px solid #D4A017;
+}
+
+/* Full saturation for status control buttons in blue theme */
+.theme-blue .glow-button-highlight-yellow-v4 {
+  background-color: #CA8A04; /* Bright yellow */
+  border: none;
+}
+
+.theme-blue .glow-button-highlight-pink-v4 {
+  background-color: var(--color-accent-red); /* Bright red/pink */
+  border: none;
+}
+
+.theme-blue .glow-button-highlight-green-v4 {
+  background-color: var(--color-accent-green); /* Bright green */
+  border: none;
+}
+
+.theme-blue .border-glow-cyan {
+  border-color: var(--color-accent-blue);
+}
+
+.theme-blue #gradient stop[offset="0%"] {
+    stop-color: var(--color-accent-blue);
+}
+
+.theme-blue #gradient stop[offset="100%"] {
+    stop-color: var(--color-accent-blue-hover);
+}
+
+.theme-blue circle[stroke="#1A1A1A"] {
+    stroke: var(--color-surface);
+}
+
+/* Theme: Light - Inverted light mode based on original */
+.theme-light {
+  --color-background: #FFFFFF;
+  --color-surface: #F6F8FA;
+  --color-overlay: #EAEEF2;
+  --color-border: #D0D7DE;
+  --color-text-primary: #1F2328;
+  --color-text-secondary: #656D76;
+  --color-accent-blue: #0969DA;
+  --color-accent-blue-hover: #0550AE;
+  --color-accent-green: #1A7F37;
+  --color-accent-red: #CF222E;
+  
+  background-color: var(--color-background);
+}
+
+.theme-light .glow-text {
   background: none;
   -webkit-text-fill-color: var(--color-text-primary);
   color: var(--color-text-primary);
   filter: none;
   animation: none;
+}
+
+/* Keep glow effects for timer buttons in light theme */
+.theme-light .glow-button-highlight {
+  position: relative;
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.45) 0%, 
+    rgba(147, 51, 234, 0.4) 25%,
+    rgba(168, 85, 247, 0.45) 50%,
+    rgba(126, 34, 206, 0.4) 75%,
+    rgba(168, 85, 247, 0.45) 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(168, 85, 247, 0.2),
+    0 0 20px -5px rgba(168, 85, 247, 0.6),
+    0 0 40px -10px rgba(147, 51, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.theme-light .glow-button-highlight:hover {
+  box-shadow: 
+    inset 0 1px 0 0 rgba(168, 85, 247, 0.3),
+    0 0 28px -5px rgba(168, 85, 247, 0.75),
+    0 0 55px -10px rgba(147, 51, 234, 0.55);
+  transform: translateY(-1px);
+}
+
+.theme-light .glow-button-highlight::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, 
+    #A855F7 0%, 
+    #9333EA 25%,
+    #A855F7 50%,
+    #7E22CE 75%,
+    #A855F7 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+  filter: blur(12px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.theme-light .glow-button-highlight:hover::before {
+  opacity: 0.7;
+}
+
+/* Full saturation for status control buttons in light theme */
+.theme-light .glow-button-highlight-yellow-v4 {
+  background-color: #CA8A04;
+  border: none;
+}
+
+.theme-light .glow-button-highlight-pink-v4 {
+  background-color: #CF222E;
+  border: none;
+}
+
+.theme-light .glow-button-highlight-green-v4 {
+  background-color: #1A7F37;
+  border: none;
+}
+
+/* Tab container background same as header in light theme */
+.theme-light .bg-overlay.rounded-lg.p-1.border.border-border:has(button.glow-button) {
+  background-color: var(--color-surface);
+}
+
+/* Keep hover glow for timer buttons only in light theme */
+.theme-light button.hover-glow:has(svg) {
+  border: 1px solid transparent;
+  background: linear-gradient(to right, transparent, transparent);
+  transition: background-image 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.theme-light button.hover-glow:has(svg):hover {
+  background-image: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(236, 72, 153, 0.1));
+  border-color: rgba(34, 211, 238, 0.1);
+  color: var(--color-text-primary);
+  box-shadow: 
+    inset 0 0 30px 10px rgba(255, 255, 255, 0.5),
+    inset 0 0 20px rgba(168, 85, 247, 0.15),
+    0 0 15px -3px rgba(168, 85, 247, 0.3);
+}
+
+/* Reset styles for light theme */
+.theme-light .glow-button {
+  background: var(--color-overlay);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.theme-light .glow-button:hover {
+  background: var(--color-border);
+  transform: none;
+}
+
+.theme-light .glow-button::before {
+  display: none;
+}
+
+.theme-light .glow-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.theme-light .glow-card::before {
+  display: none;
+}
+
+.theme-light .glow-input {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.theme-light .glow-input:focus {
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
 }
 
 /* Theme: Original - Simple dark design without effects */
@@ -856,7 +1100,8 @@ textarea:focus {
   background: #0A0A0A;
 }
 
-.theme-original .glow-text {
+.theme-original .glow-text,
+.glow-disabled .glow-text {
   background: none;
   -webkit-text-fill-color: var(--color-text-primary);
   color: var(--color-text-primary);
@@ -864,12 +1109,116 @@ textarea:focus {
   animation: none;
 }
 
-/* Apply same styles to theme-blue and theme-original as glow-disabled */
-.theme-blue .glow-button,
-.theme-blue .glow-button-highlight,
-.theme-original .glow-button,
-.theme-original .glow-button-highlight,
+/* Keep glow effects for timer buttons in original theme */
+.theme-original .glow-button-highlight {
+  position: relative;
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.45) 0%, 
+    rgba(147, 51, 234, 0.4) 25%,
+    rgba(168, 85, 247, 0.45) 50%,
+    rgba(126, 34, 206, 0.4) 75%,
+    rgba(168, 85, 247, 0.45) 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(168, 85, 247, 0.2),
+    0 0 20px -5px rgba(168, 85, 247, 0.6),
+    0 0 40px -10px rgba(147, 51, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.theme-original .glow-button-highlight:hover {
+  box-shadow: 
+    inset 0 1px 0 0 rgba(168, 85, 247, 0.3),
+    0 0 28px -5px rgba(168, 85, 247, 0.75),
+    0 0 55px -10px rgba(147, 51, 234, 0.55);
+  transform: translateY(-1px);
+}
+
+.theme-original .glow-button-highlight::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, 
+    #A855F7 0%, 
+    #9333EA 25%,
+    #A855F7 50%,
+    #7E22CE 75%,
+    #A855F7 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+  filter: blur(12px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.theme-original .glow-button-highlight:hover::before {
+  opacity: 0.7;
+}
+
+/* Full saturation for status control buttons in original theme */
+.theme-original .glow-button-highlight-yellow-v4 {
+  background-color: #CA8A04; /* Bright yellow */
+  border: none;
+}
+
+.theme-original .glow-button-highlight-pink-v4 {
+  background-color: #F85149; /* Bright red/pink */
+  border: none;
+}
+
+.theme-original .glow-button-highlight-green-v4 {
+  background-color: #2DA44E; /* Bright green */
+  border: none;
+}
+
+/* Tab container background same as header in original theme */
+.theme-original .bg-overlay.rounded-lg.p-1.border.border-border:has(button.glow-button) {
+  background-color: var(--color-surface);
+}
+
+/* Keep hover glow for timer buttons only (not container divs) */
+.theme-original button.hover-glow:has(svg) {
+  border: 1px solid transparent;
+  background: linear-gradient(to right, transparent, transparent);
+  transition: background-image 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.theme-original button.hover-glow:has(svg):hover {
+  background-image: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(236, 72, 153, 0.1));
+  border-color: rgba(34, 211, 238, 0.1);
+  color: var(--color-text-primary);
+  box-shadow: 
+    inset 0 0 30px 10px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(168, 85, 247, 0.15),
+    0 0 15px -3px rgba(168, 85, 247, 0.3);
+}
+
+/* Hover effect for play/pause buttons in tasks (original theme) */
+.theme-original button:has(svg):hover {
+  background-image: linear-gradient(to right, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1)) !important;
+  border-color: rgba(168, 85, 247, 0.2) !important;
+  box-shadow: 
+    inset 0 0 20px rgba(168, 85, 247, 0.1),
+    0 0 10px -3px rgba(168, 85, 247, 0.3) !important;
+}
+
+/* Reset styles for glow-disabled and theme-original (except timer buttons) */
 .glow-disabled .glow-button,
+.theme-original .glow-button {
+  background: var(--color-overlay);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .glow-disabled .glow-button-highlight {
   background: var(--color-overlay);
   border: 1px solid var(--color-border);
@@ -880,71 +1229,20 @@ textarea:focus {
 }
 
 .glow-disabled .glow-button:hover,
-.glow-disabled .glow-button-highlight:hover {
-  background: rgba(40, 40, 40, 1);
+.glow-disabled .glow-button-highlight:hover,
+.theme-original .glow-button:hover {
+  background: #282828;
   transform: none;
 }
 
 .glow-disabled .glow-button::before,
-.glow-disabled .glow-button-highlight::before {
+.glow-disabled .glow-button-highlight::before,
+.theme-original .glow-button::before {
   display: none;
 }
 
-/* All highlight variants - return to simple colored backgrounds */
-.glow-disabled .glow-button-highlight-yellow,
-.glow-disabled .glow-button-highlight-yellow-v4,
-.glow-disabled .glow-button-highlight-yellow-v5 {
-  background: rgba(250, 204, 21, 0.1);
-  border: 1px solid rgba(250, 204, 21, 0.2);
-  box-shadow: none;
-  animation: none;
-  backdrop-filter: none;
-}
-
-.glow-disabled .glow-button-highlight-green,
-.glow-disabled .glow-button-highlight-green-v4,
-.glow-disabled .glow-button-highlight-green-v5,
-.glow-disabled .glow-button-highlight-green-v6 {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  box-shadow: none;
-  animation: none;
-  backdrop-filter: none;
-}
-
-.glow-disabled .glow-button-highlight-pink,
-.glow-disabled .glow-button-highlight-pink-v4,
-.glow-disabled .glow-button-highlight-pink-v5,
-.glow-disabled .glow-button-highlight-pink-v6 {
-  background: rgba(236, 72, 153, 0.1);
-  border: 1px solid rgba(236, 72, 153, 0.2);
-  box-shadow: none;
-  animation: none;
-  backdrop-filter: none;
-}
-
-.glow-disabled .glow-button-highlight-red,
-.glow-disabled .glow-button-highlight-red-v5,
-.glow-disabled .glow-button-highlight-red-v6 {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  box-shadow: none;
-  animation: none;
-  backdrop-filter: none;
-}
-
-.glow-disabled .glow-button-highlight-cyan,
-.glow-disabled .glow-button-highlight-cyan-v5,
-.glow-disabled .glow-button-highlight-cyan-v6 {
-  background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  box-shadow: none;
-  animation: none;
-  backdrop-filter: none;
-}
-
-/* Cards - old simple style */
-.glow-disabled .glow-card {
+.glow-disabled .glow-card,
+.theme-original .glow-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: none;
@@ -952,27 +1250,29 @@ textarea:focus {
   -webkit-backdrop-filter: none;
 }
 
-.glow-disabled .glow-card::before {
+.glow-disabled .glow-card::before,
+.theme-original .glow-card::before {
   display: none;
 }
 
-/* Hover effects - old simple hover */
-.glow-disabled .hover-glow:hover {
+.glow-disabled .hover-glow:hover,
+.theme-original .hover-glow:hover {
   background-image: none;
   background: var(--color-overlay);
   border-color: transparent;
   box-shadow: none;
 }
 
-/* Input fields - old style */
-.glow-disabled .glow-input {
+.glow-disabled .glow-input,
+.theme-original .glow-input {
   background: var(--color-background);
   border: 1px solid var(--color-border);
   box-shadow: none;
   backdrop-filter: none;
 }
 
-.glow-disabled .glow-input:focus {
-  border-color: rgba(168, 85, 247, 0.5);
+.glow-disabled .glow-input:focus,
+.theme-original .glow-input:focus {
+  border-color: var(--color-glow-purple);
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }

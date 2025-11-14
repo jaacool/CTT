@@ -1,24 +1,68 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TimeEntry } from '../types';
 
 interface TimerMenuProps {
   timeEntry: TimeEntry;
   elapsedSeconds: number;
   onClose: () => void;
-  onUpdate: (entryId: string, startTime: string, endTime: string) => void;
+  onUpdate: (entryId: string, startTime: string, endTime: string, note?: string) => void;
   onStop: () => void;
+  anchorRect?: { top: number; right: number; bottom: number; left: number } | null;
+  taskBillable?: boolean;
+  onBillableChange?: (taskId: string, billable: boolean) => void;
 }
 
-export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop }) => {
-  const [note, setNote] = useState('');
-  const [isBillable, setIsBillable] = useState(timeEntry.billable);
+export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange }) => {
+  const [note, setNote] = useState(timeEntry.note || '');
+  const isBillable = taskBillable ?? timeEntry.billable ?? true;
   const [startTime, setStartTime] = useState(new Date(timeEntry.startTime).toTimeString().slice(0, 5));
   const originalStartTime = new Date(timeEntry.startTime).toTimeString().slice(0, 5);
+  const [totalMinutes, setTotalMinutes] = useState(Math.floor(elapsedSeconds / 60));
+  const [endTime, setEndTime] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toTimeString().slice(0, 5) : '');
+  const isRunning = !timeEntry.endTime;
+
+  const inlineStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (anchorRect === undefined) return undefined; // use default CSS positioning
+    if (anchorRect === null) {
+      // Center on screen
+      return {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 600,
+        maxWidth: 'calc(100vw - 32px)',
+        maxHeight: 'calc(100vh - 120px)',
+        zIndex: 1000,
+      } as React.CSSProperties;
+    }
+    // Position relative to anchor (above button, right-aligned)
+    const right = Math.max(8, window.innerWidth - anchorRect.right);
+    const bottom = Math.max(8, window.innerHeight - anchorRect.top + 8);
+    return {
+      position: 'fixed',
+      right,
+      bottom,
+      width: 600,
+      maxHeight: 'calc(100vh - 120px)',
+      zIndex: 1000,
+    } as React.CSSProperties;
+  }, [anchorRect]);
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  };
+
+  const handleTotalTimeChange = (newTotalMinutes: number) => {
+    setTotalMinutes(newTotalMinutes);
+    
+    // Berechne neue Startzeit basierend auf der Gesamtzeit
+    const now = new Date();
+    const newStartDate = new Date(now.getTime() - newTotalMinutes * 60 * 1000);
+    const newStartTimeStr = newStartDate.toTimeString().slice(0, 5);
+    setStartTime(newStartTimeStr);
   };
 
   const handleFinish = () => {
@@ -34,8 +78,11 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
         newStartDate.setDate(newStartDate.getDate() - 1);
       }
       
-      // Update TimeEntry mit neuer Startzeit (aber kein endTime - Timer läuft weiter)
-      onUpdate(timeEntry.id, newStartDate.toISOString(), '');
+      // Update TimeEntry mit neuer Startzeit und Notiz (aber kein endTime - Timer läuft weiter)
+      onUpdate(timeEntry.id, newStartDate.toISOString(), '', note);
+    } else {
+      // Nur Notiz aktualisieren
+      onUpdate(timeEntry.id, timeEntry.startTime, timeEntry.endTime || '', note);
     }
     onClose();
   };
@@ -49,7 +96,10 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
       />
       
       {/* Menu */}
-      <div className="fixed inset-0 md:bottom-24 md:right-8 md:w-[800px] md:inset-auto glow-card rounded-none md:rounded-2xl shadow-2xl z-50 p-6">
+      <div
+        className={"glow-card rounded-2xl shadow-2xl p-6 " + (!inlineStyle ? 'fixed bottom-24 right-8 w-[600px] max-h-[calc(100vh-120px)] overflow-y-auto z-[1000]' : '')}
+        style={inlineStyle}
+      >
         <h2 className="text-text-primary text-xl font-bold mb-6">Timer</h2>
         
         {/* Search */}
@@ -105,35 +155,46 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
           </div>
           
           <button
-            onClick={() => setIsBillable(!isBillable)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-              isBillable ? 'bg-red-500/20' : 'bg-glow-lime/20'
+            onClick={() => {
+              if (onBillableChange) {
+                onBillableChange(timeEntry.taskId, !isBillable);
+              }
+            }}
+            className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+              isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isBillable ? 'text-red-400' : 'text-glow-lime'}>
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {isBillable ? (
+                <>
+                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                  <polyline points="5 12 12 5 19 12"></polyline>
+                </>
+              ) : (
+                <>
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <polyline points="19 12 12 19 5 12"></polyline>
+                </>
+              )}
             </svg>
-            <span className={`text-sm font-bold ${isBillable ? 'text-red-400' : 'text-glow-lime'}`}>
-              {isBillable ? 'Nicht abrechenbar' : 'Abrechenbar'}
-            </span>
+            <span className="flex-1 text-left">{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
           </button>
         </div>
         
         {/* Note */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="text-text-secondary text-sm mb-2 block">Notiz</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Woran arbeitest du gerade?"
-            className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-glow-cyan resize-none"
-            rows={4}
+            className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-glow-cyan resize-none"
+            rows={2}
           />
         </div>
         
         {/* Time Controls */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <div>
             <label className="text-text-secondary text-sm mb-2 block">Timer Startzeit</label>
             <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3">
@@ -151,13 +212,38 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
           </div>
           
           <div>
-            <label className="text-text-secondary text-sm mb-2 block">Pausiert für</label>
+            <label className="text-text-secondary text-sm mb-2 block">End Zeit</label>
+            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                disabled={isRunning}
+                className={`bg-transparent text-lg font-bold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
+                placeholder="--:--"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-text-secondary text-sm mb-2 block">Gesamtzeit</label>
             <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span className="text-text-primary text-lg font-bold">0h 00m</span>
+              <input
+                type="number"
+                value={totalMinutes}
+                onChange={(e) => handleTotalTimeChange(parseInt(e.target.value) || 0)}
+                className="bg-transparent text-text-primary text-lg font-bold outline-none flex-1 w-16"
+                min="0"
+              />
+              <span className="text-text-secondary text-sm">min</span>
             </div>
           </div>
         </div>

@@ -27,6 +27,9 @@ interface TaskAreaProps {
     onDeleteTask?: (taskId: string) => void;
     onOpenCreateProject?: () => void;
     onOpenSearchProjects?: () => void;
+    onDeleteTimeEntry?: (entryId: string) => void;
+    onDuplicateTimeEntry?: (entry: TimeEntry) => void;
+    currentUser?: any;
 }
 
 const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
@@ -621,6 +624,10 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     timeEntries={props.project.timeEntries}
                     onUpdateEntry={props.onUpdateTimeEntry}
                     onBillableChange={props.onBillableChange}
+                    onStartTimer={props.onToggleTimer}
+                    onDeleteEntry={props.onDeleteTimeEntry}
+                    onDuplicateEntry={props.onDuplicateTimeEntry}
+                    currentUser={props.currentUser}
                 />
             )}
             

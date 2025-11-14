@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ThemeMode = 'glow' | 'blue' | 'original';
+export type ThemeMode = 'glow' | 'blue' | 'original' | 'light';
 
 interface GlowContextType {
   themeMode: ThemeMode;
@@ -22,13 +22,15 @@ export const GlowProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('themeMode', themeMode);
     
     // Remove all theme classes
-    document.body.classList.remove('glow-enabled', 'glow-disabled', 'theme-blue', 'theme-original');
+    document.body.classList.remove('glow-enabled', 'glow-disabled', 'theme-blue', 'theme-original', 'theme-light');
     
     // Add appropriate class
     if (themeMode === 'glow') {
       document.body.classList.add('glow-enabled');
     } else if (themeMode === 'blue') {
       document.body.classList.add('theme-blue');
+    } else if (themeMode === 'light') {
+      document.body.classList.add('theme-light');
     } else {
       document.body.classList.add('theme-original');
     }

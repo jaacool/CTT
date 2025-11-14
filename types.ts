@@ -82,6 +82,7 @@ export interface TimeEntry {
   duration: number; // seconds
   user: User;
   billable: boolean;
+  note?: string; // Optional note
 }
 
 // Subtasks are now fully-featured tasks, just without their own subtasks.

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Project, TimeEntry, Task, Subtask, User } from '../types';
 import { formatTime } from './utils';
+import { TimerMenu } from './TimerMenu';
 
 interface DashboardProps {
   user: User;
@@ -11,6 +12,8 @@ interface DashboardProps {
   onToggleTimer: (taskId: string) => void;
   activeTimerTaskId: string | null;
   taskTimers: { [taskId: string]: number };
+  onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string) => void;
+  onBillableChange?: (taskId: string, billable: boolean) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -21,9 +24,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onUpdateNote,
   onToggleTimer,
   activeTimerTaskId,
-  taskTimers
+  taskTimers,
+  onUpdateTimeEntry,
+  onBillableChange
 }) => {
   const [note, setNote] = useState(user.dashboardNote || '');
+  const [selectedTimeEntry, setSelectedTimeEntry] = useState<TimeEntry | null>(null);
+  const [selectedAnchorRect, setSelectedAnchorRect] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
 
   // Finde alle gepinnten Tasks
   const pinnedTasks: (Task | Subtask)[] = [];
@@ -108,62 +115,198 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {todayEntries.map(entry => {
                 const isActive = activeTimerTaskId === entry.taskId;
                 const currentSeconds = taskTimers[entry.taskId] || 0;
-                
-                // Finde Projekt für Icon
                 const project = projects.find(p => p.id === entry.projectId);
                 
+                // Finde Task/Subtask für Billable-Status
+                let isBillable = true;
+                projects.forEach(proj => {
+                  proj.taskLists.forEach(list => {
+                    list.tasks.forEach(task => {
+                      if (task.id === entry.taskId) {
+                        isBillable = task.billable ?? true;
+                      }
+                      task.subtasks.forEach(subtask => {
+                        if (subtask.id === entry.taskId) {
+                          isBillable = subtask.billable ?? task.billable ?? true;
+                        }
+                      });
+                    });
+                  });
+                });
+                
                 return (
-                  <div key={entry.id} className="flex items-center justify-between p-3 bg-background rounded-lg hover-glow group" data-testid={`time-entry-${entry.id}`}>
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      {/* Projekt Icon */}
-                      <span className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xl flex-shrink-0">
-                        {project?.icon || '📋'}
-                      </span>
-                      <div className="flex-1 min-w-0" title={entry.taskTitle}>
-                        <div className="text-text-primary text-sm font-semibold truncate">{entry.taskTitle}</div>
-                        <div className="text-text-secondary text-xs truncate">{entry.projectName}</div>
+                  <div
+                    key={entry.id}
+                    className="glow-card rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
+                  >
+                    <div 
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        setSelectedAnchorRect(null);
+                        setSelectedTimeEntry(entry);
+                      }}
+                    >
+                      {/* Mobile Layout */}
+                      <div className="flex items-start justify-between gap-2 sm:hidden">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <span className="w-7 h-7 rounded-full bg-yellow-400 flex items-center justify-center text-lg flex-shrink-0">
+                            {project?.icon || '📋'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-text-secondary truncate leading-tight">{entry.projectName}</div>
+                            <div className="text-text-primary font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-1.5 flex-shrink-0">
+                          <div
+                            className={`p-1 rounded ${
+                              isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
+                            }`}
+                            title={isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              {isBillable ? (
+                                <>
+                                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                                  <polyline points="5 12 12 5 19 12"></polyline>
+                                </>
+                              ) : (
+                                <>
+                                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                                  <polyline points="19 12 12 19 5 12"></polyline>
+                                </>
+                              )}
+                            </svg>
+                          </div>
+                          
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleTimer(entry.taskId);
+                            }}
+                            className={`px-2 py-1 rounded-md font-bold text-xs cursor-pointer group flex items-center justify-center min-w-[50px] ${
+                              isActive ? 'glow-button-highlight text-text-primary space-x-2' : 'glow-button-highlight-pink-v5 text-pink-500 space-x-0'
+                            }`}
+                          >
+                            {isActive ? (
+                              <>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
+                                  <rect x="6" y="4" width="4" height="16"></rect>
+                                  <rect x="14" y="4" width="4" height="16"></rect>
+                                </svg>
+                                <span>{formatDuration(currentSeconds)}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="group-hover:hidden">{formatDuration(entry.duration)}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                              </>
+                            )}
+                          </div>
+                          
+                          <div className="relative">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Context menu
+                              }}
+                              className="text-text-secondary hover:text-text-primary"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      {/* Zeit - nur sichtbar wenn nicht gehovert */}
-                      <div className="text-glow-magenta font-bold group-hover:hidden">{formatDuration(entry.duration)}</div>
                       
-                      {/* Buttons - nur sichtbar beim Hover */}
-                      <div className="hidden group-hover:flex items-center space-x-1">
-                        {/* Timer Button */}
-                        <button
-                          onClick={() => onToggleTimer(entry.taskId)}
-                          className={`p-1.5 rounded ${
-                            isActive ? 'glow-button text-text-primary' : 'hover-glow text-text-primary'
+                      {/* Desktop Layout */}
+                      <div className="hidden sm:flex items-center space-x-3">
+                        <span className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xl flex-shrink-0">
+                          {project?.icon || '📋'}
+                        </span>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-text-secondary truncate leading-tight mb-0.5">{entry.projectName}</div>
+                          <div className="text-text-primary font-semibold truncate leading-tight">{entry.taskTitle}</div>
+                        </div>
+                        
+                        <div
+                          className={`p-1 rounded ${
+                            isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
+                          }`}
+                          title={isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {isBillable ? (
+                              <>
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                              </>
+                            ) : (
+                              <>
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                              </>
+                            )}
+                          </svg>
+                        </div>
+                        
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleTimer(entry.taskId);
+                          }}
+                          className={`px-2 py-1 rounded-md font-bold text-sm cursor-pointer group flex items-center justify-center min-w-[70px] ${
+                            isActive ? 'glow-button-highlight text-text-primary space-x-2' : 'glow-button-highlight-pink-v5 text-pink-500 space-x-0'
                           }`}
                         >
                           {isActive ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="6" y="4" width="4" height="16"></rect>
-                              <rect x="14" y="4" width="4" height="16"></rect>
-                            </svg>
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                              </svg>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
+                                <rect x="6" y="4" width="4" height="16"></rect>
+                                <rect x="14" y="4" width="4" height="16"></rect>
+                              </svg>
+                              <span>{formatDuration(currentSeconds)}</span>
+                            </>
                           ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
+                            <>
+                              <span className="group-hover:hidden">{formatDuration(entry.duration)}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                              </svg>
+                            </>
                           )}
-                        </button>
+                        </div>
                         
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Zeiteintrag wirklich löschen?')) {
-                              // TODO: onDeleteTimeEntry(entry.id)
-                            }
-                          }}
-                          className="p-1.5 hover:glow-card rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO: Context menu
+                            }}
+                            className="text-text-secondary hover:text-text-primary"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="1"></circle>
+                              <circle cx="12" cy="5" r="1"></circle>
+                              <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -329,6 +472,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* TimerMenu für Zeiteintrag-Bearbeitung */}
+      {selectedTimeEntry && (
+        <TimerMenu
+          timeEntry={selectedTimeEntry}
+          elapsedSeconds={selectedTimeEntry.duration}
+          onClose={() => { setSelectedTimeEntry(null); setSelectedAnchorRect(null); }}
+          onUpdate={onUpdateTimeEntry || (() => {})}
+          onStop={() => {
+            setSelectedTimeEntry(null); setSelectedAnchorRect(null);
+          }}
+          anchorRect={selectedAnchorRect}
+        />
+      )}
     </div>
   );
 };

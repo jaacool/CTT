@@ -7,12 +7,17 @@ interface TimeViewProps {
   timeEntries: TimeEntry[];
   onUpdateEntry: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange: (taskId: string, billable: boolean) => void;
+  onStartTimer?: (taskId: string) => void;
+  onDeleteEntry?: (entryId: string) => void;
+  onDuplicateEntry?: (entry: TimeEntry) => void;
+  currentUser?: any;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, currentUser }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+  const [contextMenuEntryId, setContextMenuEntryId] = useState<string | null>(null);
 
   // Build a lookup for billable by taskId from current project tasks/subtasks
   const billableByTaskId = useMemo(() => {
@@ -48,9 +53,14 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
     return `${startTime} - ${endTime}`;
   };
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds: number, showSeconds: boolean = false) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (showSeconds) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   };
 
@@ -157,30 +167,54 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-text-secondary truncate leading-tight">{entry.projectName}</div>
-                        <div className="text-text-primary font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
+                        <div className="text-text-primary font-semibold truncate text-sm leading-tight">
+                          {entry.taskTitle}
+                          {entry.note && <span className="text-text-secondary font-normal"> ({entry.note})</span>}
+                        </div>
                       </div>
                     </div>
                     
                     <div className="flex flex-col items-end space-y-1 flex-shrink-0">
                       <div className="flex items-center space-x-1.5">
-                        <div className={`px-1.5 py-0.5 rounded font-bold text-xs ${
-                          entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500' : 'glow-button-highlight-cyan-v5 text-cyan-500'
-                        }`}>
-                          {formatDuration(entry.duration)}
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onStartTimer) onStartTimer(entry.taskId);
+                          }}
+                          className={`px-2 py-1 rounded-md font-bold text-xs cursor-pointer group flex items-center justify-center min-w-[50px] ${
+                            entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500 space-x-0' : 'glow-button-highlight text-text-primary space-x-2'
+                          }`}
+                        >
+                          {entry.endTime ? (
+                            <>
+                              <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                              </svg>
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                              </svg>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
+                                <rect x="6" y="4" width="4" height="16"></rect>
+                                <rect x="14" y="4" width="4" height="16"></rect>
+                              </svg>
+                              <span>{formatDuration(entry.duration, true)}</span>
+                            </>
+                          )}
                         </div>
                         
                         {(() => {
                           const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
                           return (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onBillableChange(entry.taskId, !isBillable);
-                              }}
+                            <div
                               className={`p-1 rounded ${
                                 isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
-                              } transition-all cursor-pointer`}
-                              title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
+                              }`}
+                              title={isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 {isBillable ? (
@@ -195,7 +229,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                                   </>
                                 )}
                               </svg>
-                            </button>
+                            </div>
                           );
                         })()}
                       </div>
@@ -220,21 +254,20 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-text-secondary truncate leading-tight mb-0.5">{entry.projectName}</div>
-                      <div className="text-text-primary font-semibold truncate leading-tight">{entry.taskTitle}</div>
+                      <div className="text-text-primary font-semibold truncate leading-tight">
+                        {entry.taskTitle}
+                        {entry.note && <span className="text-text-secondary font-normal"> ({entry.note})</span>}
+                      </div>
                     </div>
                     
                     {(() => {
                       const isBillable = billableByTaskId.get(entry.taskId) ?? (entry as any).billable ?? true;
                       return (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onBillableChange(entry.taskId, !isBillable);
-                          }}
+                        <div
                           className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold ${
                             isBillable ? 'glow-button-highlight-green-v5 text-green-500' : 'glow-button-highlight-red-v5 text-red-500'
-                          } transition-all cursor-pointer`}
-                          title={isBillable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
+                          }`}
+                          title={isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             {isBillable ? (
@@ -250,7 +283,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                             )}
                           </svg>
                           <span>{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
-                        </button>
+                        </div>
                       );
                     })()}
                     
@@ -262,19 +295,97 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                       <span>{formatTimeRange(entry.startTime, entry.endTime)}</span>
                     </div>
                     
-                    <div className={`px-3 py-1 rounded font-bold text-sm ${
-                      entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500' : 'glow-button-highlight-cyan-v5 text-cyan-500'
-                    }`}>
-                      {formatDuration(entry.duration)}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onStartTimer) onStartTimer(entry.taskId);
+                      }}
+                      className={`px-2 py-1 rounded-md font-bold text-sm cursor-pointer group flex items-center justify-center min-w-[70px] ${
+                        entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500 space-x-0' : 'glow-button-highlight text-text-primary space-x-2'
+                      }`}
+                    >
+                      {entry.endTime ? (
+                        <>
+                          <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                          </svg>
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                          </svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                          </svg>
+                          <span>{formatDuration(entry.duration, true)}</span>
+                        </>
+                      )}
                     </div>
                     
-                    <button className="text-text-secondary hover:text-text-primary">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="1"></circle>
-                        <circle cx="12" cy="5" r="1"></circle>
-                        <circle cx="12" cy="19" r="1"></circle>
-                      </svg>
-                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setContextMenuEntryId(contextMenuEntryId === entry.id ? null : entry.id);
+                        }}
+                        className="text-text-secondary hover:text-text-primary"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="1"></circle>
+                          <circle cx="12" cy="5" r="1"></circle>
+                          <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                      </button>
+                      
+                      {contextMenuEntryId === entry.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setContextMenuEntryId(null)}
+                          />
+                          <div className="absolute right-0 top-8 z-50 bg-surface border border-overlay rounded-lg shadow-xl py-1 min-w-[150px]">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onDuplicateEntry) {
+                                  onDuplicateEntry(entry);
+                                }
+                                setContextMenuEntryId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-text-primary hover:bg-overlay flex items-center space-x-2 text-sm"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                              </svg>
+                              <span>Duplizieren</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Zeiteintrag wirklich löschen?')) {
+                                  if (onDeleteEntry) {
+                                    onDeleteEntry(entry.id);
+                                  }
+                                }
+                                setContextMenuEntryId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-red-500 hover:bg-overlay flex items-center space-x-2 text-sm"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                              <span>Löschen</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

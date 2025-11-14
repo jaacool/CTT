@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Task, Subtask, Activity } from '../types';
 import { formatTime, formatRelativeTime } from './utils';
 import { ClockIcon, PaperclipIcon, MessageSquareIcon, CheckSquareIcon, PlannerIcon, PlayIcon, PauseIcon } from './Icons';
+import { useGlow } from '../contexts/GlowContext';
 
 interface TaskDetailPanelProps {
   item: Task | Subtask | null;
@@ -40,6 +41,7 @@ const Section: React.FC<{ title: string, icon: React.ReactNode, children: React.
 
 
 export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUpdate, onDescriptionUpdate, onRenameItem, trackedTime, activeTimerTaskId, onToggleTimer, onAddSubtask, onAddTodo, itemContext, onSelectItem, onBillableChange }) => {
+  const { themeMode } = useGlow();
   const [description, setDescription] = useState(item?.description || '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(item?.title || '');
@@ -276,16 +278,16 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       </Section>
 
       <div className="grid grid-cols-2 gap-3">
-          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" textColor="text-red-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" textColor="text-yellow-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" textColor="text-green-500" icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-red-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-yellow-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-green-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
           <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan-v5">
-              <div className="flex items-center space-x-2 text-xs mb-1 text-cyan-500">
+              <div className={`flex items-center space-x-2 text-xs mb-1 ${themeMode === 'blue' ? 'text-white' : 'text-cyan-500'}`}>
                   <ClockIcon className="w-3 h-3"/>
                   <span>Fortschritt</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-cyan-500">{Math.min(100, Math.round(progress))}%</span>
+                <span className={`text-xl font-bold ${themeMode === 'blue' ? 'text-white' : 'text-cyan-500'}`}>{Math.min(100, Math.round(progress))}%</span>
                 <div className="w-1/2 bg-overlay rounded-full h-1.5">
                     <div className="bg-glow-cyan h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
                 </div>

@@ -60,6 +60,7 @@ const App: React.FC = () => {
   const [activeTimerTaskId, setActiveTimerTaskId] = useState<string | null>(null);
   const [activeTimeEntryId, setActiveTimeEntryId] = useState<string | null>(null);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
+  const [timerMenuAnchor, setTimerMenuAnchor] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
   const [timerHovered, setTimerHovered] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showProjectsOverview, setShowProjectsOverview] = useState(false);
@@ -564,7 +565,7 @@ const App: React.FC = () => {
     setDashboardNote(note);
   }, []);
 
-  const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string) => {
+  const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string) => {
     setProjects(prevProjects => prevProjects.map(p => ({
       ...p,
       timeEntries: p.timeEntries.map(entry => {
@@ -577,18 +578,49 @@ const App: React.FC = () => {
             const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
             // Update taskTimers mit neuer duration
             setTaskTimers(prev => ({ ...prev, [entry.taskId]: duration }));
-            return { ...entry, startTime, duration };
+            return { ...entry, startTime, duration, note };
           }
           
           // Ansonsten normale Berechnung mit endTime
           const end = new Date(endTime);
           const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
-          return { ...entry, startTime, endTime, duration };
+          return { ...entry, startTime, endTime, duration, note };
         }
         return entry;
       })
     })));
   }, []);
+
+  const handleDeleteTimeEntry = useCallback((entryId: string) => {
+    setProjects(prevProjects => prevProjects.map(p => ({
+      ...p,
+      timeEntries: p.timeEntries.filter(entry => entry.id !== entryId)
+    })));
+  }, []);
+
+  const handleDuplicateTimeEntry = useCallback((entry: TimeEntry) => {
+    const newEntry: TimeEntry = {
+      ...entry,
+      id: `entry-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user: currentUser, // Verwende den aktuellen User
+      startTime: new Date().toISOString(),
+      endTime: '', // Neuer Eintrag ist laufend
+      duration: 0
+    };
+    
+    setProjects(prevProjects => prevProjects.map(p => {
+      if (p.id === entry.projectId) {
+        return {
+          ...p,
+          timeEntries: [...p.timeEntries, newEntry]
+        };
+      }
+      return p;
+    }));
+    
+    // Starte Timer für die duplizierte Aufgabe
+    handleToggleTimer(entry.taskId);
+  }, [currentUser, handleToggleTimer]);
 
   const handleAddTodo = (itemId: string, text: string) => {
     const newTodo = {
@@ -742,6 +774,8 @@ const App: React.FC = () => {
             onToggleTimer={handleToggleTimer}
             activeTimerTaskId={activeTimerTaskId}
             taskTimers={taskTimers}
+            onUpdateTimeEntry={handleUpdateTimeEntry}
+            onBillableChange={handleBillableChange}
           />
         ) : showProjectsOverview ? (
           <ProjectsOverview
@@ -769,6 +803,9 @@ const App: React.FC = () => {
             onDeleteTask={handleDeleteTask}
             onOpenCreateProject={() => setShowCreateProjectModal(true)}
             onOpenSearchProjects={() => setShowSearchModal(true)}
+            onDeleteTimeEntry={handleDeleteTimeEntry}
+            onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            currentUser={currentUser}
           />
         ) : (
           showSettings ? (
@@ -828,44 +865,97 @@ const App: React.FC = () => {
               )}
               
               <button
-                onClick={() => hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') ? setShowTimerMenu(!showTimerMenu) : null}
+                onClick={(e) => {
+                  if (!hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten')) return;
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setTimerMenuAnchor(rect);
+                  setShowTimerMenu(true);
+                }}
                 className="flex items-center space-x-3 px-4 py-3 rounded-full glow-button-highlight text-text-primary font-bold"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span onClick={(e) => { e.stopPropagation(); if (hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten')) setShowTimerMenu(true); }}>
+                <span onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (!hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten')) return; 
+                  const parent = (e.currentTarget as HTMLElement).closest('button');
+                  if (parent) setTimerMenuAnchor((parent as HTMLElement).getBoundingClientRect());
+                  setShowTimerMenu(true); 
+                }}>
                   {formatTime(taskTimers[activeTimerTaskId] || 0)}
                 </span>
-                <svg 
-                  onClick={(e) => { e.stopPropagation(); handleToggleTimer(activeTimerTaskId); }}
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="w-5 h-5 cursor-pointer hover:scale-110 transition-transform"
+                <div 
+                  onClick={(e) => { e.stopPropagation(); handleToggleTimer(activeTimerTaskId); }} 
+                  className="relative group w-5 h-5"
                 >
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
+                  {/* Pause Icon - default */}
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="w-5 h-5 cursor-pointer transition-opacity group-hover:opacity-0 absolute"
+                  >
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                  {/* Stop Icon - on hover */}
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="3" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="w-5 h-5 cursor-pointer transition-opacity opacity-0 group-hover:opacity-100 absolute"
+                  >
+                    <rect width="14" height="14" x="5" y="5" rx="2"/>
+                  </svg>
+                </div>
               </button>
             </div>
             
-            {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (
-              <TimerMenu
-                timeEntry={activeEntry}
-                elapsedSeconds={taskTimers[activeTimerTaskId] || 0}
-                onClose={() => setShowTimerMenu(false)}
-                onUpdate={handleUpdateTimeEntry}
-                onStop={() => handleToggleTimer(activeTimerTaskId)}
-              />
-            )}
+            {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (() => {
+              // Finde Task/Subtask für Billable-Status
+              let taskBillable = true;
+              projects.forEach(proj => {
+                proj.taskLists.forEach(list => {
+                  list.tasks.forEach(task => {
+                    if (task.id === activeTimerTaskId) {
+                      taskBillable = task.billable ?? true;
+                    }
+                    task.subtasks.forEach(subtask => {
+                      if (subtask.id === activeTimerTaskId) {
+                        taskBillable = subtask.billable ?? task.billable ?? true;
+                      }
+                    });
+                  });
+                });
+              });
+              
+              return (
+                <TimerMenu
+                  timeEntry={activeEntry}
+                  elapsedSeconds={taskTimers[activeTimerTaskId] || 0}
+                  onClose={() => setShowTimerMenu(false)}
+                  onUpdate={handleUpdateTimeEntry}
+                  onStop={() => handleToggleTimer(activeTimerTaskId)}
+                  anchorRect={timerMenuAnchor}
+                  taskBillable={taskBillable}
+                  onBillableChange={handleBillableChange}
+                />
+              );
+            })()}
           </>
         );
       })()}
