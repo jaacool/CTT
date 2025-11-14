@@ -781,3 +781,68 @@ textarea:focus {
     0 0 30px -8px rgba(236, 72, 153, 0.2);
   border-color: rgba(168, 85, 247, 0.5);
 }
+
+/* Disable all glow effects when glow-disabled class is present */
+.glow-disabled .glow-text {
+  background: none;
+  -webkit-text-fill-color: var(--color-text-primary);
+  filter: none;
+  animation: none;
+}
+
+.glow-disabled .glow-button,
+.glow-disabled .glow-button-highlight,
+.glow-disabled .glow-button-highlight-yellow,
+.glow-disabled .glow-button-highlight-green,
+.glow-disabled .glow-button-highlight-pink,
+.glow-disabled .glow-button-highlight-red,
+.glow-disabled .glow-button-highlight-cyan,
+.glow-disabled .glow-button-highlight-yellow-v4,
+.glow-disabled .glow-button-highlight-green-v4,
+.glow-disabled .glow-button-highlight-pink-v4,
+.glow-disabled .glow-button-highlight-yellow-v5,
+.glow-disabled .glow-button-highlight-green-v5,
+.glow-disabled .glow-button-highlight-pink-v5,
+.glow-disabled .glow-button-highlight-red-v5,
+.glow-disabled .glow-button-highlight-cyan-v5,
+.glow-disabled .glow-button-highlight-green-v6,
+.glow-disabled .glow-button-highlight-red-v6,
+.glow-disabled .glow-button-highlight-pink-v6,
+.glow-disabled .glow-button-highlight-cyan-v6 {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: blur(10px);
+}
+
+.glow-disabled .glow-button::before,
+.glow-disabled .glow-button-highlight::before {
+  display: none;
+}
+
+.glow-disabled .glow-card {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.glow-disabled .glow-card::before {
+  display: none;
+}
+
+.glow-disabled .hover-glow:hover {
+  background-image: none;
+  background: rgba(30, 30, 30, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.glow-disabled .glow-input {
+  box-shadow: none;
+}
+
+.glow-disabled .glow-input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}

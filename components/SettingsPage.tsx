@@ -3,6 +3,7 @@ import { User, UserStatus, Role } from '../types';
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
 import { RolesPage } from './RolesPage';
+import { useGlow } from '../contexts/GlowContext';
 
 interface SettingsPageProps {
   users: User[];
@@ -172,7 +173,8 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
 export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddUser, onUpdateUser, onDeleteUser, onChangeRole }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance'>('users');
+  const { glowEnabled, toggleGlow } = useGlow();
 
   return (
     <div className="p-8 w-full">
@@ -192,6 +194,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
           }`}
         >
           Rollen
+        </button>
+        <button
+          onClick={() => setActiveTab('appearance')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'appearance' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
+          }`}
+        >
+          Erscheinungsbild
         </button>
       </div>
 
@@ -238,8 +248,34 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         />
       )}
         </>
-      ) : (
+      ) : activeTab === 'roles' ? (
         <RolesPage roles={roles} />
+      ) : (
+        <div>
+          <h1 className="text-2xl font-bold glow-text mb-8">Erscheinungsbild</h1>
+          <div className="glow-card rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary mb-1">Glow Glass</h3>
+                <p className="text-sm text-text-secondary">
+                  Aktiviert den Liquid Glass Glow-Effekt für Buttons, Cards und interaktive Elemente
+                </p>
+              </div>
+              <button
+                onClick={toggleGlow}
+                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                  glowEnabled ? 'bg-blue-500' : 'bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                    glowEnabled ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

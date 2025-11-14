@@ -14,6 +14,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
 import { statusToText, formatTime } from './components/utils';
+import { GlowProvider } from './contexts/GlowContext';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -889,4 +890,10 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+const AppWithGlow = () => (
+  <GlowProvider>
+    <App />
+  </GlowProvider>
+);
+
+export default AppWithGlow;
