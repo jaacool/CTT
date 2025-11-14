@@ -133,8 +133,8 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: gradient-shift 6s ease infinite;
-  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.5))
-          drop-shadow(0 0 16px rgba(255, 0, 255, 0.3));
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.25))
+          drop-shadow(0 0 16px rgba(255, 0, 255, 0.15));
 }
 
 .glow-button {
