@@ -64,13 +64,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Linke Spalte: Zeiterfassung */}
         <div className="space-y-6 order-2 md:order-1" data-testid="dashboard-left-column">
           {/* Meine Zeiterfassung */}
-          <div className="bg-surface rounded-xl p-6" data-testid="my-time-tracking">
-            <h2 className="text-text-primary text-xl font-bold mb-6">Meine Zeiterfassung</h2>
+          <div className="glow-card rounded-xl p-6" data-testid="my-time-tracking">
+            <h2 className="glow-text text-xl font-bold mb-6">Meine Zeiterfassung</h2>
             
             {/* Kreis mit Zeit */}
             <div className="flex justify-center mb-8">
               <div className="relative w-48 h-48">
                 <svg className="w-full h-full transform -rotate-90">
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style={{stopColor: '#00FFFF', stopOpacity: 1}} />
+                      <stop offset="100%" style={{stopColor: '#FF00FF', stopOpacity: 1}} />
+                    </linearGradient>
+                  </defs>
                   <circle
                     cx="96"
                     cy="96"
@@ -90,12 +96,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     strokeLinecap="round"
                   />
                 </svg>
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style={{stopColor: '#00FFFF', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#FF00FF', stopOpacity: 1}} />
-                  </linearGradient>
-                </defs>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-text-primary text-4xl font-bold">{formatDuration(totalTodaySeconds)}</div>
                   <div className="text-text-secondary text-sm">{today}</div>
@@ -134,8 +134,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {/* Timer Button */}
                         <button
                           onClick={() => onToggleTimer(entry.taskId)}
-                          className={`p-1.5 rounded transition-colors ${
-                            isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay text-text-primary'
+                          className={`p-1.5 rounded transition-all ${
+                            isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay text-text-primary'
                           }`}
                         >
                           {isActive ? (
@@ -157,7 +157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               // TODO: onDeleteTimeEntry(entry.id)
                             }
                           }}
-                          className="p-1.5 hover:bg-surface rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1.5 hover:glow-card rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -178,14 +178,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Notizen */}
-          <div className="bg-surface rounded-xl p-6" data-testid="notes-section">
-            <h3 className="text-text-primary text-lg font-bold mb-4">Heute (manuell)</h3>
+          <div className="glow-card rounded-xl p-6" data-testid="notes-section">
+            <h3 className="glow-text text-lg font-bold mb-4">Heute (manuell)</h3>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onBlur={() => onUpdateNote(note)}
               placeholder="Notizen für heute..."
-              className="w-full bg-background text-text-primary placeholder-text-secondary rounded-lg p-4 outline-none focus:ring-2 focus:ring-glow-cyan resize-none"
+              className="w-full glow-input text-text-primary placeholder-text-secondary/50 rounded-lg p-4 resize-none"
               rows={6}
               data-testid="dashboard-notes"
             />
@@ -193,9 +193,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Rechte Spalte: Täglich */}
-        <div className="bg-surface rounded-xl p-6 order-1 md:order-2" data-testid="shortcuts-section">
+        <div className="glow-card rounded-xl p-6 order-1 md:order-2" data-testid="shortcuts-section">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-text-primary text-xl font-bold">Shortcuts</h2>
+            <h2 className="glow-text text-xl font-bold">Shortcuts</h2>
             <div className="flex items-center space-x-2">
               <button className="p-2 hover:bg-overlay rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
@@ -308,7 +308,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                       <button
                         onClick={() => onUnpinTask(task.id)}
-                        className="p-1.5 hover:bg-surface rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-1.5 hover:glow-card rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>

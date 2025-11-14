@@ -27,7 +27,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onU
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface rounded-2xl p-8 w-full max-w-2xl border border-overlay max-h-[90vh] overflow-y-auto">
+      <div className="glow-card rounded-2xl p-8 w-full max-w-2xl border border-overlay max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-text-primary">'{user.name}' bearbeiten</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
@@ -110,7 +110,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onU
           {/* Footer Buttons */}
           <div className="flex justify-end space-x-4 pt-4">
             <button type="button" onClick={onClose} className="px-6 py-2 bg-background text-text-primary rounded-lg hover:bg-overlay transition-colors">Abbrechen</button>
-            <button type="submit" className="px-6 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg hover:opacity-80 transition-colors">Speichern</button>
+            <button type="submit" className="px-6 py-2 glow-button text-text-primary rounded-lg hover:opacity-80 transition-colors">Speichern</button>
           </div>
         </form>
       </div>

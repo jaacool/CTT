@@ -51,7 +51,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ onClose, onSelec
       {/* Modal */}
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div 
-          className="bg-surface rounded-2xl w-full max-w-md shadow-2xl"
+          className="glow-card rounded-2xl w-full max-w-md shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -124,7 +124,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ onClose, onSelec
                   <button
                     onClick={handleCreateClient}
                     disabled={!newClientName.trim()}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 glow-button text-text-primary rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Erstellen
                   </button>

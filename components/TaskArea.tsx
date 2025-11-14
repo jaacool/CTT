@@ -47,7 +47,7 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
                 <div>
                     <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
                     <div className="flex items-center space-x-4 text-text-secondary text-xs mt-2">
-                        <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta' : 'bg-overlay'}`}>{project.status}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'glow-button' : 'bg-overlay'}`}>{project.status}</span>
                          <div className="flex items-center space-x-1.5">
                             <CalendarIcon className="w-4 h-4"/>
                             <span>{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
@@ -67,7 +67,7 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
                     <span>{completedTasks}/{totalTasks} Erledigt</span>
                 </div>
                 <div className="w-full bg-overlay rounded-full h-2">
-                    <div className="bg-gradient-to-r from-glow-cyan to-glow-magenta h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="glow-button h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
             <div className="mt-4 flex space-x-4">
@@ -264,7 +264,7 @@ const SubtaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -355,7 +355,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
@@ -483,7 +483,7 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
     const completedTasks = taskList.tasks.filter(t => t.status === TaskStatus.Done).length;
     
     return (
-        <div className="bg-surface rounded-xl p-4">
+        <div className="glow-card rounded-xl p-4">
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                      <EditableTitle id={taskList.id} title={taskList.title} onRename={(newName) => onRenameItem(taskList.id, newName, 'list')}>
@@ -551,7 +551,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
     }
     
     return (
-        <div className="bg-surface rounded-xl p-4">
+        <div className="glow-card rounded-xl p-4">
             <input 
                 type="text"
                 value={title}
@@ -574,12 +574,12 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             <ProjectHeader project={props.project} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
             
             {/* Tab Navigation */}
-            <div className="flex space-x-1 mb-6 bg-surface rounded-lg p-1">
+            <div className="flex space-x-1 mb-6 bg-overlay rounded-lg p-1 border border-border">
                 <button
                     onClick={() => setActiveTab('tasks')}
                     className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'tasks'
-                            ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary'
+                            ? 'glow-button text-text-primary'
                             : 'text-text-secondary hover:text-text-primary'
                     }`}
                 >
@@ -595,7 +595,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     }}
                     className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'time'
-                            ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary'
+                            ? 'glow-button text-text-primary'
                             : 'text-text-secondary hover:text-text-primary'
                     }`}
                 >
@@ -633,7 +633,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                 </button>
                 <button
                     onClick={props.onOpenCreateProject}
-                    className="bg-gradient-to-r from-glow-cyan to-glow-magenta p-3 rounded-full shadow-lg hover:opacity-80 transition-all"
+                    className="glow-button p-3 rounded-full shadow-lg hover:opacity-80 transition-all"
                 >
                     <PlusIcon className="w-6 h-6 text-text-primary" />
                 </button>

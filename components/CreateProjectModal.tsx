@@ -41,7 +41,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
         <div 
-          className="bg-surface rounded-2xl w-full max-w-3xl shadow-2xl"
+          className="glow-card rounded-2xl w-full max-w-3xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -73,7 +73,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
               <button
                 onClick={handleSubmit}
                 disabled={!projectName.trim()}
-                className="px-6 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                className="px-6 py-2 glow-button text-text-primary rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
               >
                 Weiter
               </button>
@@ -118,7 +118,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
                 Details super-schnell hinzufügen
               </h3>
               <p className="text-text-secondary text-sm mb-4">
-                Tippe <kbd className="px-2 py-1 bg-surface rounded text-xs">/</kbd> um Befehle zu starten
+                Tippe <kbd className="px-2 py-1 glow-card rounded text-xs">/</kbd> um Befehle zu starten
               </p>
               
               <div className="space-y-3 text-left max-w-md mx-auto">

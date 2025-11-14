@@ -78,7 +78,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-text-primary">Zeiterfassung</h2>
+        <h2 className="text-xl font-bold glow-text">Zeiterfassung</h2>
         <div className="text-text-secondary text-sm">
           Gesamt: <span className="text-text-primary font-bold">{formatTime(totalDuration)}</span>
         </div>
@@ -90,7 +90,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
           {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
             <div
               key={entry.id}
-              className="bg-surface rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
+              className="glow-card rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
             >
               {editingEntryId === entry.id ? (
                 <div className="space-y-3">
@@ -130,7 +130,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleSave(entry.id)}
-                      className="px-3 py-1 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary text-xs rounded hover:opacity-80"
+                      className="px-3 py-1 glow-button text-text-primary text-xs rounded hover:opacity-80"
                     >
                       Speichern
                     </button>

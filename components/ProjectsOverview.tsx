@@ -39,13 +39,13 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-text-primary flex items-center space-x-2">
+          <h1 className="text-2xl font-bold glow-text flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
             <span>Projekte</span>
           </h1>
-          <button className="px-4 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg hover:opacity-80 transition-colors flex items-center space-x-2">
+          <button className="px-4 py-2 glow-button text-text-primary rounded-lg hover:opacity-80 transition-colors flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -56,11 +56,11 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
 
         <div className="flex items-center space-x-4">
           {/* View Toggle */}
-          <div className="flex bg-surface rounded-lg p-1">
+          <div className="flex glow-card rounded-lg p-1">
             <button
               onClick={() => setView('list')}
               className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                view === 'list' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'text-text-secondary hover:text-text-primary'
+                view === 'list' ? 'glow-button text-text-primary' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Liste
@@ -68,7 +68,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
             <button
               onClick={() => setView('timeline')}
               className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                view === 'timeline' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'text-text-secondary hover:text-text-primary'
+                view === 'timeline' ? 'glow-button text-text-primary' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Timeline
@@ -77,7 +77,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
 
           {/* Filter Buttons */}
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg text-sm flex items-center space-x-2">
+            <button className="px-3 py-2 glow-button text-text-primary rounded-lg text-sm flex items-center space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6"></line>
                 <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -93,7 +93,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
             
-            <button className="px-3 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg text-sm flex items-center space-x-2">
+            <button className="px-3 py-2 glow-button text-text-primary rounded-lg text-sm flex items-center space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
@@ -104,13 +104,13 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-surface rounded-lg">
+            <button className="p-2 hover:glow-card rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-surface rounded-lg">
+            <button className="p-2 hover:glow-card rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <rect x="3" y="3" width="7" height="7"></rect>
                 <rect x="14" y="3" width="7" height="7"></rect>
@@ -119,7 +119,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-surface rounded-lg">
+            <button className="p-2 hover:glow-card rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -131,7 +131,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       </div>
 
       {/* Table Header */}
-      <div className="bg-surface rounded-t-xl">
+      <div className="glow-card rounded-t-xl">
         <div className="grid grid-cols-12 gap-4 px-6 py-3 text-text-secondary text-xs font-semibold border-b border-overlay">
           <div className="col-span-3">Projekt</div>
           <div className="col-span-2">Typ</div>
@@ -144,7 +144,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       </div>
 
       {/* Projects List */}
-      <div className="bg-surface rounded-b-xl">
+      <div className="glow-card rounded-b-xl">
         {Object.entries(groupedProjects).map(([status, projectsInGroup]: [string, Project[]]) => (
           <div key={status} className="mb-4">
             {/* Status Header */}

@@ -49,7 +49,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
       />
       
       {/* Menu */}
-      <div className="fixed inset-0 md:bottom-24 md:right-8 md:w-[800px] md:inset-auto bg-surface rounded-none md:rounded-2xl shadow-2xl z-50 p-6">
+      <div className="fixed inset-0 md:bottom-24 md:right-8 md:w-[800px] md:inset-auto glow-card rounded-none md:rounded-2xl shadow-2xl z-50 p-6">
         <h2 className="text-text-primary text-xl font-bold mb-6">Timer</h2>
         
         {/* Search */}
@@ -173,7 +173,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
           
           <button
             onClick={handleFinish}
-            className="flex items-center space-x-3 bg-gradient-to-r from-glow-cyan to-glow-magenta hover:opacity-80 text-text-primary px-8 py-3 rounded-full font-bold transition-all"
+            className="flex items-center space-x-3 glow-button hover:opacity-80 text-text-primary px-8 py-3 rounded-full font-bold transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
