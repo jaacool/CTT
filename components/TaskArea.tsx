@@ -264,7 +264,7 @@ const SubtaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-gradient-to-r hover:from-glow-purple/20 hover:via-glow-pink/20 hover:to-glow-blue/20 hover:text-glow-purple hover:shadow-lg hover:shadow-glow-purple/30'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer group ${isActive ? 'glow-button text-text-primary' : 'hover:bg-gradient-to-r hover:from-glow-purple/20 hover:via-glow-pink/20 hover:to-glow-blue/20 hover:shadow-lg hover:shadow-glow-purple/30'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -355,7 +355,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-gradient-to-r hover:from-glow-purple/20 hover:via-glow-pink/20 hover:to-glow-blue/20 hover:text-glow-purple hover:shadow-lg hover:shadow-glow-purple/30'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer group ${isActive ? 'glow-button text-text-primary' : 'hover:bg-gradient-to-r hover:from-glow-purple/20 hover:via-glow-pink/20 hover:to-glow-blue/20 hover:shadow-lg hover:shadow-glow-purple/30'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
