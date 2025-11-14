@@ -93,9 +93,8 @@ body {
   background: linear-gradient(#141414, #141414) padding-box,
               linear-gradient(135deg, 
                 #A855F7 0%, 
-                #EC4899 25%, 
-                #F97316 50%, 
-                #3B82F6 75%, 
+                #EC4899 33%, 
+                #3B82F6 66%, 
                 #A855F7 100%) border-box;
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
@@ -109,9 +108,8 @@ body {
   padding: 2px;
   background: linear-gradient(135deg, 
     #A855F7 0%, 
-    #EC4899 25%, 
-    #F97316 50%, 
-    #3B82F6 75%, 
+    #EC4899 33%, 
+    #3B82F6 66%, 
     #A855F7 100%);
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
@@ -141,9 +139,8 @@ body {
   position: relative;
   background: linear-gradient(135deg, 
     rgba(168, 85, 247, 0.2) 0%, 
-    rgba(236, 72, 153, 0.2) 25%, 
-    rgba(249, 115, 22, 0.2) 50%, 
-    rgba(59, 130, 246, 0.2) 75%, 
+    rgba(236, 72, 153, 0.2) 33%, 
+    rgba(59, 130, 246, 0.2) 66%, 
     rgba(168, 85, 247, 0.2) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
@@ -170,9 +167,8 @@ body {
   border-radius: inherit;
   background: linear-gradient(135deg, 
     #A855F7 0%, 
-    #EC4899 25%, 
-    #F97316 50%, 
-    #3B82F6 75%, 
+    #EC4899 33%, 
+    #3B82F6 66%, 
     #A855F7 100%);
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
@@ -204,8 +200,9 @@ body {
   padding: 1px;
   background: linear-gradient(135deg, 
     rgba(168, 85, 247, 0.3) 0%, 
-    rgba(236, 72, 153, 0.3) 50%, 
-    rgba(59, 130, 246, 0.3) 100%);
+    rgba(236, 72, 153, 0.3) 33%, 
+    rgba(59, 130, 246, 0.3) 66%, 
+    rgba(168, 85, 247, 0.3) 100%);
   background-size: 200% 200%;
   animation: gradient-shift 10s ease infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -243,9 +240,8 @@ textarea:focus.glow-border {
     linear-gradient(#0A0A0A, #0A0A0A) padding-box,
     linear-gradient(135deg, 
       #A855F7 0%, 
-      #EC4899 25%, 
-      #F97316 50%, 
-      #3B82F6 75%, 
+      #EC4899 33%, 
+      #3B82F6 66%, 
       #A855F7 100%) border-box;
   background-size: 200% 200%;
   animation: gradient-shift 6s ease infinite;
