@@ -264,7 +264,7 @@ const SubtaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -359,7 +359,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
