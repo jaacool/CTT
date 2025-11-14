@@ -597,6 +597,23 @@ body {
   transform: translateY(-1px);
 }
 
+/* Global hover style for interactive elements without highlight */
+.hover-glow {
+  border: 1px solid transparent;
+  background: linear-gradient(to right, transparent, transparent);
+  transition: background-image 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.hover-glow:hover {
+  background-image: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(236, 72, 153, 0.1));
+  border-color: rgba(34, 211, 238, 0.1);
+  color: var(--color-text-primary);
+  box-shadow: 
+    inset 0 0 30px 10px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(168, 85, 247, 0.15),
+    0 0 15px -3px rgba(168, 85, 247, 0.3);
+}
+
 /* Glow Button Highlight V6 - More saturated but darker (like bg-green-500/20) */
 .glow-button-highlight-green-v6 {
   position: relative;
