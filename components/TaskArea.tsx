@@ -264,7 +264,7 @@ const SubtaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay/80 hover:text-glow-purple hover:shadow-lg hover:shadow-glow-purple/20'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay/80 hover:border hover:border-glow-cyan/30 hover:text-text-primary'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -355,7 +355,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay/80 hover:text-glow-purple hover:shadow-lg hover:shadow-glow-purple/20'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all cursor-pointer ${isActive ? 'glow-button text-text-primary' : 'hover:bg-overlay/80 hover:border hover:border-glow-cyan/30 hover:text-text-primary'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
