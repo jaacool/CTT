@@ -126,10 +126,10 @@ const TaskStatusControl: React.FC<{
     let iconContent;
     switch (status) {
         case TaskStatus.InProgress:
-            iconContent = <div className={`${baseClasses} bg-yellow-400 text-black`}><ArrowRightIcon className="w-4 h-4"/></div>;
+            iconContent = <div className={`${baseClasses} glow-button-highlight-yellow text-black`}><ArrowRightIcon className="w-4 h-4"/></div>;
             break;
         case TaskStatus.Done:
-            iconContent = <div className={`${baseClasses} bg-glow-lime text-black`}><CheckIcon className="w-4 h-4"/></div>;
+            iconContent = <div className={`${baseClasses} glow-button-highlight-green text-black`}><CheckIcon className="w-4 h-4"/></div>;
             break;
         case TaskStatus.Todo:
         default:
@@ -149,10 +149,10 @@ const TaskStatusControl: React.FC<{
             {isMenuOpen && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-overlay p-1 rounded-full flex items-center space-x-1 shadow-lg transform transition-all duration-150 ease-in-out">
                     <button onClick={(e) => handleSetStatus(e, TaskStatus.Todo)} className="w-7 h-7 rounded-full border-2 border-text-secondary hover:bg-surface flex items-center justify-center"></button>
-                    <button onClick={(e) => handleSetStatus(e, TaskStatus.InProgress)} className="w-7 h-7 rounded-full bg-yellow-400 text-black hover:bg-yellow-500 flex items-center justify-center"><ArrowRightIcon className="w-4 h-4"/></button>
-                    <button className="w-7 h-7 rounded-full bg-glow-magenta text-white hover:opacity-80 flex items-center justify-center"><PrinterIcon className="w-4 h-4"/></button>
-                    <button className="w-7 h-7 rounded-full bg-glow-lime text-black hover:opacity-80 flex items-center justify-center"><ThumbsUpIcon className="w-4 h-4"/></button>
-                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Done)} className="w-7 h-7 rounded-full bg-glow-lime text-black hover:opacity-80 flex items-center justify-center"><CheckIcon className="w-4 h-4"/></button>
+                    <button onClick={(e) => handleSetStatus(e, TaskStatus.InProgress)} className="w-7 h-7 rounded-full glow-button-highlight-yellow text-black flex items-center justify-center"><ArrowRightIcon className="w-4 h-4"/></button>
+                    <button className="w-7 h-7 rounded-full glow-button-highlight-pink text-white flex items-center justify-center"><PrinterIcon className="w-4 h-4"/></button>
+                    <button className="w-7 h-7 rounded-full glow-button-highlight-green text-black flex items-center justify-center"><ThumbsUpIcon className="w-4 h-4"/></button>
+                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Done)} className="w-7 h-7 rounded-full glow-button-highlight-green text-black flex items-center justify-center"><CheckIcon className="w-4 h-4"/></button>
                 </div>
             )}
         </div>
