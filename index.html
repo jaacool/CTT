@@ -6,45 +6,6 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CTT Projektmanagement</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'ai-bg': '#000000',
-              'ai-surface': 'rgba(20, 20, 20, 0.6)',
-              'ai-surface-strong': 'rgba(25, 25, 25, 0.8)',
-              'ai-surface-light': 'rgba(15, 15, 15, 0.4)',
-              'ai-border': 'rgba(255, 255, 255, 0.1)',
-              'ai-border-strong': 'rgba(255, 255, 255, 0.15)',
-              'ai-text': '#ffffff',
-              'ai-text-muted': 'rgba(255, 255, 255, 0.6)',
-              'ai-text-subtle': 'rgba(255, 255, 255, 0.4)',
-              'ai-purple': '#5856d6',
-              'ai-pink': '#ff2d55',
-              'ai-green': '#34c759',
-              'ai-cyan': '#00c7be',
-              'ai-blue': '#007aff',
-              'ai-orange': '#ff9500',
-              'ai-glow-purple': 'rgba(88, 86, 214, 0.6)',
-              'ai-glow-pink': 'rgba(255, 45, 85, 0.6)',
-              'ai-glow-green': 'rgba(52, 199, 89, 0.6)',
-              'ai-glow-cyan': 'rgba(0, 199, 190, 0.6)',
-            },
-            backdropBlur: {
-              'ai': '20px',
-              'ai-strong': '30px',
-            },
-            boxShadow: {
-              'ai-glow': '0 0 20px rgba(88, 86, 214, 0.3), 0 0 40px rgba(88, 86, 214, 0.2)',
-              'ai-glow-strong': '0 0 30px rgba(88, 86, 214, 0.5), 0 0 60px rgba(88, 86, 214, 0.3)',
-              'ai-card': '0 20px 40px rgba(88, 86, 214, 0.3), 0 10px 20px rgba(88, 86, 214, 0.2)',
-            },
-          },
-        },
-      }
-    </script>
   <script type="importmap">
 {
   "imports": {
@@ -54,18 +15,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-ai-bg text-ai-text antialiased">
-    <!-- Animated Background -->
-    <div class="ai-background"></div>
-    
-    <!-- Floating RGB Orbs -->
-    <div class="ai-orb ai-orb-1"></div>
-    <div class="ai-orb ai-orb-2"></div>
-    <div class="ai-orb ai-orb-3"></div>
-    <div class="ai-orb ai-orb-4"></div>
-    
+  <body class="bg-background text-text-primary antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -131,4 +131,6 @@ export interface Project {
   budgetHours: number;
   members: User[];
   timeEntries: TimeEntry[];
+  client?: string;
+  owner?: User;
 }

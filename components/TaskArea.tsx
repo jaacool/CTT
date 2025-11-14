@@ -42,12 +42,12 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     return (
-        <header className="mb-6 bg-c-surface p-4 rounded-xl">
+        <header className="mb-6 bg-surface p-4 rounded-xl">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{project.name}</h1>
-                    <div className="flex items-center space-x-4 text-c-subtle text-xs mt-2">
-                        <span className={`px-2 py-0.5 rounded-full text-white ${project.status === 'AKTIV' ? 'bg-c-blue' : 'bg-c-muted'}`}>{project.status}</span>
+                    <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
+                    <div className="flex items-center space-x-4 text-text-secondary text-xs mt-2">
+                        <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta' : 'bg-overlay'}`}>{project.status}</span>
                          <div className="flex items-center space-x-1.5">
                             <CalendarIcon className="w-4 h-4"/>
                             <span>{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
@@ -56,31 +56,31 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
                 </div>
                 <div className="flex items-center space-x-2">
                     {project.members.map(member => (
-                        <img key={member.id} src={member.avatarUrl} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-c-surface ring-2 ring-c-highlight" />
+                        <img key={member.id} src={member.avatarUrl} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-surface ring-2 ring-overlay" />
                     ))}
-                    <button className="w-8 h-8 rounded-full bg-c-highlight flex items-center justify-center text-c-subtle hover:bg-c-overlay">+</button>
+                    <button className="w-8 h-8 rounded-full bg-overlay flex items-center justify-center text-text-secondary hover:bg-surface">+</button>
                 </div>
             </div>
             <div className="mt-4">
-                 <div className="flex justify-between items-center text-xs text-c-subtle mb-1">
+                 <div className="flex justify-between items-center text-xs text-text-secondary mb-1">
                     <span>Fortschritt</span>
                     <span>{completedTasks}/{totalTasks} Erledigt</span>
                 </div>
-                <div className="w-full bg-c-highlight rounded-full h-2">
-                    <div className="bg-c-blue h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                <div className="w-full bg-overlay rounded-full h-2">
+                    <div className="bg-gradient-to-r from-glow-cyan to-glow-magenta h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
             <div className="mt-4 flex space-x-4">
                 <div className="flex-1">
-                    <div className="text-xs text-c-subtle">Erfasste Zeit</div>
-                    <div className="text-white font-bold">{formatTime(totalTrackedSeconds)}</div>
+                    <div className="text-xs text-text-secondary">Erfasste Zeit</div>
+                    <div className="text-text-primary font-bold">{formatTime(totalTrackedSeconds)}</div>
                 </div>
                  <div className="flex-1">
-                    <div className="text-xs text-c-subtle">Geplantes Budget</div>
-                    <div className="text-white font-bold">{project.budgetHours || ''} Stunden</div>
+                    <div className="text-xs text-text-secondary">Geplantes Budget</div>
+                    <div className="text-text-primary font-bold">{project.budgetHours || ''} Stunden</div>
                 </div>
                 <div className="flex-1">
-                    <div className="text-xs text-c-subtle mb-1">Standard</div>
+                    <div className="text-xs text-text-secondary mb-1">Standard</div>
                     <button
                         onClick={onToggleDefaultBillable}
                         className={`flex items-center space-x-2 px-3 py-1 rounded text-xs font-bold transition-opacity cursor-pointer ${
@@ -126,14 +126,14 @@ const TaskStatusControl: React.FC<{
     let iconContent;
     switch (status) {
         case TaskStatus.InProgress:
-            iconContent = <div className={`${baseClasses} bg-c-yellow`}><ArrowRightIcon className="w-4 h-4"/></div>;
+            iconContent = <div className={`${baseClasses} bg-yellow-400 text-black`}><ArrowRightIcon className="w-4 h-4"/></div>;
             break;
         case TaskStatus.Done:
-            iconContent = <div className={`${baseClasses} bg-c-green`}><CheckIcon className="w-4 h-4"/></div>;
+            iconContent = <div className={`${baseClasses} bg-glow-lime text-black`}><CheckIcon className="w-4 h-4"/></div>;
             break;
         case TaskStatus.Todo:
         default:
-            iconContent = <div className="w-6 h-6 rounded-full border-2 border-dashed border-c-muted shrink-0"></div>;
+            iconContent = <div className="w-6 h-6 rounded-full border-2 border-dashed border-text-secondary shrink-0"></div>;
             break;
     }
 
@@ -147,12 +147,12 @@ const TaskStatusControl: React.FC<{
                 {iconContent}
             </div>
             {isMenuOpen && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-c-overlay p-1 rounded-full flex items-center space-x-1 shadow-lg transform transition-all duration-150 ease-in-out">
-                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Todo)} className="w-7 h-7 rounded-full border-2 border-c-muted hover:bg-c-highlight flex items-center justify-center"></button>
-                    <button onClick={(e) => handleSetStatus(e, TaskStatus.InProgress)} className="w-7 h-7 rounded-full bg-c-yellow text-black hover:bg-yellow-400 flex items-center justify-center"><ArrowRightIcon className="w-4 h-4"/></button>
-                    <button className="w-7 h-7 rounded-full bg-c-magenta text-white hover:bg-purple-500 flex items-center justify-center"><PrinterIcon className="w-4 h-4"/></button>
-                    <button className="w-7 h-7 rounded-full bg-c-green text-black hover:bg-green-400 flex items-center justify-center"><ThumbsUpIcon className="w-4 h-4"/></button>
-                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Done)} className="w-7 h-7 rounded-full bg-c-green text-black hover:bg-green-400 flex items-center justify-center"><CheckIcon className="w-4 h-4"/></button>
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-overlay p-1 rounded-full flex items-center space-x-1 shadow-lg transform transition-all duration-150 ease-in-out">
+                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Todo)} className="w-7 h-7 rounded-full border-2 border-text-secondary hover:bg-surface flex items-center justify-center"></button>
+                    <button onClick={(e) => handleSetStatus(e, TaskStatus.InProgress)} className="w-7 h-7 rounded-full bg-yellow-400 text-black hover:bg-yellow-500 flex items-center justify-center"><ArrowRightIcon className="w-4 h-4"/></button>
+                    <button className="w-7 h-7 rounded-full bg-glow-magenta text-white hover:opacity-80 flex items-center justify-center"><PrinterIcon className="w-4 h-4"/></button>
+                    <button className="w-7 h-7 rounded-full bg-glow-lime text-black hover:opacity-80 flex items-center justify-center"><ThumbsUpIcon className="w-4 h-4"/></button>
+                    <button onClick={(e) => handleSetStatus(e, TaskStatus.Done)} className="w-7 h-7 rounded-full bg-glow-lime text-black hover:opacity-80 flex items-center justify-center"><CheckIcon className="w-4 h-4"/></button>
                 </div>
             )}
         </div>
@@ -205,7 +205,7 @@ const EditableTitle: React.FC<{ id: string, title: string, onRename: (newName: s
                 onChange={(e) => setCurrentTitle(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                className="bg-c-highlight text-c-text border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-1 py-0 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-1 py-0 w-full"
                 autoFocus
                 onClick={e => e.stopPropagation()}
             />
@@ -253,18 +253,18 @@ const SubtaskItem: React.FC<{
     return (
         <div 
             onClick={handleDirectClick}
-            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
+            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-surface' : 'hover:bg-overlay'}`}
         >
             <TaskStatusControl status={subtask.status} onSetStatus={(newStatus) => onSetTaskStatus(subtask.id, newStatus)} />
              <EditableTitle id={subtask.id} title={subtask.title} onRename={(newName) => onRenameItem(subtask.id, newName, 'subtask')} onNameClick={handleNameClick}>
-                {() => <span className="flex-1 truncate text-c-text">{subtask.title}</span>}
+                {() => <span className="flex-1 truncate text-text-primary">{subtask.title}</span>}
             </EditableTitle>
-            <div className="flex items-center space-x-4 text-c-subtle">
+            <div className="flex items-center space-x-4 text-text-secondary">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-magenta hover:text-white'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -343,19 +343,19 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     setContextMenu({ x: e.clientX, y: e.clientY - 60 });
                     setIsContextMenuOpen(true);
                 }}
-                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-c-highlight' : 'hover:bg-c-surface'}`}
+                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-surface' : 'hover:bg-overlay'}`}
             >
                 <TaskStatusControl status={task.status} onSetStatus={(newStatus) => onSetTaskStatus(task.id, newStatus)} />
                 <EditableTitle id={task.id} title={task.title} onRename={(newName) => onRenameItem(task.id, newName, 'task')} onNameClick={handleNameClick}>
                     {() => <span className="flex-1 truncate">{task.title}</span>}
                 </EditableTitle>
-                <div className="flex items-center space-x-4 text-c-subtle">
+                <div className="flex items-center space-x-4 text-text-secondary">
                     {task.subtasks.length > 0 && <span className="text-xs">{task.subtasks.length}</span>}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-c-magenta text-white' : 'hover:bg-c-magenta hover:text-white'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-colors ${isActive ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'hover:bg-overlay'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
@@ -435,8 +435,8 @@ const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: 
     
     if (!isAdding) {
         return (
-            <button onClick={() => setIsAdding(true)} className="flex items-center space-x-4 p-2 text-c-muted cursor-pointer hover:text-c-text w-full">
-                <div className="w-6 h-6 rounded-full border-2 border-dashed border-c-muted flex items-center justify-center"><PlusIcon className="w-4 h-4"/></div>
+            <button onClick={() => setIsAdding(true)} className="flex items-center space-x-4 p-2 text-text-secondary cursor-pointer hover:text-text-primary w-full">
+                <div className="w-6 h-6 rounded-full border-2 border-dashed border-text-secondary flex items-center justify-center"><PlusIcon className="w-4 h-4"/></div>
                 <span className="flex-1 text-left">Neue Aufgabe</span>
             </button>
         );
@@ -450,7 +450,7 @@ const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: 
                 onChange={e => setTitle(e.target.value)}
                 onBlur={handleSubmit}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                className="bg-c-highlight text-c-text border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-2 py-1 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-2 py-1 w-full"
                 placeholder="Aufgabentitel eingeben..."
                 autoFocus
             />
@@ -483,14 +483,14 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
     const completedTasks = taskList.tasks.filter(t => t.status === TaskStatus.Done).length;
     
     return (
-        <div className="bg-c-surface rounded-xl p-4">
+        <div className="bg-surface rounded-xl p-4">
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                      <EditableTitle id={taskList.id} title={taskList.title} onRename={(newName) => onRenameItem(taskList.id, newName, 'list')}>
-                        {() => <h2 className="font-bold text-white truncate">{taskList.title}</h2>}
+                        {() => <h2 className="font-bold text-text-primary truncate">{taskList.title}</h2>}
                     </EditableTitle>
                 </div>
-                <div className="flex items-center space-x-4 text-c-subtle text-xs">
+                <div className="flex items-center space-x-4 text-text-secondary text-xs">
                     <div className="flex items-center space-x-1">
                         <ClockIcon className="w-4 h-4" />
                         <span>{totalTrackedHours}h{totalBudgetHours > 0 ? ` / ${totalBudgetHours}h` : ''}</span>
@@ -499,12 +499,12 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
                         <CheckIcon className="w-4 h-4" />
                         <span>{completedTasks}/{taskList.tasks.length}</span>
                     </div>
-                    <button className="text-c-subtle hover:text-c-text"><MoreHorizontalIcon className="w-5 h-5" /></button>
+                    <button className="text-text-secondary hover:text-text-primary"><MoreHorizontalIcon className="w-5 h-5" /></button>
                 </div>
             </div>
             <div className="space-y-1">
                  <AddNewTask listId={taskList.id} onAddTask={props.onAddTask} />
-                 {taskList.tasks.length > 0 && <div className="border-t border-c-highlight my-2"></div>}
+                 {taskList.tasks.length > 0 && <div className="border-t border-overlay my-2"></div>}
                 {taskList.tasks.map(task => {
                     // Summiere alle TimeEntries für diese Aufgabe
                     const timeEntriesSum = props.project.timeEntries
@@ -543,7 +543,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
     
     if (!isAdding) {
         return (
-            <button onClick={() => setIsAdding(true)} className="w-full bg-c-highlight/50 hover:bg-c-highlight p-3 rounded-lg text-c-subtle flex items-center justify-center space-x-2">
+            <button onClick={() => setIsAdding(true)} className="w-full bg-overlay/50 hover:bg-overlay p-3 rounded-lg text-text-secondary flex items-center justify-center space-x-2">
                 <PlusIcon className="w-5 h-5" />
                 <span>Neue Liste hinzufügen</span>
             </button>
@@ -551,7 +551,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
     }
     
     return (
-        <div className="bg-c-surface rounded-xl p-4">
+        <div className="bg-surface rounded-xl p-4">
             <input 
                 type="text"
                 value={title}
@@ -559,7 +559,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
                 onBlur={handleAdd}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
                 placeholder="Listentitel eingeben..."
-                className="bg-c-highlight text-c-text border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-2 py-2 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-2 py-2 w-full"
                 autoFocus
             />
         </div>
@@ -574,13 +574,13 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             <ProjectHeader project={props.project} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
             
             {/* Tab Navigation */}
-            <div className="flex space-x-1 mb-6 bg-c-surface rounded-lg p-1">
+            <div className="flex space-x-1 mb-6 bg-surface rounded-lg p-1">
                 <button
                     onClick={() => setActiveTab('tasks')}
                     className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'tasks'
-                            ? 'bg-c-blue text-white'
-                            : 'text-c-subtle hover:text-c-text'
+                            ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary'
+                            : 'text-text-secondary hover:text-text-primary'
                     }`}
                 >
                     Aufgaben
@@ -595,8 +595,8 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     }}
                     className={`flex-1 px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${
                         activeTab === 'time'
-                            ? 'bg-c-blue text-white'
-                            : 'text-c-subtle hover:text-c-text'
+                            ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary'
+                            : 'text-text-secondary hover:text-text-primary'
                     }`}
                 >
                     Zeit
@@ -627,15 +627,15 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
              }`}>
                 <button
                     onClick={props.onOpenSearchProjects}
-                    className="bg-c-surface p-3 rounded-full shadow-lg hover:bg-c-highlight transition-all"
+                    className="bg-surface p-3 rounded-full shadow-lg hover:bg-overlay transition-all"
                 >
-                    <SearchIcon className="w-6 h-6 text-c-text" />
+                    <SearchIcon className="w-6 h-6 text-text-primary" />
                 </button>
                 <button
                     onClick={props.onOpenCreateProject}
-                    className="bg-c-blue p-3 rounded-full shadow-lg hover:bg-blue-600 transition-all"
+                    className="bg-gradient-to-r from-glow-cyan to-glow-magenta p-3 rounded-full shadow-lg hover:opacity-80 transition-all"
                 >
-                    <PlusIcon className="w-6 h-6 text-white" />
+                    <PlusIcon className="w-6 h-6 text-text-primary" />
                 </button>
             </div>
         </div>

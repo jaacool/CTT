@@ -20,17 +20,17 @@ interface TaskDetailPanelProps {
 
 const InfoCard: React.FC<{ label: string; value: string; color: string, icon: React.ReactNode }> = ({ label, value, color, icon }) => (
   <div className={`flex-1 p-3 rounded-lg bg-opacity-20 ${color}`}>
-    <div className="flex items-center space-x-2 text-xs text-c-subtle mb-1">
+    <div className="flex items-center space-x-2 text-xs text-text-secondary mb-1">
         {icon}
         <span>{label}</span>
     </div>
-    <span className="text-xl font-bold text-white">{value}</span>
+    <span className="text-xl font-bold text-text-primary">{value}</span>
   </div>
 );
 
 const Section: React.FC<{ title: string, icon: React.ReactNode, children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="pt-4">
-        <h4 className="flex items-center space-x-2 text-sm font-bold text-white mb-2">
+        <h4 className="flex items-center space-x-2 text-sm font-bold text-text-primary mb-2">
             {icon}
             <span>{title}</span>
         </h4>
@@ -104,13 +104,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
   const isTimerActive = activeTimerTaskId === item.id;
 
   return (
-    <aside className={`bg-c-surface flex-shrink-0 border-l border-c-highlight px-6 pb-6 flex flex-col space-y-6 overflow-y-auto overflow-x-hidden h-full
+    <aside className={`bg-surface flex-shrink-0 border-l border-overlay px-6 pb-6 flex flex-col space-y-6 overflow-y-auto overflow-x-hidden h-full
       fixed inset-0 z-50 md:relative md:w-96 md:inset-auto md:z-auto transition-transform duration-300 ease-in-out 
       ${item ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
 
       {/* Sticky Header with Title, Info and Billable Toggle */}
-      <div className="sticky top-0 bg-c-surface z-10 border-b border-c-highlight pb-3 -mx-6 px-6 pt-6">
-        <button onClick={() => onSelectItem?.(null)} className="md:hidden absolute top-3 right-4 p-2 text-c-muted hover:text-white">
+      <div className="sticky top-0 bg-surface z-10 border-b border-overlay pb-3 -mx-6 px-6 pt-6">
+        <button onClick={() => onSelectItem?.(null)} className="md:hidden absolute top-3 right-4 p-2 text-text-secondary hover:text-text-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -124,14 +124,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
                   onChange={e => setTitle(e.target.value)}
                   onBlur={handleTitleBlur}
                   onKeyDown={handleTitleKeyDown}
-                  className="w-full bg-c-highlight text-lg font-bold text-white border-none outline-none focus:ring-1 focus:ring-c-blue rounded px-1 -ml-1"
+                  className="w-full bg-overlay text-lg font-bold text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-1 -ml-1"
                   autoFocus
               />
           ) : (
-              <h3 onDoubleClick={() => setIsEditingTitle(true)} className="text-lg font-bold text-white mb-1">{item.title}</h3>
+              <h3 onDoubleClick={() => setIsEditingTitle(true)} className="text-lg font-bold text-text-primary mb-1">{item.title}</h3>
           )}
           {itemContext && (
-            <p className="text-xs text-c-subtle">
+            <p className="text-xs text-text-secondary">
               In Projekt: <span className="font-semibold">{itemContext.projectName}</span> → Liste: <span className="font-semibold">{itemContext.listTitle}</span>
             </p>
           )}
@@ -175,7 +175,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
             onChange={(e) => setDescription(e.target.value)}
             onBlur={handleDescriptionBlur}
             placeholder="Beschreibung hinzufügen..."
-            className="w-full bg-c-bg border border-c-highlight rounded-md p-2 outline-none focus:ring-2 focus:ring-c-blue text-c-text text-xs h-24 resize-none"
+            className="w-full bg-background border border-overlay rounded-md p-2 outline-none focus:ring-2 focus:ring-glow-cyan text-text-primary text-xs h-24 resize-none"
         />
       </Section>
 
@@ -184,18 +184,18 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
           {item.todos.map(todo => (
             <div key={todo.id} onClick={() => toggleTodo(todo.id)} className="flex items-center space-x-3 group cursor-pointer">
               {todo.completed ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white">
+                <div className="w-5 h-5 rounded-full bg-glow-lime flex items-center justify-center text-black">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
               ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-c-muted"></div>
+                <div className="w-5 h-5 rounded-full border-2 border-text-secondary"></div>
               )}
-              <span className={`flex-1 text-sm ${todo.completed ? 'text-c-muted' : 'text-c-text'}`}>{todo.text}</span>
+              <span className={`flex-1 text-sm ${todo.completed ? 'text-text-secondary' : 'text-text-primary'}`}>{todo.text}</span>
             </div>
           ))}
           {isAddingTodo ? (
             <div className="flex items-center space-x-3">
-              <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+              <div className="w-5 h-5 border-2 border-dashed border-text-secondary rounded-full"></div>
               <input
                 type="text"
                 value={newTodoText}
@@ -213,13 +213,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
                   }
                 }}
                 placeholder="Eintrag hinzufügen..."
-                className="flex-1 bg-transparent text-sm text-c-text placeholder-c-muted outline-none"
+                className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-secondary outline-none"
                 autoFocus
               />
             </div>
           ) : (
-            <div onClick={() => setIsAddingTodo(true)} className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text">
-              <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+            <div onClick={() => setIsAddingTodo(true)} className="flex items-center space-x-3 text-text-secondary cursor-pointer hover:text-text-primary">
+              <div className="w-5 h-5 border-2 border-dashed border-text-secondary rounded-full"></div>
               <span className="text-sm">Eintrag hinzufügen</span>
             </div>
           )}
@@ -230,14 +230,14 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
         <Section title={`Unteraufgaben (${item.subtasks.length})`} icon={<PlannerIcon className="w-5 h-5"/>}>
           <div className="space-y-2.5">
             {item.subtasks.map(subtask => (
-              <div key={subtask.id} onClick={() => onSelectItem?.(subtask)} className="flex items-center space-x-3 text-c-text text-sm cursor-pointer">
-                <div className="w-5 h-5 rounded-full border-2 border-c-muted"></div>
+              <div key={subtask.id} onClick={() => onSelectItem?.(subtask)} className="flex items-center space-x-3 text-text-primary text-sm cursor-pointer">
+                <div className="w-5 h-5 rounded-full border-2 border-text-secondary"></div>
                 <span>{subtask.title}</span>
               </div>
             ))}
             {isAddingSubtask ? (
               <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+                <div className="w-5 h-5 border-2 border-dashed border-text-secondary rounded-full"></div>
                 <input
                   type="text"
                   value={newSubtaskTitle}
@@ -255,13 +255,13 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
                     }
                   }}
                   placeholder="Neue Unteraufgabe..."
-                  className="flex-1 bg-transparent text-sm text-c-text placeholder-c-muted outline-none"
+                  className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-secondary outline-none"
                   autoFocus
                 />
               </div>
             ) : (
-              <div onClick={() => setIsAddingSubtask(true)} className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text">
-                <div className="w-5 h-5 border-2 border-dashed border-c-muted rounded-full"></div>
+              <div onClick={() => setIsAddingSubtask(true)} className="flex items-center space-x-3 text-text-secondary cursor-pointer hover:text-text-primary">
+                <div className="w-5 h-5 border-2 border-dashed border-text-secondary rounded-full"></div>
                 <span className="text-sm">Neue Unteraufgabe</span>
               </div>
             )}
@@ -270,7 +270,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       )}
 
       <Section title="Anhänge" icon={<PaperclipIcon className="w-4 h-4"/>}>
-          <div className="flex items-center space-x-3 text-c-muted cursor-pointer hover:text-c-text text-xs bg-c-highlight p-3 rounded-md border-2 border-dashed border-c-muted">
+          <div className="flex items-center space-x-3 text-text-secondary cursor-pointer hover:text-text-primary text-xs bg-overlay p-3 rounded-md border-2 border-dashed border-text-secondary">
               <span>Datei hinzufügen...</span>
           </div>
       </Section>
@@ -279,15 +279,15 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
           <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="bg-red-500" icon={<ClockIcon className="w-3 h-3"/>}/>
           <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="bg-yellow-500" icon={<ClockIcon className="w-3 h-3"/>}/>
           <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="bg-green-500" icon={<ClockIcon className="w-3 h-3"/>}/>
-          <div className={`flex-1 p-3 rounded-lg bg-opacity-20 bg-blue-500`}>
+          <div className={`flex-1 p-3 rounded-lg bg-opacity-20 bg-glow-cyan`}>
               <div className="flex items-center space-x-2 text-xs text-c-subtle mb-1">
                   <ClockIcon className="w-3 h-3"/>
                   <span>Fortschritt</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-white">{Math.min(100, Math.round(progress))}%</span>
-                <div className="w-1/2 bg-c-highlight rounded-full h-1.5">
-                    <div className="bg-c-blue h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
+                <span className="text-xl font-bold text-text-primary">{Math.min(100, Math.round(progress))}%</span>
+                <div className="w-1/2 bg-overlay rounded-full h-1.5">
+                    <div className="bg-glow-cyan h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
                 </div>
               </div>
           </div>
@@ -299,10 +299,10 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
             <div key={act.id} className="flex items-start space-x-3 text-xs">
               <img src={act.user.avatarUrl} alt={act.user.name} className="w-6 h-6 rounded-full mt-0.5" />
               <div>
-                <p className="text-c-text">
-                  <span className="font-bold text-white">{act.user.name}</span> {act.text}
+                <p className="text-text-primary">
+                  <span className="font-bold text-text-primary">{act.user.name}</span> {act.text}
                 </p>
-                <span className="text-c-subtle">{formatRelativeTime(new Date(act.timestamp))}</span>
+                <span className="text-text-secondary">{formatRelativeTime(new Date(act.timestamp))}</span>
               </div>
             </div>
           ))}

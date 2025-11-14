@@ -52,13 +52,13 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
   const userRole = roles.find(r => r.id === user.role);
 
   return (
-    <div className="grid grid-cols-12 gap-4 items-center py-3 px-4 border-b border-c-highlight/50 text-sm">
+    <div className="grid grid-cols-12 gap-4 items-center py-3 px-4 border-b border-overlay/50 text-sm">
       {/* Teams */}
       <div className="col-span-4 flex items-center space-x-3">
         <img src={user.avatarUrl} alt={user.name} className="w-9 h-9 rounded-full" />
         <div>
-          {user.title && <div className="text-xs text-c-subtle">{user.title}</div>}
-          <div className="font-semibold text-c-text">{user.name}</div>
+          {user.title && <div className="text-xs text-text-secondary">{user.title}</div>}
+          <div className="font-semibold text-text-primary">{user.name}</div>
         </div>
       </div>
 
@@ -80,7 +80,7 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
         
         {/* Role Selection Menu */}
         {showRoleMenu && (
-          <div className="absolute left-0 top-8 bg-c-surface border border-c-highlight rounded-lg shadow-xl z-50 min-w-[160px] p-2">
+          <div className="absolute left-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[160px] p-2">
             {roles.map(role => (
               <button
                 key={role.id}
@@ -88,8 +88,8 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
                   onChangeRole(user.id, role.id);
                   setShowRoleMenu(false);
                 }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-c-highlight rounded-md transition-colors ${
-                  user.role === role.id ? 'bg-c-highlight text-c-blue font-semibold' : 'text-c-text'
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-overlay rounded-md transition-colors ${
+                  user.role === role.id ? 'bg-overlay text-glow-cyan font-semibold' : 'text-text-primary'
                 }`}
               >
                 {role.name}
@@ -100,7 +100,7 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
       </div>
 
       {/* E-Mail */}
-      <div className="col-span-3 text-c-subtle">{user.email}</div>
+      <div className="col-span-3 text-text-secondary">{user.email}</div>
 
       {/* Status */}
       <div className="col-span-1">
@@ -113,29 +113,29 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
       <div className="col-span-1 flex justify-end relative" ref={menuRef}>
         <button 
           onClick={() => setShowMenu(!showMenu)}
-          className="text-c-subtle hover:text-c-text"
+          className="text-text-secondary hover:text-text-primary"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         
         {/* Context Menu */}
         {showMenu && (
-          <div className="absolute right-0 top-8 bg-c-surface border border-c-highlight rounded-lg shadow-xl z-50 min-w-[200px] p-2">
+          <div className="absolute right-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[200px] p-2">
             <button
               onClick={() => {
                 onEdit(user);
                 setShowMenu(false);
               }}
-              className="w-full px-3 py-2 text-left text-c-text hover:bg-c-highlight rounded-md transition-colors flex items-center space-x-2"
+              className="w-full px-3 py-2 text-left text-text-primary hover:bg-overlay rounded-md transition-colors flex items-center space-x-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               <span>Bearbeiten</span>
             </button>
-            <div className="border-t border-c-highlight my-1"></div>
+            <div className="border-t border-overlay my-1"></div>
             {!confirming ? (
               <button
                 onClick={() => setConfirming(true)}
-                className="w-full px-3 py-2 text-left text-red-500 hover:bg-c-highlight rounded-md transition-colors flex items-center space-x-2"
+                className="w-full px-3 py-2 text-left text-red-500 hover:bg-overlay rounded-md transition-colors flex items-center space-x-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
@@ -145,11 +145,11 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
               </button>
             ) : (
               <div className="space-y-2">
-                <div className="px-2 text-sm text-c-text">Sicher löschen?</div>
+                <div className="px-2 text-sm text-text-primary">Sicher löschen?</div>
                 <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => { setConfirming(false); setShowMenu(false); }}
-                    className="px-3 py-1 text-sm bg-c-bg text-c-text rounded-md hover:bg-c-highlight"
+                    className="px-3 py-1 text-sm bg-background text-text-primary rounded-md hover:bg-overlay"
                   >
                     Abbrechen
                   </button>
@@ -180,7 +180,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         <button
           onClick={() => setActiveTab('users')}
           className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            activeTab === 'users' ? 'bg-c-blue text-white' : 'bg-c-bg text-c-text hover:bg-c-highlight'
+            activeTab === 'users' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
           User
@@ -188,7 +188,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         <button
           onClick={() => setActiveTab('roles')}
           className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            activeTab === 'roles' ? 'bg-c-blue text-white' : 'bg-c-bg text-c-text hover:bg-c-highlight'
+            activeTab === 'roles' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
           Rollen
@@ -198,18 +198,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
       {activeTab === 'users' ? (
         <>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-c-text">User</h1>
+        <h1 className="text-2xl font-bold text-text-primary">User</h1>
         <button 
           onClick={() => setShowAddUserModal(true)}
-          className="bg-c-blue text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          className="bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary font-semibold px-4 py-2 rounded-lg hover:opacity-80 transition-colors"
         >
           + User hinzufügen
         </button>
       </div>
 
-      <div className="bg-c-surface rounded-lg border border-c-highlight/50">
+      <div className="bg-surface rounded-lg border border-overlay/50">
         {/* Header */}
-        <div className="grid grid-cols-12 gap-4 py-3 px-4 text-xs font-semibold text-c-subtle border-b border-c-highlight/50">
+        <div className="grid grid-cols-12 gap-4 py-3 px-4 text-xs font-semibold text-text-secondary border-b border-overlay/50">
           <div className="col-span-4">Teams</div>
           <div className="col-span-3">Tags</div>
           <div className="col-span-3">E-Mail</div>

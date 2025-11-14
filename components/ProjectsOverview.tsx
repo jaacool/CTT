@@ -39,13 +39,13 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-white flex items-center space-x-2">
+          <h1 className="text-2xl font-bold text-text-primary flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
             <span>Projekte</span>
           </h1>
-          <button className="px-4 py-2 bg-c-blue text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2">
+          <button className="px-4 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg hover:opacity-80 transition-colors flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -56,11 +56,11 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
 
         <div className="flex items-center space-x-4">
           {/* View Toggle */}
-          <div className="flex bg-c-surface rounded-lg p-1">
+          <div className="flex bg-surface rounded-lg p-1">
             <button
               onClick={() => setView('list')}
               className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                view === 'list' ? 'bg-c-blue text-white' : 'text-c-subtle hover:text-c-text'
+                view === 'list' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Liste
@@ -68,7 +68,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
             <button
               onClick={() => setView('timeline')}
               className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-                view === 'timeline' ? 'bg-c-blue text-white' : 'text-c-subtle hover:text-c-text'
+                view === 'timeline' ? 'bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Timeline
@@ -77,7 +77,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
 
           {/* Filter Buttons */}
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-2 bg-c-blue text-white rounded-lg text-sm flex items-center space-x-2">
+            <button className="px-3 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg text-sm flex items-center space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6"></line>
                 <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -93,7 +93,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
             
-            <button className="px-3 py-2 bg-c-blue text-white rounded-lg text-sm flex items-center space-x-2">
+            <button className="px-3 py-2 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary rounded-lg text-sm flex items-center space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
@@ -104,14 +104,14 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-c-surface rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+            <button className="p-2 hover:bg-surface rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-c-surface rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+            <button className="p-2 hover:bg-surface rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <rect x="3" y="3" width="7" height="7"></rect>
                 <rect x="14" y="3" width="7" height="7"></rect>
                 <rect x="14" y="14" width="7" height="7"></rect>
@@ -119,8 +119,8 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
               </svg>
             </button>
 
-            <button className="p-2 hover:bg-c-surface rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-c-subtle">
+            <button className="p-2 hover:bg-surface rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -131,8 +131,8 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       </div>
 
       {/* Table Header */}
-      <div className="bg-c-surface rounded-t-xl">
-        <div className="grid grid-cols-12 gap-4 px-6 py-3 text-c-subtle text-xs font-semibold border-b border-c-highlight">
+      <div className="bg-surface rounded-t-xl">
+        <div className="grid grid-cols-12 gap-4 px-6 py-3 text-text-secondary text-xs font-semibold border-b border-overlay">
           <div className="col-span-3">Projekt</div>
           <div className="col-span-2">Typ</div>
           <div className="col-span-2">Tags</div>
@@ -144,17 +144,17 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       </div>
 
       {/* Projects List */}
-      <div className="bg-c-surface rounded-b-xl">
-        {Object.entries(groupedProjects).map(([status, projectsInGroup]) => (
+      <div className="bg-surface rounded-b-xl">
+        {Object.entries(groupedProjects).map(([status, projectsInGroup]: [string, Project[]]) => (
           <div key={status} className="mb-4">
             {/* Status Header */}
             <div className="flex items-center space-x-2 px-6 py-2">
               <div className={`w-2 h-2 rounded-full ${
-                status === 'AKTIV' ? 'bg-c-blue' : 
-                status === 'GEPLANT' ? 'bg-c-yellow' : 
-                'bg-c-subtle'
+                status === 'AKTIV' ? 'bg-glow-cyan' : 
+                status === 'GEPLANT' ? 'bg-yellow-400' : 
+                'bg-text-secondary'
               }`}></div>
-              <span className="text-c-subtle text-sm font-semibold">{status}</span>
+              <span className="text-text-secondary text-sm font-semibold">{status}</span>
             </div>
 
             {/* Projects */}
@@ -165,55 +165,55 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                 <div
                   key={project.id}
                   onClick={() => onSelectProject(project.id)}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-c-highlight transition-colors cursor-pointer border-b border-c-highlight/50"
+                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-overlay transition-colors cursor-pointer border-b border-overlay/50"
                 >
                   {/* Projekt Name */}
                   <div className="col-span-3 flex items-center space-x-3">
                     <span className="text-2xl">{project.icon}</span>
                     <div className="min-w-0">
-                      <div className="text-white font-semibold truncate">{project.name}</div>
-                      <div className="text-c-subtle text-xs truncate">{project.client || '-'}</div>
+                      <div className="text-text-primary font-semibold truncate">{project.name}</div>
+                      <div className="text-text-secondary text-xs truncate">{project.client || '-'}</div>
                     </div>
                   </div>
 
                   {/* Typ */}
                   <div className="col-span-2 flex items-center">
-                    <span className="text-c-subtle text-sm">PROJEKTARB...</span>
+                    <span className="text-text-secondary text-sm">PROJEKTARB...</span>
                   </div>
 
                   {/* Tags */}
                   <div className="col-span-2 flex items-center">
-                    <span className="px-2 py-1 bg-c-highlight text-c-subtle text-xs rounded">None</span>
+                    <span className="px-2 py-1 bg-overlay text-text-secondary text-xs rounded">None</span>
                   </div>
 
                   {/* Fällig */}
                   <div className="col-span-1 flex items-center">
-                    <span className="text-c-subtle text-sm">-</span>
+                    <span className="text-text-secondary text-sm">-</span>
                   </div>
 
                   {/* Aufgaben */}
                   <div className="col-span-2 flex items-center">
-                    <span className="text-white text-sm">{stats.taskText}</span>
+                    <span className="text-text-primary text-sm">{stats.taskText}</span>
                   </div>
 
                   {/* Fortschritt */}
                   <div className="col-span-1 flex items-center space-x-2">
                     {stats.progress > 0 && (
                       <>
-                        <div className="flex-1 bg-c-highlight rounded-full h-2">
+                        <div className="flex-1 bg-overlay rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
                               stats.progress === 100 ? 'bg-red-500' :
-                              stats.progress > 50 ? 'bg-c-blue' :
-                              'bg-c-blue'
+                              stats.progress > 50 ? 'bg-glow-cyan' :
+                              'bg-glow-cyan'
                             }`}
                             style={{ width: `${stats.progress}%` }}
                           ></div>
                         </div>
-                        <span className="text-c-subtle text-xs">{stats.progress}%</span>
+                        <span className="text-text-secondary text-xs">{stats.progress}%</span>
                       </>
                     )}
-                    {stats.progress === 0 && <span className="text-c-subtle text-sm">-</span>}
+                    {stats.progress === 0 && <span className="text-text-secondary text-sm">-</span>}
                   </div>
 
                   {/* Verantwortlich */}
@@ -223,7 +223,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                       alt={project.owner?.name || 'User'}
                       className="w-6 h-6 rounded-full"
                     />
-                    <button className="text-c-subtle hover:text-white">
+                    <button className="text-text-secondary hover:text-text-primary">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="1"></circle>
                         <circle cx="12" cy="5" r="1"></circle>

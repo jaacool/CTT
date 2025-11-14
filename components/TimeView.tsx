@@ -78,19 +78,19 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-white">Zeiterfassung</h2>
-        <div className="text-c-subtle text-sm">
-          Gesamt: <span className="text-white font-bold">{formatTime(totalDuration)}</span>
+        <h2 className="text-xl font-bold text-text-primary">Zeiterfassung</h2>
+        <div className="text-text-secondary text-sm">
+          Gesamt: <span className="text-text-primary font-bold">{formatTime(totalDuration)}</span>
         </div>
       </div>
 
       {Object.entries(entriesByDate).reverse().map(([date, entries]: [string, TimeEntry[]]) => (
         <div key={date} className="space-y-2">
-          <div className="text-xs text-c-subtle font-bold uppercase px-2">{date}</div>
+          <div className="text-xs text-text-secondary font-bold uppercase px-2">{date}</div>
           {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
             <div
               key={entry.id}
-              className="bg-c-surface rounded-lg p-3 sm:p-4 hover:bg-c-highlight transition-colors"
+              className="bg-surface rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
             >
               {editingEntryId === entry.id ? (
                 <div className="space-y-3">
@@ -101,28 +101,28 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                       className="w-8 h-8 rounded-full"
                     />
                     <div className="flex-1">
-                      <div className="text-white font-semibold">{entry.taskTitle}</div>
-                      <div className="text-xs text-c-subtle">{entry.projectName}</div>
+                      <div className="text-text-primary font-semibold">{entry.taskTitle}</div>
+                      <div className="text-xs text-text-secondary">{entry.projectName}</div>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-c-subtle block mb-1">Start</label>
+                      <label className="text-xs text-text-secondary block mb-1">Start</label>
                       <input
                         type="datetime-local"
                         value={new Date(editStartTime).toISOString().slice(0, 16)}
                         onChange={(e) => setEditStartTime(new Date(e.target.value).toISOString())}
-                        className="w-full bg-c-bg border border-c-highlight rounded px-2 py-1 text-xs text-c-text outline-none focus:ring-1 focus:ring-c-blue"
+                        className="w-full bg-background border border-overlay rounded px-2 py-1 text-xs text-text-primary outline-none focus:ring-1 focus:ring-glow-cyan"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-c-subtle block mb-1">Ende</label>
+                      <label className="text-xs text-text-secondary block mb-1">Ende</label>
                       <input
                         type="datetime-local"
                         value={new Date(editEndTime).toISOString().slice(0, 16)}
                         onChange={(e) => setEditEndTime(new Date(e.target.value).toISOString())}
-                        className="w-full bg-c-bg border border-c-highlight rounded px-2 py-1 text-xs text-c-text outline-none focus:ring-1 focus:ring-c-blue"
+                        className="w-full bg-background border border-overlay rounded px-2 py-1 text-xs text-text-primary outline-none focus:ring-1 focus:ring-glow-cyan"
                       />
                     </div>
                   </div>
@@ -130,13 +130,13 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleSave(entry.id)}
-                      className="px-3 py-1 bg-c-blue text-white text-xs rounded hover:bg-blue-600"
+                      className="px-3 py-1 bg-gradient-to-r from-glow-cyan to-glow-magenta text-text-primary text-xs rounded hover:opacity-80"
                     >
                       Speichern
                     </button>
                     <button
                       onClick={() => setEditingEntryId(null)}
-                      className="px-3 py-1 bg-c-highlight text-c-text text-xs rounded hover:bg-c-overlay"
+                      className="px-3 py-1 bg-overlay text-text-primary text-xs rounded hover:bg-surface"
                     >
                       Abbrechen
                     </button>
@@ -156,15 +156,15 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                         className="w-7 h-7 rounded-full flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-c-subtle truncate leading-tight">{entry.projectName}</div>
-                        <div className="text-white font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
+                        <div className="text-xs text-text-secondary truncate leading-tight">{entry.projectName}</div>
+                        <div className="text-text-primary font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
                       </div>
                     </div>
                     
                     <div className="flex flex-col items-end space-y-1 flex-shrink-0">
                       <div className="flex items-center space-x-1.5">
                         <div className={`px-1.5 py-0.5 rounded font-bold text-xs ${
-                          entry.endTime ? 'bg-c-magenta/20 text-c-magenta' : 'bg-c-blue/20 text-c-blue'
+                          entry.endTime ? 'bg-glow-magenta/20 text-glow-magenta' : 'bg-glow-cyan/20 text-glow-cyan'
                         }`}>
                           {formatDuration(entry.duration)}
                         </div>
@@ -200,7 +200,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                         })()}
                       </div>
                       
-                      <div className="flex items-center space-x-1 text-c-subtle text-xs">
+                      <div className="flex items-center space-x-1 text-text-secondary text-xs">
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                           <circle cx="12" cy="12" r="10"></circle>
                           <polyline points="12 6 12 12 16 14"></polyline>
@@ -219,8 +219,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     />
                     
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-c-subtle truncate leading-tight mb-0.5">{entry.projectName}</div>
-                      <div className="text-white font-semibold truncate leading-tight">{entry.taskTitle}</div>
+                      <div className="text-xs text-text-secondary truncate leading-tight mb-0.5">{entry.projectName}</div>
+                      <div className="text-text-primary font-semibold truncate leading-tight">{entry.taskTitle}</div>
                     </div>
                     
                     {(() => {
@@ -254,7 +254,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                       );
                     })()}
                     
-                    <div className="flex items-center space-x-2 text-xs text-c-subtle">
+                    <div className="flex items-center space-x-2 text-xs text-text-secondary">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
@@ -263,12 +263,12 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                     </div>
                     
                     <div className={`px-3 py-1 rounded font-bold text-sm ${
-                      entry.endTime ? 'bg-c-magenta/20 text-c-magenta' : 'bg-c-blue/20 text-c-blue'
+                      entry.endTime ? 'bg-glow-magenta/20 text-glow-magenta' : 'bg-glow-cyan/20 text-glow-cyan'
                     }`}>
                       {formatDuration(entry.duration)}
                     </div>
                     
-                    <button className="text-c-subtle hover:text-c-text">
+                    <button className="text-text-secondary hover:text-text-primary">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="1"></circle>
                         <circle cx="12" cy="5" r="1"></circle>
@@ -284,7 +284,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
       ))}
       
       {timeEntries.length === 0 && (
-        <div className="text-center py-12 text-c-subtle">
+        <div className="text-center py-12 text-text-secondary">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-50">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
