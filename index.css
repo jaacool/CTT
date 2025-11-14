@@ -782,38 +782,30 @@ textarea:focus {
   border-color: rgba(168, 85, 247, 0.5);
 }
 
-/* Disable all glow effects when glow-disabled class is present */
+/* Restore old appearance when glow-disabled class is present */
 .glow-disabled .glow-text {
   background: none;
   -webkit-text-fill-color: var(--color-text-primary);
+  color: var(--color-text-primary);
   filter: none;
   animation: none;
 }
 
+/* Active buttons/tabs - old style with simple background */
 .glow-disabled .glow-button,
-.glow-disabled .glow-button-highlight,
-.glow-disabled .glow-button-highlight-yellow,
-.glow-disabled .glow-button-highlight-green,
-.glow-disabled .glow-button-highlight-pink,
-.glow-disabled .glow-button-highlight-red,
-.glow-disabled .glow-button-highlight-cyan,
-.glow-disabled .glow-button-highlight-yellow-v4,
-.glow-disabled .glow-button-highlight-green-v4,
-.glow-disabled .glow-button-highlight-pink-v4,
-.glow-disabled .glow-button-highlight-yellow-v5,
-.glow-disabled .glow-button-highlight-green-v5,
-.glow-disabled .glow-button-highlight-pink-v5,
-.glow-disabled .glow-button-highlight-red-v5,
-.glow-disabled .glow-button-highlight-cyan-v5,
-.glow-disabled .glow-button-highlight-green-v6,
-.glow-disabled .glow-button-highlight-red-v6,
-.glow-disabled .glow-button-highlight-pink-v6,
-.glow-disabled .glow-button-highlight-cyan-v6 {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.glow-disabled .glow-button-highlight {
+  background: var(--color-overlay);
+  border: 1px solid var(--color-border);
   box-shadow: none;
   animation: none;
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.glow-disabled .glow-button:hover,
+.glow-disabled .glow-button-highlight:hover {
+  background: rgba(40, 40, 40, 1);
+  transform: none;
 }
 
 .glow-disabled .glow-button::before,
@@ -821,28 +813,89 @@ textarea:focus {
   display: none;
 }
 
-.glow-disabled .glow-card {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* All highlight variants - return to simple colored backgrounds */
+.glow-disabled .glow-button-highlight-yellow,
+.glow-disabled .glow-button-highlight-yellow-v4,
+.glow-disabled .glow-button-highlight-yellow-v5 {
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.2);
   box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+.glow-disabled .glow-button-highlight-green,
+.glow-disabled .glow-button-highlight-green-v4,
+.glow-disabled .glow-button-highlight-green-v5,
+.glow-disabled .glow-button-highlight-green-v6 {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+.glow-disabled .glow-button-highlight-pink,
+.glow-disabled .glow-button-highlight-pink-v4,
+.glow-disabled .glow-button-highlight-pink-v5,
+.glow-disabled .glow-button-highlight-pink-v6 {
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+.glow-disabled .glow-button-highlight-red,
+.glow-disabled .glow-button-highlight-red-v5,
+.glow-disabled .glow-button-highlight-red-v6 {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+.glow-disabled .glow-button-highlight-cyan,
+.glow-disabled .glow-button-highlight-cyan-v5,
+.glow-disabled .glow-button-highlight-cyan-v6 {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+/* Cards - old simple style */
+.glow-disabled .glow-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .glow-disabled .glow-card::before {
   display: none;
 }
 
+/* Hover effects - old simple hover */
 .glow-disabled .hover-glow:hover {
   background-image: none;
-  background: rgba(30, 30, 30, 0.5);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--color-overlay);
+  border-color: transparent;
   box-shadow: none;
 }
 
+/* Input fields - old style */
 .glow-disabled .glow-input {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   box-shadow: none;
+  backdrop-filter: none;
 }
 
 .glow-disabled .glow-input:focus {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: none;
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
