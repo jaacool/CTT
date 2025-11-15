@@ -370,24 +370,47 @@ const CalendarView: React.FC<{
             }
           };
 
+          // Berechne Border-Style für genehmigte Abwesenheiten
+          const getBorderStyle = () => {
+            if (inDragRange) return { borderColor: 'rgb(236, 72, 153)', backgroundColor: 'rgba(236, 72, 153, 0.2)' };
+            if (isToday) return { borderColor: 'rgba(34, 211, 238, 0.8)', backgroundColor: 'rgba(34, 211, 238, 0.1)' };
+            if (holiday.isHoliday) return { borderColor: 'rgba(74, 222, 128, 0.6)', backgroundColor: 'rgba(34, 197, 94, 0.1)' };
+            
+            // Genehmigte Abwesenheiten
+            if (approvedAbsences.length > 0) {
+              const colors = approvedAbsences.map(a => getAbsenceColor(a.type));
+              if (colors.length === 1) {
+                return { borderColor: colors[0], backgroundColor: `${colors[0]}20` };
+              } else {
+                // Mehrere Abwesenheiten: Gradient Border
+                const gradient = `linear-gradient(to right, ${colors.join(', ')})`;
+                return { 
+                  borderImage: gradient,
+                  borderImageSlice: 1,
+                  backgroundColor: `${colors[0]}15`
+                };
+              }
+            }
+            
+            if (weekend) return { borderColor: 'rgba(156, 163, 175, 0.4)', backgroundColor: 'rgb(15, 23, 42)' };
+            return { borderColor: 'rgb(51, 65, 85)', backgroundColor: 'rgb(30, 41, 59)' };
+          };
+
+          const borderStyle = getBorderStyle();
+          const hasGradientBorder = approvedAbsences.length > 1;
+
           return (
             <div
               key={day}
               onMouseDown={() => handleMouseDown(day)}
               onMouseEnter={() => handleMouseEnter(day)}
               className={`aspect-square p-1 rounded-lg border-2 transition-all cursor-pointer flex flex-col relative ${
-                inDragRange
-                  ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
-                  : isToday
-                  ? 'border-glow-cyan/80 bg-glow-cyan/10'
-                  : holiday.isHoliday
-                  ? 'border-green-400/60 bg-green-500/10'
-                  : weekend
-                  ? 'border-text-secondary/40 bg-background'
-                  : hasAbsence
-                  ? 'border-blue-500/30 bg-blue-500/10'
-                  : 'border-border bg-overlay hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
+                weekend ? '' : 'hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
               }`}
+              style={hasGradientBorder ? borderStyle : { 
+                borderColor: borderStyle.borderColor, 
+                backgroundColor: borderStyle.backgroundColor 
+              }}
               title={holiday.isHoliday ? holiday.name : undefined}
             >
               {/* Pending Request Flags (rechte Kante) */}
@@ -419,9 +442,9 @@ const CalendarView: React.FC<{
                 <div className="text-[7px] text-green-400 text-center leading-tight px-0.5 line-clamp-2">{holiday.name}</div>
               )}
               
-              {/* Approved Absences - Einträge */}
+              {/* Approved Absences - Namen anzeigen */}
               {approvedAbsences.length > 0 && (
-                <div className="flex-1 flex flex-col justify-end gap-0.5 mt-1">
+                <div className="flex-1 flex flex-col justify-center items-center gap-0.5">
                   {approvedAbsences.slice(0, 2).map((absence, idx) => {
                     const isMorning = absence.halfDay === 'morning';
                     const isAfternoon = absence.halfDay === 'afternoon';
@@ -430,18 +453,14 @@ const CalendarView: React.FC<{
                     return (
                       <div
                         key={idx}
-                        className={`rounded px-1 text-[7px] font-semibold text-white leading-tight ${
-                          isFullDay ? 'py-1' : 'py-0.5'
-                        }`}
-                        style={{ backgroundColor: getAbsenceColor(absence.type) }}
+                        className="text-[8px] font-bold text-center leading-tight"
+                        style={{ color: getAbsenceColor(absence.type) }}
                         title={`${absence.user.name} - ${getAbsenceTypeLabel(absence.type)}${absence.halfDay ? ` (${absence.halfDay === 'morning' ? 'Vormittag' : 'Nachmittag'})` : ''}`}
                       >
-                        <div className="text-center truncate">
-                          {absence.user.name.split(' ')[0]}
-                          {!isFullDay && (
-                            <span className="ml-0.5">({isMorning ? 'VM' : 'NM'})</span>
-                          )}
-                        </div>
+                        {absence.user.name.split(' ')[0]}
+                        {!isFullDay && (
+                          <span className="ml-0.5 text-[7px]">({isMorning ? 'VM' : 'NM'})</span>
+                        )}
                       </div>
                     );
                   })}
