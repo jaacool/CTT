@@ -135,3 +135,34 @@ export interface Project {
   client?: string;
   owner?: User;
 }
+
+export enum AbsenceType {
+  Vacation = 'VACATION',
+  Sick = 'SICK',
+  HomeOffice = 'HOME_OFFICE',
+  BusinessTrip = 'BUSINESS_TRIP',
+  Other = 'OTHER'
+}
+
+export enum AbsenceStatus {
+  Pending = 'PENDING',
+  Approved = 'APPROVED',
+  Rejected = 'REJECTED',
+  Cancelled = 'CANCELLED'
+}
+
+export interface AbsenceRequest {
+  id: string;
+  user: User;
+  type: AbsenceType;
+  startDate: string; // ISO 8601 string
+  endDate: string; // ISO 8601 string
+  halfDay?: 'morning' | 'afternoon'; // Optional: Halber Tag
+  reason?: string;
+  status: AbsenceStatus;
+  approvedBy?: User;
+  approvedAt?: string; // ISO timestamp
+  rejectedReason?: string;
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
+}

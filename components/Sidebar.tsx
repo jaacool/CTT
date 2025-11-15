@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Project, User, Role } from '../types';
-import { PlannerIcon, ClockIcon, ChartIcon, ChevronDownIcon, SearchIcon, StarIcon, PlusIcon } from './Icons';
+import { PlannerIcon, ClockIcon, ChartIcon, ChevronDownIcon, SearchIcon, StarIcon, PlusIcon, UmbrellaIcon } from './Icons';
 import { hasPermission } from '../utils/permissions';
 
 interface SidebarProps {
@@ -15,6 +15,7 @@ interface SidebarProps {
   onRenameProject: (projectId: string, newName: string) => void;
   onSelectDashboard: () => void;
   onSelectProjectsOverview: () => void;
+  onSelectVacationAbsence: () => void;
   onSelectSettings: () => void;
 }
 
@@ -80,7 +81,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectSettings }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectVacationAbsence, onSelectSettings }) => {
   const canAccessSettings = hasPermission(currentUser, roles, 'Einstellungen');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -128,6 +129,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                 </svg>
                 <span>Projekte</span>
+            </button>
+            <button 
+                onClick={onSelectVacationAbsence}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
+            >
+                <UmbrellaIcon className="w-5 h-5" />
+                <span>Urlaub & Absent</span>
             </button>
         </nav>
       </div>
