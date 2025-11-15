@@ -23,6 +23,22 @@ export const formatTimeWithUnits = (totalSeconds: number): string => {
     return `${minutes}m`;
 };
 
+export const formatTimeCompact = (totalSeconds: number): string => {
+    if (typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {
+        totalSeconds = 0;
+    }
+    
+    // Wenn nicht getrackt wird (0 Sekunden), zeige 0:00h
+    if (totalSeconds === 0) {
+        return '0:00h';
+    }
+    
+    // Sonst zeige H:MM Format
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}:${String(minutes).padStart(2, '0')}h`;
+};
+
 export const statusToText = (status: TaskStatus): string => {
     switch (status) {
         case TaskStatus.Todo:

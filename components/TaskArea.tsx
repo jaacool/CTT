@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Project, Task, TaskList as ITaskList, TaskStatus, Subtask, User, TimeEntry } from '../types';
 import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, CalendarIcon, PrinterIcon, ThumbsUpIcon, CheckIcon, ChevronDownIcon, PlayIcon, PauseIcon } from './Icons';
-import { formatTime } from './utils';
+import { formatTime, formatTimeCompact } from './utils';
 import { TimeView } from './TimeView';
 import { TaskContextMenu } from './TaskContextMenu';
 import { AssigneeSelector } from './AssigneeSelector';
@@ -262,7 +262,7 @@ const SubtaskItem: React.FC<{
     return (
         <div 
             onClick={handleDirectClick}
-            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'bg-surface' : 'hover-glow'}`}
+            className={`flex items-center space-x-4 p-2 pl-8 rounded-lg cursor-pointer ${isSelected ? 'glow-button' : 'hover-glow'}`}
         >
             <TaskStatusControl status={subtask.status} onSetStatus={(newStatus) => onSetTaskStatus(subtask.id, newStatus)} />
              <EditableTitle id={subtask.id} title={subtask.title} onRename={(newName) => onRenameItem(subtask.id, newName, 'subtask')} onNameClick={handleNameClick}>
@@ -288,7 +288,7 @@ const SubtaskItem: React.FC<{
                             <PlayIcon className="w-4 h-4" />
                         )
                     )}
-                    <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
+                    <span className="hidden md:inline">{formatTimeCompact(elapsedSeconds)}</span>
                 </button>
                 <AssigneeSelector
                     assignees={subtask.assignees}
@@ -363,7 +363,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     setContextMenu({ x: e.clientX, y: e.clientY - 60 });
                     setIsContextMenuOpen(true);
                 }}
-                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'bg-surface' : 'hover-glow'}`}
+                className={`flex items-center space-x-4 p-2 rounded-lg cursor-pointer ${isSelected || isContextMenuOpen ? 'glow-button' : 'hover-glow'}`}
             >
                 <TaskStatusControl status={task.status} onSetStatus={(newStatus) => onSetTaskStatus(task.id, newStatus)} />
                 <EditableTitle id={task.id} title={task.title} onRename={(newName) => onRenameItem(task.id, newName, 'task')} onNameClick={handleNameClick}>
@@ -390,7 +390,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                                 <PlayIcon className="w-4 h-4" />
                             )
                         )}
-                        <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
+                        <span className="hidden md:inline">{formatTimeCompact(elapsedSeconds)}</span>
                     </button>
                     <AssigneeSelector
                         assignees={task.assignees}
@@ -503,7 +503,15 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
     }, 0);
     
     const totalTrackedSeconds = timeEntriesSum + currentTimerSum;
-    const totalTrackedHours = (totalTrackedSeconds / 3600).toFixed(1);
+    
+    // Formatiere Zeit im H:MM Format
+    const formatListTime = (seconds: number): string => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours}:${String(minutes).padStart(2, '0')}`;
+    };
+    
+    const totalTrackedTime = formatListTime(totalTrackedSeconds);
     
     // Berechne Budget (Summe aller Task-Budgets)
     const totalBudgetHours = taskList.tasks.reduce((acc, task) => acc + (task.timeBudgetHours || 0), 0);
@@ -520,7 +528,7 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
                 <div className="flex items-center space-x-4 text-text-secondary text-xs">
                     <div className="flex items-center space-x-1">
                         <ClockIcon className="w-4 h-4" />
-                        <span>{totalTrackedHours}h{totalBudgetHours > 0 ? ` / ${totalBudgetHours}h` : ''}</span>
+                        <span>{totalTrackedTime}h{totalBudgetHours > 0 ? ` / ${totalBudgetHours}h` : ''}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                         <CheckIcon className="w-4 h-4" />
