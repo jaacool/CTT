@@ -49,11 +49,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   });
 
-  // Hole heute's TimeEntries - sortiert nach Startzeit (neueste zuerst)
+  // Hole heute's TimeEntries - nur eigene Einträge, sortiert nach Startzeit (neueste zuerst)
   const today = new Date().toLocaleDateString('de-DE');
   const todayEntries = projects.flatMap(p => 
     p.timeEntries.filter(entry => 
-      new Date(entry.startTime).toLocaleDateString('de-DE') === today
+      new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
+      entry.user.id === user.id
     )
   ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 

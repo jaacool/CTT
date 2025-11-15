@@ -621,7 +621,9 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             ) : (
                 <TimeView 
                     project={props.project}
-                    timeEntries={props.project.timeEntries}
+                    timeEntries={props.project.timeEntries.filter(entry => 
+                        props.currentUser && entry.user.id === props.currentUser.id
+                    )}
                     onUpdateEntry={props.onUpdateTimeEntry}
                     onBillableChange={props.onBillableChange}
                     onStartTimer={props.onToggleTimer}
