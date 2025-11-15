@@ -63,21 +63,18 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
         </div>
       </div>
 
-      {/* Tags / Role */}
+      {/* Role */}
       <div className="col-span-3 flex items-center space-x-2 relative" ref={roleMenuRef}>
-        {userRole && (
+        {userRole ? (
           <button
             onClick={() => setShowRoleMenu(!showRoleMenu)}
             className={`px-2 py-1 rounded-md text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getTagColor(userRole.name)}`}
           >
             {userRole.name}
           </button>
+        ) : (
+          <span className="text-xs text-text-secondary italic">Keine Rolle</span>
         )}
-        {user.tags?.map(tag => (
-          <span key={tag} className={`px-2 py-1 rounded-md text-xs font-semibold ${getTagColor(tag)}`}>
-            {tag}
-          </span>
-        ))}
         
         {/* Role Selection Menu */}
         {showRoleMenu && (
@@ -221,7 +218,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         {/* Header */}
         <div className="grid grid-cols-12 gap-4 py-3 px-4 text-xs font-semibold text-text-secondary border-b border-overlay/50">
           <div className="col-span-4">Teams</div>
-          <div className="col-span-3">Tags</div>
+          <div className="col-span-3">Rollen</div>
           <div className="col-span-3">E-Mail</div>
           <div className="col-span-1">Status</div>
           <div className="col-span-1"></div>

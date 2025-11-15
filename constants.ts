@@ -27,6 +27,7 @@ export const MOCK_USER_2: User = {
   avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026705d',
   tags: ['editor'],
   status: UserStatus.Active,
+  role: 'role-3', // Editor
   gender: Gender.Male,
   position: 'Smuggler',
   birthday: '1980-05-25',
@@ -77,6 +78,7 @@ export const MOCK_USERS: User[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026709d',
     tags: ['editor'],
     status: UserStatus.Inactive,
+    role: 'role-4', // Nutzer
   },
   {
     id: 'user-6',
@@ -95,6 +97,7 @@ export const MOCK_USERS: User[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026711d',
     tags: ['editor'],
     status: UserStatus.Inactive,
+    role: 'role-3', // Editor
   },
 ];
 
