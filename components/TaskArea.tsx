@@ -231,7 +231,9 @@ const SubtaskItem: React.FC<{
     onToggleTimer: (id: string) => void;
     onSetTaskStatus: (id: string, newStatus: TaskStatus) => void;
     onRenameItem: RenameFn;
-}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem }) => {
+    allUsers?: User[];
+    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
+}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateAssignees }) => {
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
     const [timerHovered, setTimerHovered] = useState(false);
     
@@ -288,7 +290,18 @@ const SubtaskItem: React.FC<{
                     )}
                     <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                 </button>
-                <img src={subtask.assignee.avatarUrl} alt={subtask.assignee.name} className="w-6 h-6 rounded-full" />
+                {allUsers && onUpdateAssignees ? (
+                    <AssigneeSelector
+                        assignees={subtask.assignees}
+                        allUsers={allUsers}
+                        onAssigneesChange={(assignees) => onUpdateAssignees(subtask.id, assignees)}
+                        size="small"
+                    />
+                ) : (
+                    subtask.assignees.length > 0 && (
+                        <img src={subtask.assignees[0].avatarUrl} alt={subtask.assignees[0].name} className="w-6 h-6 rounded-full" />
+                    )
+                )}
             </div>
         </div>
     );
@@ -309,6 +322,8 @@ interface TaskItemProps {
     onPinTask?: (taskId: string) => void;
     pinnedTaskIds?: string[];
     onDeleteTask?: (taskId: string) => void;
+    allUsers?: User[];
+    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = (props) => {
@@ -383,7 +398,18 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         )}
                         <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                     </button>
-                    <img src={task.assignee.avatarUrl} alt={task.assignee.name} className="w-6 h-6 rounded-full" />
+                    {props.allUsers && props.onUpdateAssignees ? (
+                        <AssigneeSelector
+                            assignees={task.assignees}
+                            allUsers={props.allUsers}
+                            onAssigneesChange={(assignees) => props.onUpdateAssignees!(task.id, assignees)}
+                            size="small"
+                        />
+                    ) : (
+                        task.assignees.length > 0 && (
+                            <img src={task.assignees[0].avatarUrl} alt={task.assignees[0].name} className="w-6 h-6 rounded-full" />
+                        )
+                    )}
                 </div>
             </div>
             {task.subtasks.map(subtask => {
@@ -406,6 +432,8 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onToggleTimer={onToggleTimer}
                         onSetTaskStatus={onSetTaskStatus}
                         onRenameItem={onRenameItem}
+                        allUsers={props.allUsers}
+                        onUpdateAssignees={props.onUpdateAssignees}
                     />
                 );
             })}
