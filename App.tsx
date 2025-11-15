@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType } from './types';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES } from './constants';
 import { hasPermission } from './utils/permissions';
 import { Sidebar } from './components/Sidebar';
@@ -8,6 +8,7 @@ import { TaskDetailPanel } from './components/TaskDetailPanel';
 import { TimerMenu } from './components/TimerMenu';
 import { Dashboard } from './components/Dashboard';
 import { ProjectsOverview } from './components/ProjectsOverview';
+import { VacationAbsence } from './components/VacationAbsence';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
 import { LoginScreen } from './components/LoginScreen';
@@ -73,6 +74,8 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showVacationAbsence, setShowVacationAbsence] = useState(false);
+  const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -219,6 +222,7 @@ const App: React.FC = () => {
     setSelectedTask(null);
     setShowDashboard(false);
     setShowProjectsOverview(false);
+    setShowVacationAbsence(false);
     setShowSettings(false);
   }, [projects]);
 
@@ -563,6 +567,57 @@ const App: React.FC = () => {
     setDashboardNote(note);
   }, []);
 
+  // Vacation & Absence Handlers
+  const handleCreateAbsenceRequest = useCallback((request: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+    const newRequest: AbsenceRequest = {
+      ...request,
+      id: `absence-${Date.now()}`,
+      status: AbsenceStatus.Pending,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setAbsenceRequests(prev => [...prev, newRequest]);
+  }, []);
+
+  const handleApproveRequest = useCallback((requestId: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId 
+        ? { 
+            ...req, 
+            status: AbsenceStatus.Approved, 
+            approvedBy: currentUser!,
+            approvedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        : req
+    ));
+  }, [currentUser]);
+
+  const handleRejectRequest = useCallback((requestId: string, reason: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId 
+        ? { 
+            ...req, 
+            status: AbsenceStatus.Rejected, 
+            rejectedReason: reason,
+            updatedAt: new Date().toISOString()
+          }
+        : req
+    ));
+  }, []);
+
+  const handleCancelRequest = useCallback((requestId: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId 
+        ? { 
+            ...req, 
+            status: AbsenceStatus.Cancelled,
+            updatedAt: new Date().toISOString()
+          }
+        : req
+    ));
+  }, []);
+
   const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string) => {
     setTimeEntries(prev => prev.map(entry => {
       if (entry.id === entryId) {
@@ -761,6 +816,7 @@ const App: React.FC = () => {
         onSelectDashboard={() => {
           setShowDashboard(true);
           setShowProjectsOverview(false);
+          setShowVacationAbsence(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -769,6 +825,16 @@ const App: React.FC = () => {
         onSelectProjectsOverview={() => {
           setShowProjectsOverview(true);
           setShowDashboard(false);
+          setShowVacationAbsence(false);
+          setSelectedProject(null);
+          setSelectedTask(null);
+          setShowSettings(false);
+          setIsSidebarOpen(false); // Close sidebar
+        }}
+        onSelectVacationAbsence={() => {
+          setShowVacationAbsence(true);
+          setShowDashboard(false);
+          setShowProjectsOverview(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -778,6 +844,7 @@ const App: React.FC = () => {
           setShowSettings(true);
           setShowDashboard(false);
           setShowProjectsOverview(false);
+          setShowVacationAbsence(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setIsSidebarOpen(false); // Close sidebar
@@ -807,6 +874,17 @@ const App: React.FC = () => {
           <ProjectsOverview
             projects={projects}
             onSelectProject={handleSelectProject}
+          />
+        ) : showVacationAbsence ? (
+          <VacationAbsence
+            absenceRequests={absenceRequests}
+            currentUser={currentUser}
+            allUsers={users}
+            onCreateRequest={handleCreateAbsenceRequest}
+            onApproveRequest={handleApproveRequest}
+            onRejectRequest={handleRejectRequest}
+            onCancelRequest={handleCancelRequest}
+            isAdmin={currentUser?.role === 'role-1'}
           />
         ) : selectedProject ? (
           <TaskArea 
