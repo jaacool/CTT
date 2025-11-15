@@ -327,7 +327,7 @@ const App: React.FC = () => {
       setActiveTimeEntryId(newEntryId);
       setTaskTimers(prev => ({ ...prev, [taskId]: 0 }));
     }
-  }, [activeTimerTaskId, activeTimeEntryId, projects]);
+  }, [activeTimerTaskId, activeTimeEntryId, projects, currentUser]);
 
   const handleSetTaskStatus = useCallback((itemId: string, newStatus: TaskStatus) => {
     updateProjects(prevProjects => {
@@ -763,7 +763,11 @@ const App: React.FC = () => {
       />
       
         <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300">
-        {showDashboard ? (
+        {!currentUser ? (
+          <div className="flex items-center justify-center h-full text-text-secondary">
+            <p>Laden...</p>
+          </div>
+        ) : showDashboard ? (
           <Dashboard
             user={currentUser}
             projects={projects}

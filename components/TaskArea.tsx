@@ -385,8 +385,8 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
             </div>
             {task.subtasks.map(subtask => {
                 // Summiere alle TimeEntries für diese Unteraufgabe
-                const timeEntriesSum = project.timeEntries
-                    .filter(entry => entry.taskId === subtask.id)
+                const timeEntriesSum = props.timeEntries
+                    .filter(entry => entry.projectId === project.id && entry.taskId === subtask.id)
                     .reduce((sum, entry) => sum + entry.duration, 0);
                 // Addiere aktuellen Timer falls aktiv
                 const currentTimer = activeTimerTaskId === subtask.id ? (taskTimers[subtask.id] || 0) : 0;
@@ -417,12 +417,12 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     setIsContextMenuOpen(false);
                 }}
                 onPinToDashboard={() => onPinTask(task.id)}
-                onDeleteTask={onDeleteTask ? (moveToTaskId) => onDeleteTask(task.id) : undefined}
+                onDeleteTask={onDeleteTask ? () => onDeleteTask(task.id) : undefined}
                 isPinned={pinnedTaskIds?.includes(task.id) || false}
                 task={task}
                 projects={[project]}
-                timeEntriesCount={project.timeEntries.filter(te => te.taskId === task.id).length}
-                totalHours={project.timeEntries.filter(te => te.taskId === task.id).reduce((sum, te) => sum + te.duration, 0) / 3600}
+                timeEntriesCount={props.timeEntries.filter(te => te.projectId === project.id && te.taskId === task.id).length}
+                totalHours={props.timeEntries.filter(te => te.projectId === project.id && te.taskId === task.id).reduce((sum, te) => sum + te.duration, 0) / 3600}
             />
         )}
     </>
@@ -471,8 +471,8 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
     
     // Berechne summierte Zeit aus TimeEntries für alle Aufgaben in dieser Liste
     const taskIds = taskList.tasks.flatMap(task => [task.id, ...task.subtasks.map(st => st.id)]);
-    const timeEntriesSum = project.timeEntries
-        .filter(entry => taskIds.includes(entry.taskId))
+    const timeEntriesSum = props.timeEntries
+        .filter(entry => entry.projectId === project.id && taskIds.includes(entry.taskId))
         .reduce((sum, entry) => sum + entry.duration, 0);
     
     // Addiere aktuelle Timer
@@ -515,8 +515,8 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
                  {taskList.tasks.length > 0 && <div className="border-t border-overlay my-2"></div>}
                 {taskList.tasks.map(task => {
                     // Summiere alle TimeEntries für diese Aufgabe
-                    const timeEntriesSum = props.project.timeEntries
-                        .filter(entry => entry.taskId === task.id)
+                    const timeEntriesSum = props.timeEntries
+                        .filter(entry => entry.projectId === props.project.id && entry.taskId === task.id)
                         .reduce((sum, entry) => sum + entry.duration, 0);
                     // Addiere aktuellen Timer falls aktiv
                     const currentTimer = props.activeTimerTaskId === task.id ? (props.taskTimers[task.id] || 0) : 0;
@@ -622,10 +622,12 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             ) : (
                 <TimeView 
                     project={props.project}
-                    timeEntries={props.timeEntries.filter(entry => 
-                        entry.projectId === props.project.id &&
-                        props.currentUser && entry.user.id === props.currentUser.id
-                    )}
+                    timeEntries={props.timeEntries.filter(entry => {
+                        // Admin hat role-ID 'role-1'
+                        const isAdmin = props.currentUser?.role === 'role-1';
+                        return entry.projectId === props.project.id &&
+                            (isAdmin || (props.currentUser && entry.user.id === props.currentUser.id));
+                    })}
                     onUpdateEntry={props.onUpdateTimeEntry}
                     onBillableChange={props.onBillableChange}
                     onStartTimer={props.onToggleTimer}

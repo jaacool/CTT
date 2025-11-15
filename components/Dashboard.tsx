@@ -51,7 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   });
 
-  // Hole heute's TimeEntries - nur eigene Einträge, sortiert nach Startzeit (neueste zuerst)
+  // Hole heute's TimeEntries - jeder User sieht nur seine eigenen
   const today = new Date().toLocaleDateString('de-DE');
   const todayEntries = timeEntries.filter(entry => 
     new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
