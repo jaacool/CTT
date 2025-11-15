@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType } from './types';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES } from './constants';
 import { hasPermission } from './utils/permissions';
@@ -9,6 +9,7 @@ import { TimerMenu } from './components/TimerMenu';
 import { Dashboard } from './components/Dashboard';
 import { ProjectsOverview } from './components/ProjectsOverview';
 import { VacationAbsence } from './components/VacationAbsence';
+import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
 import { LoginScreen } from './components/LoginScreen';
@@ -76,6 +77,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -618,6 +620,13 @@ const App: React.FC = () => {
     ));
   }, []);
 
+  // Berechne ausstehende Anträge für Admins
+  const pendingAbsenceRequests = useMemo(() => {
+    return absenceRequests.filter(req => req.status === AbsenceStatus.Pending);
+  }, [absenceRequests]);
+
+  const isAdmin = currentUser?.role === 'role-1';
+
   const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string) => {
     setTimeEntries(prev => prev.map(entry => {
       if (entry.id === entryId) {
@@ -793,7 +802,9 @@ const App: React.FC = () => {
         onRedo={redo}
         onChangeRole={handleChangeCurrentUserRole}
         onChangeUser={handleChangeUser}
-        onToggleSidebar={toggleSidebar}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        pendingAbsenceRequests={isAdmin ? pendingAbsenceRequests : []}
+        onOpenNotifications={isAdmin ? () => setShowNotifications(true) : undefined}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -1080,6 +1091,16 @@ const App: React.FC = () => {
           projects={projects}
           onClose={() => setShowSearchModal(false)}
           onSelectProject={handleSelectProject}
+        />
+      )}
+
+      {showNotifications && isAdmin && (
+        <NotificationsModal
+          onClose={() => setShowNotifications(false)}
+          pendingRequests={pendingAbsenceRequests}
+          onApproveRequest={handleApproveRequest}
+          onRejectRequest={handleRejectRequest}
+          currentUser={currentUser!}
         />
       )}
       </div>

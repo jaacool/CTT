@@ -47,15 +47,15 @@ const getAbsenceTypeLabel = (type: AbsenceType) => {
 const getAbsenceTypeColor = (type: AbsenceType) => {
   switch (type) {
     case AbsenceType.Vacation:
-      return 'bg-blue-500/20 text-blue-500 border-blue-500/30';
+      return 'bg-orange-500/20 text-orange-500 border-orange-500/30';
     case AbsenceType.Sick:
       return 'bg-red-500/20 text-red-500 border-red-500/30';
     case AbsenceType.HomeOffice:
-      return 'bg-purple-500/20 text-purple-500 border-purple-500/30';
+      return 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30';
     case AbsenceType.BusinessTrip:
-      return 'bg-green-500/20 text-green-500 border-green-500/30';
+      return 'bg-blue-500/20 text-blue-500 border-blue-500/30';
     case AbsenceType.Other:
-      return 'bg-gray-500/20 text-gray-500 border-gray-500/30';
+      return 'bg-purple-500/20 text-purple-500 border-purple-500/30';
   }
 };
 
@@ -348,38 +348,48 @@ const CalendarView: React.FC<{
               key={day}
               onMouseDown={() => handleMouseDown(day)}
               onMouseEnter={() => handleMouseEnter(day)}
-              className={`aspect-square p-1 rounded-lg border transition-all cursor-pointer ${
+              className={`aspect-square p-1 rounded-lg border-2 transition-all cursor-pointer flex flex-col ${
                 inDragRange
                   ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
                   : isToday
-                  ? 'border-glow-cyan bg-glow-cyan/10'
+                  ? 'border-glow-cyan/80 bg-glow-cyan/10'
                   : holiday.isHoliday
-                  ? 'border-green-500/50 bg-green-500/15'
+                  ? 'border-green-400/60 bg-green-500/10'
                   : weekend
-                  ? 'border-purple-500/30 bg-purple-500/5'
+                  ? 'border-text-secondary/40 bg-background'
                   : hasAbsence
                   ? 'border-blue-500/30 bg-blue-500/10'
                   : 'border-border bg-overlay hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
               }`}
               title={holiday.isHoliday ? holiday.name : undefined}
             >
-              <div className={`text-xs font-semibold text-center ${
+              <div className={`text-xs font-bold text-center mb-0.5 ${
                 holiday.isHoliday 
                   ? 'text-green-400' 
+                  : isToday
+                  ? 'text-glow-cyan'
                   : weekend 
-                  ? 'text-purple-400' 
+                  ? 'text-text-secondary' 
                   : 'text-text-primary'
               }`}>{day}</div>
+              {isToday && (
+                <div className="text-[8px] text-glow-cyan text-center font-semibold leading-none">Heute</div>
+              )}
+              {holiday.isHoliday && (
+                <div className="text-[7px] text-green-400 text-center leading-tight px-0.5 line-clamp-2">{holiday.name}</div>
+              )}
               {hasAbsence && (
-                <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
+                <div className="flex flex-wrap gap-0.5 mt-auto justify-center">
                   {absences.slice(0, 3).map((absence, idx) => (
                     <div
                       key={idx}
                       className="w-1.5 h-1.5 rounded-full"
                       style={{
-                        backgroundColor: absence.type === AbsenceType.Vacation ? '#3b82f6' :
-                                       absence.type === AbsenceType.Sick ? '#ef4444' :
-                                       absence.type === AbsenceType.HomeOffice ? '#a855f7' : '#10b981'
+                        backgroundColor: absence.type === AbsenceType.Vacation ? '#fb923c' : // Orange
+                                       absence.type === AbsenceType.Sick ? '#ef4444' : // Rot
+                                       absence.type === AbsenceType.HomeOffice ? '#fbbf24' : // Gelb
+                                       absence.type === AbsenceType.BusinessTrip ? '#3b82f6' : // Blau
+                                       '#a855f7' // Lila für Other
                       }}
                       title={`${absence.user.name} - ${getAbsenceTypeLabel(absence.type)}`}
                     />
@@ -485,12 +495,16 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
         </div>
         <div className="flex items-center space-x-4 mt-3 text-xs">
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-green-500/50 bg-green-500/15"></div>
+            <div className="w-3 h-3 rounded border-2 border-green-400/60 bg-green-500/10"></div>
             <span className="text-text-secondary">Feiertag</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-purple-500/30 bg-purple-500/5"></div>
+            <div className="w-3 h-3 rounded border-2 border-text-secondary/40 bg-background"></div>
             <span className="text-text-secondary">Wochenende</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded border-2 border-glow-cyan/80 bg-glow-cyan/10"></div>
+            <span className="text-text-secondary">Heute</span>
           </div>
         </div>
       </div>
