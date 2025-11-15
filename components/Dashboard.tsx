@@ -6,6 +6,7 @@ import { TimerMenu } from './TimerMenu';
 interface DashboardProps {
   user: User;
   projects: Project[];
+  timeEntries: TimeEntry[];
   pinnedTaskIds: string[];
   onUnpinTask: (taskId: string) => void;
   onUpdateNote: (note: string) => void;
@@ -19,6 +20,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   user,
   projects,
+  timeEntries,
   pinnedTaskIds,
   onUnpinTask,
   onUpdateNote,
@@ -51,11 +53,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Hole heute's TimeEntries - nur eigene Einträge, sortiert nach Startzeit (neueste zuerst)
   const today = new Date().toLocaleDateString('de-DE');
-  const todayEntries = projects.flatMap(p => 
-    p.timeEntries.filter(entry => 
-      new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
-      entry.user.id === user.id
-    )
+  const todayEntries = timeEntries.filter(entry => 
+    new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
+    entry.user.id === user.id
   ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   const totalTodaySeconds = todayEntries.reduce((sum, entry) => sum + entry.duration, 0);

@@ -51,6 +51,7 @@ const addActivity = (projects: Project[], itemId: string, user: User, text: stri
 
 const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]); // Globaler Zeiteintrag-Speicher
   const [defaultBillableByProject, setDefaultBillableByProject] = useState<Record<string, boolean>>({});
   const [history, setHistory] = useState<Project[][]>([MOCK_PROJECTS]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -155,13 +156,14 @@ const App: React.FC = () => {
         }));
         
         // Update duration in the active TimeEntry
+        setTimeEntries(prev => prev.map(entry =>
+          entry.id === activeTimeEntryId
+            ? { ...entry, duration: entry.duration + 1 }
+            : entry
+        ));
+        
         setProjects(prevProjects => prevProjects.map(p => ({
           ...p,
-          timeEntries: p.timeEntries.map(entry =>
-            entry.id === activeTimeEntryId
-              ? { ...entry, duration: entry.duration + 1 }
-              : entry
-          ),
           taskLists: p.taskLists.map(list => ({
             ...list,
             tasks: list.tasks.map(t => {
@@ -235,9 +237,9 @@ const App: React.FC = () => {
         ...list,
         tasks: list.tasks.filter(t => t.id !== taskId)
       })),
-      // optional: remove time entries linked to the deleted task
-      timeEntries: p.timeEntries.filter(te => te.taskId !== taskId),
     })));
+    // Remove time entries linked to the deleted task
+    setTimeEntries(prev => prev.filter(te => te.taskId !== taskId));
     setSelectedTask(prev => (prev && 'id' in prev && prev.id === taskId ? null : prev));
   }, [updateProjects]);
 
@@ -264,14 +266,11 @@ const App: React.FC = () => {
     if (activeTimerTaskId === taskId) {
       // Stop timer - set endTime on active TimeEntry
       if (activeTimeEntryId) {
-        setProjects(prevProjects => prevProjects.map(p => ({
-          ...p,
-          timeEntries: p.timeEntries.map(entry =>
-            entry.id === activeTimeEntryId
-              ? { ...entry, endTime: new Date().toISOString() }
-              : entry
-          )
-        })));
+        setTimeEntries(prev => prev.map(entry =>
+          entry.id === activeTimeEntryId
+            ? { ...entry, endTime: new Date().toISOString() }
+            : entry
+        ));
       }
       setActiveTimerTaskId(null);
       setActiveTimeEntryId(null);
@@ -283,6 +282,7 @@ const App: React.FC = () => {
       
       // Find task info
       let taskTitle = '';
+      let listTitle = '';
       let projectId = '';
       let projectName = '';
       
@@ -291,12 +291,14 @@ const App: React.FC = () => {
           list.tasks.forEach(task => {
             if (task.id === taskId) {
               taskTitle = task.title;
+              listTitle = list.title;
               projectId = p.id;
               projectName = p.name;
             }
             task.subtasks.forEach(subtask => {
               if (subtask.id === taskId) {
                 taskTitle = subtask.title;
+                listTitle = list.title;
                 projectId = p.id;
                 projectName = p.name;
               }
@@ -309,6 +311,7 @@ const App: React.FC = () => {
         id: newEntryId,
         taskId,
         taskTitle,
+        listTitle,
         projectId,
         projectName,
         startTime: now,
@@ -318,11 +321,7 @@ const App: React.FC = () => {
         billable: false,
       };
       
-      setProjects(prevProjects => prevProjects.map(p =>
-        p.id === projectId
-          ? { ...p, timeEntries: [...p.timeEntries, newEntry] }
-          : p
-      ));
+      setTimeEntries(prev => [...prev, newEntry]);
       
       setActiveTimerTaskId(taskId);
       setActiveTimeEntryId(newEntryId);
@@ -421,7 +420,6 @@ const App: React.FC = () => {
       icon: projectData.icon || '📁',
       status: ProjectStatus.Active,
       taskLists: [],
-      timeEntries: [],
       startDate: new Date().toISOString(),
       endDate: null,
       budgetHours: null,
@@ -566,29 +564,26 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string) => {
-    setProjects(prevProjects => prevProjects.map(p => ({
-      ...p,
-      timeEntries: p.timeEntries.map(entry => {
-        if (entry.id === entryId) {
-          const start = new Date(startTime);
-          
-          // Wenn endTime leer ist, Timer läuft weiter - berechne duration bis jetzt
-          if (!endTime) {
-            const now = new Date();
-            const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
-            // Update taskTimers mit neuer duration
-            setTaskTimers(prev => ({ ...prev, [entry.taskId]: duration }));
-            return { ...entry, startTime, duration, note };
-          }
-          
-          // Ansonsten normale Berechnung mit endTime
-          const end = new Date(endTime);
-          const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
-          return { ...entry, startTime, endTime, duration, note };
+    setTimeEntries(prev => prev.map(entry => {
+      if (entry.id === entryId) {
+        const start = new Date(startTime);
+        
+        // Wenn endTime leer ist, Timer läuft weiter - berechne duration bis jetzt
+        if (!endTime) {
+          const now = new Date();
+          const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
+          // Update taskTimers mit neuer duration
+          setTaskTimers(prev => ({ ...prev, [entry.taskId]: duration }));
+          return { ...entry, startTime, duration, note };
         }
-        return entry;
-      })
-    })));
+        
+        // Ansonsten normale Berechnung mit endTime
+        const end = new Date(endTime);
+        const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
+        return { ...entry, startTime, endTime, duration, note };
+      }
+      return entry;
+    }));
   }, []);
 
   const handleDeleteTimeEntry = useCallback((entryId: string) => {
@@ -598,10 +593,7 @@ const App: React.FC = () => {
       setActiveTimeEntryId(null);
     }
     
-    setProjects(prevProjects => prevProjects.map(p => ({
-      ...p,
-      timeEntries: p.timeEntries.filter(entry => entry.id !== entryId)
-    })));
+    setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
   }, [activeTimeEntryId]);
 
   const handleDuplicateTimeEntry = useCallback((entry: TimeEntry) => {
@@ -617,15 +609,7 @@ const App: React.FC = () => {
       duration: entry.duration // Gleiche Duration wie Original
     };
     
-    setProjects(prevProjects => prevProjects.map(p => {
-      if (p.id === entry.projectId) {
-        return {
-          ...p,
-          timeEntries: [...p.timeEntries, newEntry]
-        };
-      }
-      return p;
-    }));
+    setTimeEntries(prev => [...prev, newEntry]);
   }, [currentUser]);
 
   const handleAddTodo = (itemId: string, text: string) => {
@@ -783,6 +767,7 @@ const App: React.FC = () => {
           <Dashboard
             user={currentUser}
             projects={projects}
+            timeEntries={timeEntries}
             pinnedTaskIds={pinnedTasks}
             onUnpinTask={handlePinTask}
             onUpdateNote={handleUpdateDashboardNote}
@@ -799,7 +784,8 @@ const App: React.FC = () => {
           />
         ) : selectedProject ? (
           <TaskArea 
-            project={selectedProject} 
+            project={selectedProject}
+            timeEntries={timeEntries}
             selectedItem={selectedTask}
             onSelectItem={handleSelectTask}
             taskTimers={taskTimers}
@@ -857,9 +843,7 @@ const App: React.FC = () => {
         </div>
 
       {activeTimerTaskId && (() => {
-        const activeEntry = projects
-          .flatMap(p => p.timeEntries)
-          .find(e => e.id === activeTimeEntryId);
+        const activeEntry = timeEntries.find(e => e.id === activeTimeEntryId);
         
         if (!activeEntry) return null;
         

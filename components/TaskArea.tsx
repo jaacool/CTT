@@ -9,6 +9,7 @@ type RenameFn = (id: string, newName: string, type: 'project' | 'list' | 'task' 
 
 interface TaskAreaProps {
     project: Project;
+    timeEntries: TimeEntry[];
     selectedItem: Task | Subtask | null;
     onSelectItem: (item: Task | Subtask | null) => void;
     taskTimers: { [taskId: string]: number };
@@ -32,7 +33,7 @@ interface TaskAreaProps {
     currentUser?: any;
 }
 
-const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
+const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
     
     const allTasks = project.taskLists.flatMap(list => list.tasks);
     const totalTasks = allTasks.length;
@@ -40,7 +41,7 @@ const ProjectHeader: React.FC<{ project: Project; taskTimers: { [taskId: string]
     const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
     
     // Summiere alle TimeEntries für dieses Projekt
-    const totalTrackedSeconds = project.timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
+    const totalTrackedSeconds = timeEntries.filter(e => e.projectId === project.id).reduce((sum, entry) => sum + entry.duration, 0);
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -578,7 +579,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
     
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <ProjectHeader project={props.project} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
+            <ProjectHeader project={props.project} timeEntries={props.timeEntries} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
             
             {/* Tab Navigation */}
             <div className="flex space-x-1 mb-6 bg-overlay rounded-lg p-1 border border-border">
@@ -621,7 +622,8 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             ) : (
                 <TimeView 
                     project={props.project}
-                    timeEntries={props.project.timeEntries.filter(entry => 
+                    timeEntries={props.timeEntries.filter(entry => 
+                        entry.projectId === props.project.id &&
                         props.currentUser && entry.user.id === props.currentUser.id
                     )}
                     onUpdateEntry={props.onUpdateTimeEntry}

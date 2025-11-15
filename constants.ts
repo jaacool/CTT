@@ -170,7 +170,6 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-07-29',
     budgetHours: 120,
     members: [MOCK_USER],
-    timeEntries: [],
   },
   {
     id: 'proj-2',
@@ -182,7 +181,6 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-07-30',
     budgetHours: 200,
     members: [MOCK_USER, MOCK_USER_2],
-    timeEntries: [],
   },
   {
     id: 'proj-3',
@@ -193,7 +191,6 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-09-30',
     budgetHours: 400,
     members: [MOCK_USER, MOCK_USER_2],
-    timeEntries: [],
     taskLists: [
       {
         id: 'list-1',
@@ -327,7 +324,6 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-12-31',
     budgetHours: 50,
     members: [MOCK_USER_2],
-    timeEntries: [],
   },
   {
     id: 'proj-5',
@@ -339,6 +335,5 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-12-31',
     budgetHours: 1000,
     members: [MOCK_USER],
-    timeEntries: [],
   },
 ];

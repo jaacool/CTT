@@ -75,6 +75,7 @@ export interface TimeEntry {
   id: string;
   taskId: string;
   taskTitle: string;
+  listTitle: string; // Name der Task-Liste
   projectId: string;
   projectName: string;
   startTime: string; // ISO timestamp
@@ -131,7 +132,6 @@ export interface Project {
   endDate: string; // ISO 8601 string
   budgetHours: number;
   members: User[];
-  timeEntries: TimeEntry[];
   client?: string;
   owner?: User;
 }
