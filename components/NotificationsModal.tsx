@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment } from '../types';
 import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XCircleIcon, CheckCircleIcon, ClockIcon } from './Icons';
 
@@ -105,6 +105,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return diffDays;
   };
+
+  // Aktualisiere selectedRequest wenn sich absenceRequests ändern
+  useEffect(() => {
+    if (selectedRequest) {
+      const updatedRequest = absenceRequests.find(req => req.id === selectedRequest.id);
+      if (updatedRequest) {
+        setSelectedRequest(updatedRequest);
+      }
+    }
+  }, [absenceRequests, selectedRequest?.id]);
 
   const handleSendMessage = () => {
     if (!selectedRequest || !chatMessage.trim()) return;
