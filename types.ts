@@ -93,7 +93,7 @@ export interface Subtask {
   description: string;
   status: TaskStatus;
   todos: Todo[];
-  assignee: User;
+  assignees: User[]; // Mehrere User können zugewiesen werden
   timeTrackedSeconds: number;
   timeBudgetHours: number | null;
   dueDate: string | null;
@@ -108,7 +108,7 @@ export interface Task {
   status: TaskStatus;
   subtasks: Subtask[];
   todos: Todo[];
-  assignee: User;
+  assignees: User[]; // Mehrere User können zugewiesen werden
   timeTrackedSeconds: number;
   timeBudgetHours: number | null;
   dueDate: string | null;

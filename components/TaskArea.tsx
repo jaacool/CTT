@@ -4,6 +4,7 @@ import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, Ca
 import { formatTime } from './utils';
 import { TimeView } from './TimeView';
 import { TaskContextMenu } from './TaskContextMenu';
+import { AssigneeSelector } from './AssigneeSelector';
 
 type RenameFn = (id: string, newName: string, type: 'project' | 'list' | 'task' | 'subtask') => void;
 
@@ -31,6 +32,8 @@ interface TaskAreaProps {
     onDeleteTimeEntry?: (entryId: string) => void;
     onDuplicateTimeEntry?: (entry: TimeEntry) => void;
     currentUser?: any;
+    allUsers?: User[];
+    onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
 }
 
 const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {

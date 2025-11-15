@@ -458,7 +458,7 @@ const App: React.FC = () => {
         title,
         description: '',
         status: TaskStatus.Todo,
-        assignee: currentUser!,
+        assignees: [currentUser!],
         timeTrackedSeconds: 0,
         timeBudgetHours: null,
         dueDate: null,
@@ -528,7 +528,7 @@ const App: React.FC = () => {
       title,
       description: '',
       status: TaskStatus.Todo,
-      assignee: currentUser!,
+      assignees: [currentUser!],
       timeTrackedSeconds: 0,
       timeBudgetHours: null,
       dueDate: null,
@@ -611,6 +611,28 @@ const App: React.FC = () => {
     
     setTimeEntries(prev => [...prev, newEntry]);
   }, [currentUser]);
+
+  const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: User[]) => {
+    updateProjects(prevProjects => prevProjects.map(p => ({
+      ...p,
+      taskLists: p.taskLists.map(list => ({
+        ...list,
+        tasks: list.tasks.map(t => {
+          if (t.id === taskId) {
+            return { ...t, assignees };
+          }
+          // Check subtasks
+          const subtaskIndex = t.subtasks.findIndex(st => st.id === taskId);
+          if (subtaskIndex > -1) {
+            const updatedSubtasks = [...t.subtasks];
+            updatedSubtasks[subtaskIndex] = { ...updatedSubtasks[subtaskIndex], assignees };
+            return { ...t, subtasks: updatedSubtasks };
+          }
+          return t;
+        })
+      }))
+    })));
+  }, [updateProjects]);
 
   const handleAddTodo = (itemId: string, text: string) => {
     const newTodo = {
@@ -811,6 +833,8 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
             currentUser={currentUser}
+            allUsers={MOCK_USERS}
+            onUpdateTaskAssignees={handleUpdateTaskAssignees}
           />
         ) : (
           showSettings ? (
