@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType } from './types';
-import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES } from './constants';
+import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
 import { hasPermission } from './utils/permissions';
 import { Sidebar } from './components/Sidebar';
 import { TaskArea } from './components/TaskArea';
@@ -76,7 +76,7 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
-  const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
+  const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Undo/Redo system
@@ -620,6 +620,39 @@ const App: React.FC = () => {
     ));
   }, []);
 
+  const handleAddComment = useCallback((requestId: string, message: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId 
+        ? { 
+            ...req, 
+            comments: [
+              ...(req.comments || []),
+              {
+                id: `comment-${Date.now()}`,
+                user: currentUser!,
+                message,
+                timestamp: new Date().toISOString(),
+                read: false,
+              }
+            ],
+            updatedAt: new Date().toISOString()
+          }
+        : req
+    ));
+  }, [currentUser]);
+
+  const handleMarkCommentsRead = useCallback((requestId: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId 
+        ? { 
+            ...req, 
+            comments: req.comments?.map(c => ({ ...c, read: true })),
+            updatedAt: new Date().toISOString()
+          }
+        : req
+    ));
+  }, []);
+
   // Berechne ausstehende Anträge für Admins
   const pendingAbsenceRequests = useMemo(() => {
     return absenceRequests.filter(req => req.status === AbsenceStatus.Pending);
@@ -803,8 +836,8 @@ const App: React.FC = () => {
         onChangeRole={handleChangeCurrentUserRole}
         onChangeUser={handleChangeUser}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        pendingAbsenceRequests={isAdmin ? pendingAbsenceRequests : []}
-        onOpenNotifications={isAdmin ? () => setShowNotifications(true) : undefined}
+        absenceRequests={absenceRequests}
+        onOpenNotifications={() => setShowNotifications(true)}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -1094,12 +1127,14 @@ const App: React.FC = () => {
         />
       )}
 
-      {showNotifications && isAdmin && (
+      {showNotifications && (
         <NotificationsModal
           onClose={() => setShowNotifications(false)}
-          pendingRequests={pendingAbsenceRequests}
+          absenceRequests={absenceRequests}
           onApproveRequest={handleApproveRequest}
           onRejectRequest={handleRejectRequest}
+          onAddComment={handleAddComment}
+          onMarkCommentsRead={handleMarkCommentsRead}
           currentUser={currentUser!}
         />
       )}

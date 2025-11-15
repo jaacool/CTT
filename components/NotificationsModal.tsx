@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { AbsenceRequest, AbsenceStatus, AbsenceType, User } from '../types';
+import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment } from '../types';
 import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XCircleIcon, CheckCircleIcon, ClockIcon } from './Icons';
 
 interface NotificationsModalProps {
   onClose: () => void;
-  pendingRequests: AbsenceRequest[];
+  absenceRequests: AbsenceRequest[];
   onApproveRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string, reason: string) => void;
+  onAddComment: (requestId: string, message: string) => void;
+  onMarkCommentsRead: (requestId: string) => void;
   currentUser: User;
 }
 
@@ -57,14 +59,28 @@ const getAbsenceTypeColor = (type: AbsenceType) => {
 
 export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onClose,
-  pendingRequests,
+  absenceRequests,
   onApproveRequest,
   onRejectRequest,
+  onAddComment,
+  onMarkCommentsRead,
   currentUser,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(null);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<{ [requestId: string]: Array<{ user: User; message: string; timestamp: string }> }>({});
+  
+  const isAdmin = currentUser.role === 'role-1';
+  
+  // Filtere relevante Anträge für den aktuellen User
+  const relevantRequests = absenceRequests.filter(req => {
+    // Admins sehen alle ausstehenden Anträge
+    if (isAdmin && req.status === AbsenceStatus.Pending) return true;
+    
+    // User sehen ihre eigenen Anträge
+    if (req.user.id === currentUser.id) return true;
+    
+    return false;
+  });
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('de-DE', {
@@ -85,17 +101,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const handleSendMessage = () => {
     if (!selectedRequest || !chatMessage.trim()) return;
     
-    const newMessage = {
-      user: currentUser,
-      message: chatMessage.trim(),
-      timestamp: new Date().toISOString(),
-    };
-
-    setChatMessages(prev => ({
-      ...prev,
-      [selectedRequest.id]: [...(prev[selectedRequest.id] || []), newMessage],
-    }));
+    onAddComment(selectedRequest.id, chatMessage.trim());
     setChatMessage('');
+  };
+  
+  const handleSelectRequest = (request: AbsenceRequest) => {
+    setSelectedRequest(request);
+    // Markiere Kommentare als gelesen
+    if (request.comments && request.comments.some(c => !c.read && c.user.id !== currentUser.id)) {
+      onMarkCommentsRead(request.id);
+    }
   };
 
   const handleApprove = (requestId: string) => {
@@ -123,7 +138,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           <div>
             <h2 className="text-xl font-bold text-text-primary">Benachrichtigungen</h2>
             <p className="text-sm text-text-secondary mt-1">
-              {pendingRequests.length} ausstehende Abwesenheitsanträge
+              {relevantRequests.length} {isAdmin ? 'ausstehende Abwesenheitsanträge' : 'Abwesenheitsanträge'}
             </p>
           </div>
           <button
@@ -138,22 +153,28 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         <div className="flex-1 overflow-hidden flex">
           {/* Request List */}
           <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-3">
-            {pendingRequests.length === 0 ? (
+            {relevantRequests.length === 0 ? (
               <div className="text-center py-12">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
-                <p className="text-text-secondary">Keine ausstehenden Anträge</p>
+                <p className="text-text-secondary">Keine Anträge</p>
               </div>
             ) : (
-              pendingRequests.map((request) => (
+              relevantRequests.map((request) => {
+                const hasUnreadComments = request.comments?.some(c => !c.read && c.user.id !== currentUser.id) || false;
+                
+                return (
                 <div
                   key={request.id}
-                  onClick={() => setSelectedRequest(request)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  onClick={() => handleSelectRequest(request)}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
                     selectedRequest?.id === request.id
                       ? 'border-glow-cyan bg-glow-cyan/10'
                       : 'border-border bg-overlay hover:border-glow-cyan/50'
                   }`}
                 >
+                  {hasUnreadComments && (
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></div>
+                  )}
                   <div className="flex items-start space-x-3">
                     <div className={`p-2 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>
                       {getAbsenceTypeIcon(request.type)}
@@ -172,7 +193,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     </div>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -216,23 +238,41 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() => handleApprove(selectedRequest.id)}
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-500 rounded-lg font-semibold transition-all"
-                    >
-                      <CheckCircleIcon className="w-4 h-4" />
-                      <span>Genehmigen</span>
-                    </button>
-                    <button
-                      onClick={() => handleReject(selectedRequest.id)}
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg font-semibold transition-all"
-                    >
-                      <XCircleIcon className="w-4 h-4" />
-                      <span>Ablehnen</span>
-                    </button>
-                  </div>
+                  {/* Action Buttons - nur für Admins bei ausstehenden Anträgen */}
+                  {isAdmin && selectedRequest.status === AbsenceStatus.Pending && (
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handleApprove(selectedRequest.id)}
+                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-500 rounded-lg font-semibold transition-all"
+                      >
+                        <CheckCircleIcon className="w-4 h-4" />
+                        <span>Genehmigen</span>
+                      </button>
+                      <button
+                        onClick={() => handleReject(selectedRequest.id)}
+                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg font-semibold transition-all"
+                      >
+                        <XCircleIcon className="w-4 h-4" />
+                        <span>Ablehnen</span>
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Status Badge für nicht-ausstehende Anträge */}
+                  {selectedRequest.status !== AbsenceStatus.Pending && (
+                    <div className="mt-4">
+                      {selectedRequest.status === AbsenceStatus.Approved && (
+                        <div className="px-3 py-2 bg-green-500/20 text-green-500 rounded-lg text-center font-semibold">
+                          ✓ Genehmigt
+                        </div>
+                      )}
+                      {selectedRequest.status === AbsenceStatus.Rejected && (
+                        <div className="px-3 py-2 bg-red-500/20 text-red-500 rounded-lg text-center font-semibold">
+                          ✗ Abgelehnt
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Chat Area */}
@@ -243,7 +283,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {(chatMessages[selectedRequest.id] || []).map((msg, idx) => (
+                    {(selectedRequest.comments || []).map((msg, idx) => (
                       <div key={idx} className="flex items-start space-x-2">
                         <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-6 h-6 rounded-full" />
                         <div className="flex-1">

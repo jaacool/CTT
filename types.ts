@@ -151,6 +151,14 @@ export enum AbsenceStatus {
   Cancelled = 'CANCELLED'
 }
 
+export interface AbsenceRequestComment {
+  id: string;
+  user: User;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export interface AbsenceRequest {
   id: string;
   user: User;
@@ -165,4 +173,5 @@ export interface AbsenceRequest {
   rejectedReason?: string;
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
+  comments?: AbsenceRequestComment[];
 }

@@ -12,15 +12,31 @@ interface TopBarProps {
   onChangeRole: (roleId: string) => void;
   onChangeUser: (userId: string) => void;
   onToggleSidebar: () => void;
-  pendingAbsenceRequests?: AbsenceRequest[];
+  absenceRequests?: AbsenceRequest[];
   onOpenNotifications?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, pendingAbsenceRequests = [], onOpenNotifications }) => {
+export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, absenceRequests = [], onOpenNotifications }) => {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = user.role === 'role-1';
+  
+  // Berechne Benachrichtigungen für aktuellen User
+  const notificationCount = absenceRequests.filter(req => {
+    // Admins: Ausstehende Anträge
+    if (isAdmin && req.status === 'PENDING') return true;
+    
+    // Eigene Anträge mit ungelesenen Kommentaren
+    if (req.user.id === user.id && req.comments) {
+      const hasUnreadComments = req.comments.some(c => !c.read && c.user.id !== user.id);
+      return hasUnreadComments || req.status === 'PENDING';
+    }
+    
+    return false;
+  }).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -173,9 +189,9 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            {pendingAbsenceRequests.length > 0 && (
+            {notificationCount > 0 && (
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-surface">
-                {pendingAbsenceRequests.length}
+                {notificationCount}
               </span>
             )}
           </button>

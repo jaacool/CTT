@@ -1,4 +1,4 @@
-import { Project, User, TaskStatus, ProjectStatus, UserStatus, Gender, Role, PermissionStatus } from './types';
+import { Project, User, TaskStatus, ProjectStatus, UserStatus, Gender, Role, PermissionStatus, AbsenceRequest, AbsenceType, AbsenceStatus } from './types';
 
 export const MOCK_USER: User = {
   id: 'user-1',
@@ -335,5 +335,44 @@ export const MOCK_PROJECTS: Project[] = [
     endDate: '2024-12-31',
     budgetHours: 1000,
     members: [MOCK_USER],
+  },
+];
+
+// Mock Absence Requests
+export const MOCK_ABSENCE_REQUESTS: AbsenceRequest[] = [
+  {
+    id: 'absence-1',
+    user: MOCK_USER,
+    type: AbsenceType.Vacation,
+    startDate: '2025-11-20',
+    endDate: '2025-11-22',
+    status: AbsenceStatus.Pending,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'absence-2',
+    user: MOCK_USER_2,
+    type: AbsenceType.Sick,
+    startDate: '2025-11-18',
+    endDate: '2025-11-18',
+    halfDay: 'morning',
+    status: AbsenceStatus.Approved,
+    approvedBy: ADMIN_USER,
+    approvedAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'absence-3',
+    user: MOCK_USER,
+    type: AbsenceType.HomeOffice,
+    startDate: '2025-11-25',
+    endDate: '2025-11-25',
+    status: AbsenceStatus.Approved,
+    approvedBy: ADMIN_USER,
+    approvedAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
