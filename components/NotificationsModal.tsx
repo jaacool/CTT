@@ -199,14 +199,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                console.log('Delete clicked (Pending):', request.id);
+                                if (window.confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                  console.log('Confirmed delete:', request.id);
                                   onDeleteRequest(request.id);
                                   if (selectedRequest?.id === request.id) {
                                     setSelectedRequest(null);
                                   }
                                 }
                               }}
-                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all"
+                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
                               title="Löschen"
                             >
                               <XCircleIcon className="w-4 h-4" />
@@ -261,14 +263,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                console.log('Delete clicked (Completed):', request.id);
+                                if (window.confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                  console.log('Confirmed delete:', request.id);
                                   onDeleteRequest(request.id);
                                   if (selectedRequest?.id === request.id) {
                                     setSelectedRequest(null);
                                   }
                                 }
                               }}
-                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all"
+                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
                               title="Löschen"
                             >
                               <XCircleIcon className="w-4 h-4" />
