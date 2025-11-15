@@ -867,6 +867,8 @@ const App: React.FC = () => {
             itemContext={selectedTask ? findItemContext(selectedTask.id) : null}
             onSelectItem={handleSelectTask}
             onBillableChange={handleBillableChange}
+            allUsers={MOCK_USERS}
+            onUpdateAssignees={handleUpdateTaskAssignees}
           />
         </div>
 

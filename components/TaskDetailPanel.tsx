@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Task, Subtask, Activity } from '../types';
+import { Task, Subtask, Activity, User } from '../types';
 import { formatTime, formatRelativeTime } from './utils';
 import { ClockIcon, PaperclipIcon, MessageSquareIcon, CheckSquareIcon, PlannerIcon, PlayIcon, PauseIcon } from './Icons';
 import { useGlow } from '../contexts/GlowContext';
+import { AssigneeSelector } from './AssigneeSelector';
 
 interface TaskDetailPanelProps {
   item: Task | Subtask | null;
@@ -17,6 +18,8 @@ interface TaskDetailPanelProps {
   itemContext: { projectName: string; listTitle: string } | null;
   onSelectItem?: (item: Subtask | null) => void;
   onBillableChange: (itemId: string, billable: boolean) => void;
+  allUsers?: User[];
+  onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
 }
 
 const InfoCard: React.FC<{ label: string; value: string; color: string, textColor: string, icon: React.ReactNode }> = ({ label, value, color, textColor, icon }) => (
@@ -40,7 +43,7 @@ const Section: React.FC<{ title: string, icon: React.ReactNode, children: React.
 );
 
 
-export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUpdate, onDescriptionUpdate, onRenameItem, trackedTime, activeTimerTaskId, onToggleTimer, onAddSubtask, onAddTodo, itemContext, onSelectItem, onBillableChange }) => {
+export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUpdate, onDescriptionUpdate, onRenameItem, trackedTime, activeTimerTaskId, onToggleTimer, onAddSubtask, onAddTodo, itemContext, onSelectItem, onBillableChange, allUsers, onUpdateAssignees }) => {
   const { themeMode } = useGlow();
   const [description, setDescription] = useState(item?.description || '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -169,6 +172,19 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
           <span className="flex-1 text-left">{isBillable ? 'Abrechenbar' : 'Nicht abrechenbar'}</span>
         </button>
         </div>
+        
+        {/* Bearbeiter Section */}
+        {allUsers && onUpdateAssignees && (
+          <div className="mt-4">
+            <h4 className="text-xs font-bold text-text-secondary mb-2">BEARBEITER</h4>
+            <AssigneeSelector
+              assignees={item.assignees}
+              allUsers={allUsers}
+              onAssigneesChange={(assignees) => onUpdateAssignees(item.id, assignees)}
+              size="medium"
+            />
+          </div>
+        )}
       </div>
       
       <Section title="Beschreibung" icon={<MessageSquareIcon className="w-4 h-4"/>}>
