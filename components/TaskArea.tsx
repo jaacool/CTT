@@ -290,18 +290,12 @@ const SubtaskItem: React.FC<{
                     )}
                     <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                 </button>
-                {allUsers && onUpdateAssignees ? (
-                    <AssigneeSelector
-                        assignees={subtask.assignees}
-                        allUsers={allUsers}
-                        onAssigneesChange={(assignees) => onUpdateAssignees(subtask.id, assignees)}
-                        size="small"
-                    />
-                ) : (
-                    subtask.assignees.length > 0 && (
-                        <img src={subtask.assignees[0].avatarUrl} alt={subtask.assignees[0].name} className="w-6 h-6 rounded-full" />
-                    )
-                )}
+                <AssigneeSelector
+                    assignees={subtask.assignees}
+                    allUsers={allUsers || []}
+                    onAssigneesChange={(assignees) => onUpdateAssignees?.(subtask.id, assignees)}
+                    size="small"
+                />
             </div>
         </div>
     );
@@ -398,18 +392,12 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         )}
                         <span className="hidden md:inline">{formatTime(elapsedSeconds)}</span>
                     </button>
-                    {props.allUsers && props.onUpdateAssignees ? (
-                        <AssigneeSelector
-                            assignees={task.assignees}
-                            allUsers={props.allUsers}
-                            onAssigneesChange={(assignees) => props.onUpdateAssignees!(task.id, assignees)}
-                            size="small"
-                        />
-                    ) : (
-                        task.assignees.length > 0 && (
-                            <img src={task.assignees[0].avatarUrl} alt={task.assignees[0].name} className="w-6 h-6 rounded-full" />
-                        )
-                    )}
+                    <AssigneeSelector
+                        assignees={task.assignees}
+                        allUsers={props.allUsers || []}
+                        onAssigneesChange={(assignees) => props.onUpdateAssignees?.(task.id, assignees)}
+                        size="small"
+                    />
                 </div>
             </div>
             {task.subtasks.map(subtask => {

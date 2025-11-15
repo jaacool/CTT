@@ -82,13 +82,10 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             {showMenu && (
                 <>
                     <div 
-                        className="fixed inset-0 z-[60]" 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowMenu(false);
-                        }}
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute left-0 top-8 z-[70] bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col">
+                    <div className="absolute left-0 top-8 z-50 bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col">
                         <div className="p-3 border-b border-overlay">
                             <h4 className="text-sm font-bold text-text-primary mb-2">Bearbeiter</h4>
                             {assignees.length > 0 && (
