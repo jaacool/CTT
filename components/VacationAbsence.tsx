@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AbsenceRequest, AbsenceType, AbsenceStatus, User } from '../types';
-import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, PlusIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from './Icons';
+import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, PlusIcon, CalendarIcon, CheckCircleIcon, XIcon, ClockIcon } from './Icons';
 import { GermanState, GERMAN_STATE_NAMES, isHoliday, isWeekend } from '../utils/holidays';
 
 interface VacationAbsenceProps {
@@ -684,7 +684,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
                     className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
                     title="Löschen"
                   >
-                    <XCircleIcon className="w-4 h-4" />
+                    <XIcon className="w-4 h-4" />
                   </button>
                 )}
                 
@@ -755,7 +755,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
                         className="p-2 hover-glow rounded-lg text-red-500 hover:bg-red-500/10"
                         title="Ablehnen"
                       >
-                        <XCircleIcon className="w-5 h-5" />
+                        <XIcon className="w-5 h-5" />
                       </button>
                     </>
                   )}

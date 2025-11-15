@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment } from '../types';
-import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XCircleIcon, CheckCircleIcon, ClockIcon } from './Icons';
+import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XIcon, CheckCircleIcon, ClockIcon } from './Icons';
 
 interface NotificationsModalProps {
   onClose: () => void;
@@ -170,7 +170,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             onClick={onClose}
             className="p-2 hover-glow rounded-lg text-text-secondary hover:text-text-primary"
           >
-            <XCircleIcon className="w-6 h-6" />
+            <XIcon className="w-6 h-6" />
           </button>
         </div>
 
@@ -218,7 +218,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                               className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
                               title="Löschen"
                             >
-                              <XCircleIcon className="w-4 h-4" />
+                              <XIcon className="w-4 h-4" />
                             </button>
                             
                             {hasUnreadComments && (
@@ -282,7 +282,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                               className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
                               title="Löschen"
                             >
-                              <XCircleIcon className="w-4 h-4" />
+                              <XIcon className="w-4 h-4" />
                             </button>
                             
                             {hasUnreadComments && (
@@ -376,7 +376,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         onClick={() => handleReject(selectedRequest.id)}
                         className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg font-semibold transition-all"
                       >
-                        <XCircleIcon className="w-4 h-4" />
+                        <XIcon className="w-4 h-4" />
                         <span>Ablehnen</span>
                       </button>
                     </div>
