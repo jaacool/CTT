@@ -592,20 +592,29 @@ const App: React.FC = () => {
   }, []);
 
   const handleDeleteTimeEntry = useCallback((entryId: string) => {
+    // Stoppe aktiven Timer falls dieser Eintrag gerade läuft
+    if (activeTimeEntryId === entryId) {
+      setActiveTimerTaskId(null);
+      setActiveTimeEntryId(null);
+    }
+    
     setProjects(prevProjects => prevProjects.map(p => ({
       ...p,
       timeEntries: p.timeEntries.filter(entry => entry.id !== entryId)
     })));
-  }, []);
+  }, [activeTimeEntryId]);
 
   const handleDuplicateTimeEntry = useCallback((entry: TimeEntry) => {
+    const now = new Date();
+    const startTime = new Date(now.getTime() - (entry.duration * 1000)); // Berechne Startzeit basierend auf Original-Duration
+    
     const newEntry: TimeEntry = {
       ...entry,
       id: `entry-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      user: currentUser, // Verwende den aktuellen User
-      startTime: new Date().toISOString(),
-      endTime: '', // Neuer Eintrag ist laufend
-      duration: 0
+      user: currentUser!, // Verwende den aktuellen User
+      startTime: startTime.toISOString(),
+      endTime: now.toISOString(), // Abgeschlossener Eintrag
+      duration: entry.duration // Gleiche Duration wie Original
     };
     
     setProjects(prevProjects => prevProjects.map(p => {
@@ -617,10 +626,7 @@ const App: React.FC = () => {
       }
       return p;
     }));
-    
-    // Starte Timer für die duplizierte Aufgabe
-    handleToggleTimer(entry.taskId);
-  }, [currentUser, handleToggleTimer]);
+  }, [currentUser]);
 
   const handleAddTodo = (itemId: string, text: string) => {
     const newTodo = {
@@ -686,6 +692,13 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
+  const handleChangeUser = useCallback((userId: string) => {
+    const newUser = users.find(u => u.id === userId);
+    if (newUser) {
+      setCurrentUser(newUser);
+    }
+  }, [users]);
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   // Removed login screen - always logged in as admin
@@ -711,12 +724,14 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen font-sans text-sm">
       <TopBar
         user={currentUser}
+        users={users}
         roles={MOCK_ROLES}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
         onChangeRole={handleChangeCurrentUserRole}
+        onChangeUser={handleChangeUser}
         onToggleSidebar={toggleSidebar}
       />
       

@@ -113,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Heute's Einträge */}
             <div className="space-y-2" data-testid="today-entries">
               {todayEntries.map(entry => {
-                const isActive = activeTimerTaskId === entry.taskId;
+                const isActive = activeTimerTaskId === entry.taskId && !entry.endTime;
                 const currentSeconds = taskTimers[entry.taskId] || 0;
                 const project = projects.find(p => p.id === entry.projectId);
                 

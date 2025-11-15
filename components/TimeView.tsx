@@ -18,6 +18,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
   const [contextMenuEntryId, setContextMenuEntryId] = useState<string | null>(null);
+  const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<string | null>(null);
 
   // Build a lookup for billable by taskId from current project tasks/subtasks
   const billableByTaskId = useMemo(() => {
@@ -367,11 +368,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm('Zeiteintrag wirklich löschen?')) {
-                                  if (onDeleteEntry) {
-                                    onDeleteEntry(entry.id);
-                                  }
-                                }
+                                setDeleteConfirmEntryId(entry.id);
                                 setContextMenuEntryId(null);
                               }}
                               className="w-full px-4 py-2 text-left text-red-500 hover:bg-overlay flex items-center space-x-2 text-sm"
@@ -394,6 +391,42 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
         </div>
       ))}
       
+      {/* Delete confirmation modal */}
+      {deleteConfirmEntryId && (() => {
+        const entry = timeEntries.find(e => e.id === deleteConfirmEntryId);
+        if (!entry) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setDeleteConfirmEntryId(null)} />
+            <div className="relative z-50 bg-surface border border-overlay rounded-xl p-5 w-full max-w-sm shadow-2xl">
+              <div className="text-text-primary font-bold mb-2">Zeiteintrag löschen?</div>
+              <div className="text-text-secondary text-sm mb-4 space-y-1">
+                <div className="font-semibold text-text-primary">{entry.taskTitle}</div>
+                <div>{formatDuration(entry.duration, false)}</div>
+                <div>{formatTimeRange(entry.startTime, entry.endTime)}</div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setDeleteConfirmEntryId(null)}
+                  className="px-3 py-1 bg-overlay hover:bg-surface rounded text-text-primary text-sm"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={() => {
+                    if (onDeleteEntry) onDeleteEntry(entry.id);
+                    setDeleteConfirmEntryId(null);
+                  }}
+                  className="px-3 py-1 glow-button text-text-primary rounded text-sm"
+                >
+                  Löschen
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {timeEntries.length === 0 && (
         <div className="text-center py-12 text-text-secondary">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-50">
