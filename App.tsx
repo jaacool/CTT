@@ -78,6 +78,7 @@ const App: React.FC = () => {
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -932,6 +933,11 @@ const App: React.FC = () => {
             onApproveRequest={handleApproveRequest}
             onRejectRequest={handleRejectRequest}
             onCancelRequest={handleCancelRequest}
+            onDeleteRequest={handleDeleteRequest}
+            onOpenRequestChat={(request) => {
+              setSelectedNotificationRequestId(request.id);
+              setShowNotifications(true);
+            }}
             isAdmin={currentUser?.role === 'role-1'}
           />
         ) : selectedProject ? (
@@ -1133,7 +1139,10 @@ const App: React.FC = () => {
 
       {showNotifications && (
         <NotificationsModal
-          onClose={() => setShowNotifications(false)}
+          onClose={() => {
+            setShowNotifications(false);
+            setSelectedNotificationRequestId(undefined);
+          }}
           absenceRequests={absenceRequests}
           onApproveRequest={handleApproveRequest}
           onRejectRequest={handleRejectRequest}
@@ -1141,6 +1150,7 @@ const App: React.FC = () => {
           onMarkCommentsRead={handleMarkCommentsRead}
           onDeleteRequest={handleDeleteRequest}
           currentUser={currentUser!}
+          initialSelectedRequestId={selectedNotificationRequestId}
         />
       )}
       </div>

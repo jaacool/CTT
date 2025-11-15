@@ -11,6 +11,8 @@ interface VacationAbsenceProps {
   onApproveRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string, reason: string) => void;
   onCancelRequest: (requestId: string) => void;
+  onDeleteRequest: (requestId: string) => void;
+  onOpenRequestChat: (request: AbsenceRequest) => void;
   isAdmin: boolean;
 }
 
@@ -491,6 +493,8 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   onApproveRequest,
   onRejectRequest,
   onCancelRequest,
+  onDeleteRequest,
+  onOpenRequestChat,
   isAdmin,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -664,8 +668,25 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
           filteredRequests.map((request) => (
             <div
               key={request.id}
-              className="bg-surface rounded-xl p-4 border border-border hover:border-glow-cyan/30 transition-all"
+              onClick={() => onOpenRequestChat(request)}
+              className="bg-surface rounded-xl p-4 border border-border hover:border-glow-cyan/30 transition-all cursor-pointer relative"
             >
+              {/* Delete Button - nur für Admins */}
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                      onDeleteRequest(request.id);
+                    }
+                  }}
+                  className="absolute top-4 right-4 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
+                  title="Löschen"
+                >
+                  <XCircleIcon className="w-5 h-5" />
+                </button>
+              )}
+              
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
                   <div className={`p-3 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>

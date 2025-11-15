@@ -11,6 +11,7 @@ interface NotificationsModalProps {
   onMarkCommentsRead: (requestId: string) => void;
   onDeleteRequest: (requestId: string) => void;
   currentUser: User;
+  initialSelectedRequestId?: string;
 }
 
 const getAbsenceTypeIcon = (type: AbsenceType) => {
@@ -67,8 +68,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onMarkCommentsRead,
   onDeleteRequest,
   currentUser,
+  initialSelectedRequestId,
 }) => {
-  const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(() => {
+    if (initialSelectedRequestId) {
+      return absenceRequests.find(req => req.id === initialSelectedRequestId) || null;
+    }
+    return null;
+  });
   const [chatMessage, setChatMessage] = useState('');
   
   const isAdmin = currentUser.role === 'role-1';
