@@ -254,10 +254,12 @@ const CalendarView: React.FC<{
 
   const getAbsencesForDay = (day: number) => {
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    
     return absenceRequests.filter((req) => {
-      const start = new Date(req.startDate);
-      const end = new Date(req.endDate);
-      return date >= start && date <= end && req.status === AbsenceStatus.Approved;
+      const startStr = req.startDate.split('T')[0];
+      const endStr = req.endDate.split('T')[0];
+      return dateStr >= startStr && dateStr <= endStr;
     });
   };
 
@@ -542,7 +544,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
             ))}
           </select>
         </div>
-        <div className="flex items-center space-x-4 mt-3 text-xs">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 text-xs">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded border-2 border-green-400/60 bg-green-500/10"></div>
             <span className="text-text-secondary">Feiertag</span>
@@ -554,6 +556,26 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded border-2 border-glow-cyan/80 bg-glow-cyan/10"></div>
             <span className="text-text-secondary">Heute</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fb923c' }}></div>
+            <span className="text-text-secondary">Urlaub</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+            <span className="text-text-secondary">Krankmeldung</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
+            <span className="text-text-secondary">Home Office</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+            <span className="text-text-secondary">Dienstreise</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-1 h-3 rounded-l" style={{ backgroundColor: '#fb923c' }}></div>
+            <span className="text-text-secondary">Ausstehend</span>
           </div>
         </div>
       </div>
