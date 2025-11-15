@@ -116,21 +116,34 @@ const CreateRequestModal: React.FC<{
           <div>
             <label className="block text-sm font-semibold text-text-primary mb-2">Art der Abwesenheit</label>
             <div className="grid grid-cols-2 gap-2">
-              {Object.values(AbsenceType).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setType(t)}
-                  className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-all ${
-                    type === t
-                      ? 'glow-button border-glow-cyan'
-                      : 'bg-overlay border-border hover:border-text-secondary'
-                  }`}
-                >
-                  {getAbsenceTypeIcon(t)}
-                  <span className="text-sm font-medium">{getAbsenceTypeLabel(t)}</span>
-                </button>
-              ))}
+              {[AbsenceType.Vacation, AbsenceType.Sick, AbsenceType.HomeOffice, AbsenceType.BusinessTrip].map((t) => {
+                const getTypeColor = (absType: AbsenceType) => {
+                  switch (absType) {
+                    case AbsenceType.Vacation: return { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' };
+                    case AbsenceType.Sick: return { bg: 'bg-red-500/20', border: 'border-red-500', text: 'text-red-500' };
+                    case AbsenceType.HomeOffice: return { bg: 'bg-yellow-500/20', border: 'border-yellow-500', text: 'text-yellow-500' };
+                    case AbsenceType.BusinessTrip: return { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' };
+                    default: return { bg: 'bg-purple-500/20', border: 'border-purple-500', text: 'text-purple-500' };
+                  }
+                };
+                const colors = getTypeColor(t);
+                
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-all ${
+                      type === t
+                        ? `${colors.bg} ${colors.border} ${colors.text} font-semibold`
+                        : 'bg-overlay border-border hover:border-text-secondary text-text-primary'
+                    }`}
+                  >
+                    {getAbsenceTypeIcon(t)}
+                    <span className="text-sm font-medium">{getAbsenceTypeLabel(t)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -166,10 +179,10 @@ const CreateRequestModal: React.FC<{
               <button
                 type="button"
                 onClick={() => setHalfDay(halfDay === 'morning' ? undefined : 'morning')}
-                className={`flex-1 px-3 py-2 rounded-lg border transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg border-2 transition-all font-medium ${
                   halfDay === 'morning'
-                    ? 'glow-button border-glow-cyan'
-                    : 'bg-overlay border-border hover:border-text-secondary'
+                    ? 'bg-glow-cyan/20 border-glow-cyan text-glow-cyan'
+                    : 'bg-overlay border-border hover:border-text-secondary text-text-primary'
                 }`}
               >
                 Vormittag
@@ -177,10 +190,10 @@ const CreateRequestModal: React.FC<{
               <button
                 type="button"
                 onClick={() => setHalfDay(halfDay === 'afternoon' ? undefined : 'afternoon')}
-                className={`flex-1 px-3 py-2 rounded-lg border transition-all ${
+                className={`flex-1 px-3 py-2 rounded-lg border-2 transition-all font-medium ${
                   halfDay === 'afternoon'
-                    ? 'glow-button border-glow-cyan'
-                    : 'bg-overlay border-border hover:border-text-secondary'
+                    ? 'bg-glow-cyan/20 border-glow-cyan text-glow-cyan'
+                    : 'bg-overlay border-border hover:border-text-secondary text-text-primary'
                 }`}
               >
                 Nachmittag
@@ -333,6 +346,8 @@ const CalendarView: React.FC<{
         ))}
         {days.map((day) => {
           const absences = getAbsencesForDay(day);
+          const approvedAbsences = absences.filter(a => a.status === AbsenceStatus.Approved);
+          const pendingAbsences = absences.filter(a => a.status === AbsenceStatus.Pending);
           const hasAbsence = absences.length > 0;
           const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
           const isToday = 
@@ -343,12 +358,22 @@ const CalendarView: React.FC<{
           const weekend = isWeekend(currentDate);
           const holiday = isHoliday(currentDate, selectedState);
 
+          const getAbsenceColor = (type: AbsenceType) => {
+            switch (type) {
+              case AbsenceType.Vacation: return '#fb923c'; // Orange
+              case AbsenceType.Sick: return '#ef4444'; // Rot
+              case AbsenceType.HomeOffice: return '#fbbf24'; // Gelb
+              case AbsenceType.BusinessTrip: return '#3b82f6'; // Blau
+              default: return '#a855f7'; // Lila
+            }
+          };
+
           return (
             <div
               key={day}
               onMouseDown={() => handleMouseDown(day)}
               onMouseEnter={() => handleMouseEnter(day)}
-              className={`aspect-square p-1 rounded-lg border-2 transition-all cursor-pointer flex flex-col ${
+              className={`aspect-square p-1 rounded-lg border-2 transition-all cursor-pointer flex flex-col relative ${
                 inDragRange
                   ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
                   : isToday
@@ -363,6 +388,19 @@ const CalendarView: React.FC<{
               }`}
               title={holiday.isHoliday ? holiday.name : undefined}
             >
+              {/* Pending Request Flags (rechte Kante) */}
+              {pendingAbsences.length > 0 && (
+                <div className="absolute top-0 right-0 flex flex-col gap-0.5">
+                  {pendingAbsences.slice(0, 3).map((absence, idx) => (
+                    <div
+                      key={idx}
+                      className="w-1 h-3 rounded-l"
+                      style={{ backgroundColor: getAbsenceColor(absence.type) }}
+                      title={`Ausstehend: ${absence.user.name} - ${getAbsenceTypeLabel(absence.type)}`}
+                    />
+                  ))}
+                </div>
+              )}
               <div className={`text-xs font-bold text-center mb-0.5 ${
                 holiday.isHoliday 
                   ? 'text-green-400' 
@@ -378,22 +416,33 @@ const CalendarView: React.FC<{
               {holiday.isHoliday && (
                 <div className="text-[7px] text-green-400 text-center leading-tight px-0.5 line-clamp-2">{holiday.name}</div>
               )}
-              {hasAbsence && (
-                <div className="flex flex-wrap gap-0.5 mt-auto justify-center">
-                  {absences.slice(0, 3).map((absence, idx) => (
-                    <div
-                      key={idx}
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        backgroundColor: absence.type === AbsenceType.Vacation ? '#fb923c' : // Orange
-                                       absence.type === AbsenceType.Sick ? '#ef4444' : // Rot
-                                       absence.type === AbsenceType.HomeOffice ? '#fbbf24' : // Gelb
-                                       absence.type === AbsenceType.BusinessTrip ? '#3b82f6' : // Blau
-                                       '#a855f7' // Lila für Other
-                      }}
-                      title={`${absence.user.name} - ${getAbsenceTypeLabel(absence.type)}`}
-                    />
-                  ))}
+              
+              {/* Approved Absences - Einträge */}
+              {approvedAbsences.length > 0 && (
+                <div className="flex-1 flex flex-col justify-end gap-0.5 mt-1">
+                  {approvedAbsences.slice(0, 2).map((absence, idx) => {
+                    const isMorning = absence.halfDay === 'morning';
+                    const isAfternoon = absence.halfDay === 'afternoon';
+                    const isFullDay = !absence.halfDay;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`rounded px-1 text-[7px] font-semibold text-white leading-tight ${
+                          isFullDay ? 'py-1' : 'py-0.5'
+                        }`}
+                        style={{ backgroundColor: getAbsenceColor(absence.type) }}
+                        title={`${absence.user.name} - ${getAbsenceTypeLabel(absence.type)}${absence.halfDay ? ` (${absence.halfDay === 'morning' ? 'Vormittag' : 'Nachmittag'})` : ''}`}
+                      >
+                        <div className="text-center truncate">
+                          {absence.user.name.split(' ')[0]}
+                          {!isFullDay && (
+                            <span className="ml-0.5">({isMorning ? 'VM' : 'NM'})</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
