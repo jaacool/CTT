@@ -671,23 +671,23 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
               onClick={() => onOpenRequestChat(request)}
               className="bg-surface rounded-xl p-4 border border-border hover:border-glow-cyan/30 transition-all cursor-pointer relative"
             >
-              {/* Delete Button - nur für Admins */}
-              {isAdmin && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm('Möchtest du diesen Antrag wirklich löschen?')) {
-                      onDeleteRequest(request.id);
-                    }
-                  }}
-                  className="absolute top-4 right-4 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
-                  title="Löschen"
-                >
-                  <XCircleIcon className="w-5 h-5" />
-                </button>
-              )}
-              
               <div className="flex items-start justify-between">
+                {/* Delete Button - nur für Admins */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                        onDeleteRequest(request.id);
+                      }
+                    }}
+                    className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all z-10"
+                    title="Löschen"
+                  >
+                    <XCircleIcon className="w-4 h-4" />
+                  </button>
+                )}
+                
                 <div className="flex items-start space-x-4 flex-1">
                   <div className={`p-3 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>
                     {getAbsenceTypeIcon(request.type)}
@@ -733,18 +733,22 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mt-8">
                   {isAdmin && request.status === AbsenceStatus.Pending && (
                     <>
                       <button
-                        onClick={() => onApproveRequest(request.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onApproveRequest(request.id);
+                        }}
                         className="p-2 hover-glow rounded-lg text-green-500 hover:bg-green-500/10"
                         title="Genehmigen"
                       >
                         <CheckCircleIcon className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           const reason = prompt('Grund für Ablehnung:');
                           if (reason) onRejectRequest(request.id, reason);
                         }}
