@@ -371,12 +371,8 @@ const CalendarView: React.FC<{
           };
 
           // Berechne Border-Style für genehmigte Abwesenheiten
-          const getBorderStyle = () => {
-            if (inDragRange) return { borderColor: 'rgb(236, 72, 153)', backgroundColor: 'rgba(236, 72, 153, 0.2)' };
-            if (isToday) return { borderColor: 'rgba(34, 211, 238, 0.8)', backgroundColor: 'rgba(34, 211, 238, 0.1)' };
-            if (holiday.isHoliday) return { borderColor: 'rgba(74, 222, 128, 0.6)', backgroundColor: 'rgba(34, 197, 94, 0.1)' };
-            
-            // Genehmigte Abwesenheiten
+          const getCustomBorderStyle = () => {
+            // Nur für genehmigte Abwesenheiten Custom-Style
             if (approvedAbsences.length > 0) {
               const colors = approvedAbsences.map(a => getAbsenceColor(a.type));
               if (colors.length === 1) {
@@ -391,12 +387,11 @@ const CalendarView: React.FC<{
                 };
               }
             }
-            
-            if (weekend) return { borderColor: 'rgba(156, 163, 175, 0.4)', backgroundColor: 'rgb(15, 23, 42)' };
-            return { borderColor: 'rgb(51, 65, 85)', backgroundColor: 'rgb(30, 41, 59)' };
+            return null;
           };
 
-          const borderStyle = getBorderStyle();
+          const customBorderStyle = getCustomBorderStyle();
+          const hasCustomBorder = customBorderStyle !== null;
           const hasGradientBorder = approvedAbsences.length > 1;
 
           return (
@@ -405,12 +400,22 @@ const CalendarView: React.FC<{
               onMouseDown={() => handleMouseDown(day)}
               onMouseEnter={() => handleMouseEnter(day)}
               className={`aspect-square p-1 rounded-lg border-2 transition-all cursor-pointer flex flex-col relative ${
-                weekend ? '' : 'hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
+                inDragRange
+                  ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
+                  : isToday
+                  ? 'border-glow-cyan/80 bg-glow-cyan/10'
+                  : holiday.isHoliday
+                  ? 'border-green-400/60 bg-green-500/10'
+                  : weekend
+                  ? 'border-text-secondary/40 bg-background'
+                  : hasCustomBorder
+                  ? '' // Kein Tailwind-Border, wird per Style gesetzt
+                  : 'border-border bg-overlay hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
               }`}
-              style={hasGradientBorder ? borderStyle : { 
-                borderColor: borderStyle.borderColor, 
-                backgroundColor: borderStyle.backgroundColor 
-              }}
+              style={hasCustomBorder ? (hasGradientBorder ? customBorderStyle : { 
+                borderColor: customBorderStyle!.borderColor, 
+                backgroundColor: customBorderStyle!.backgroundColor 
+              }) : undefined}
               title={holiday.isHoliday ? holiday.name : undefined}
             >
               {/* Pending Request Flags (rechte Kante) */}
