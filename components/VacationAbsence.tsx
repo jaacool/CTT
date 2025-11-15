@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AbsenceRequest, AbsenceType, AbsenceStatus, User } from '../types';
 import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, PlusIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from './Icons';
+import { GermanState, GERMAN_STATE_NAMES, isHoliday, isWeekend } from '../utils/holidays';
 
 interface VacationAbsenceProps {
   absenceRequests: AbsenceRequest[];
@@ -226,7 +227,8 @@ const CalendarView: React.FC<{
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
   onDateRangeSelect: (startDate: Date, endDate: Date) => void;
-}> = ({ absenceRequests, currentMonth, onMonthChange, onDateRangeSelect }) => {
+  selectedState?: GermanState;
+}> = ({ absenceRequests, currentMonth, onMonthChange, onDateRangeSelect, selectedState }) => {
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -332,11 +334,14 @@ const CalendarView: React.FC<{
         {days.map((day) => {
           const absences = getAbsencesForDay(day);
           const hasAbsence = absences.length > 0;
+          const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
           const isToday = 
             day === new Date().getDate() &&
             currentMonth.getMonth() === new Date().getMonth() &&
             currentMonth.getFullYear() === new Date().getFullYear();
           const inDragRange = isInDragRange(day);
+          const weekend = isWeekend(currentDate);
+          const holiday = isHoliday(currentDate, selectedState);
 
           return (
             <div
@@ -348,12 +353,23 @@ const CalendarView: React.FC<{
                   ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
                   : isToday
                   ? 'border-glow-cyan bg-glow-cyan/10'
+                  : holiday.isHoliday
+                  ? 'border-green-500/50 bg-green-500/15'
+                  : weekend
+                  ? 'border-purple-500/30 bg-purple-500/5'
                   : hasAbsence
                   ? 'border-blue-500/30 bg-blue-500/10'
                   : 'border-border bg-overlay hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
               }`}
+              title={holiday.isHoliday ? holiday.name : undefined}
             >
-              <div className="text-xs font-semibold text-text-primary text-center">{day}</div>
+              <div className={`text-xs font-semibold text-center ${
+                holiday.isHoliday 
+                  ? 'text-green-400' 
+                  : weekend 
+                  ? 'text-purple-400' 
+                  : 'text-text-primary'
+              }`}>{day}</div>
               {hasAbsence && (
                 <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
                   {absences.slice(0, 3).map((absence, idx) => (
@@ -393,6 +409,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<AbsenceStatus | 'all'>('all');
   const [filterUser, setFilterUser] = useState<string | 'all'>('all');
+  const [selectedState, setSelectedState] = useState<GermanState | undefined>('BY'); // Default: Bayern
 
   const handleDateRangeSelect = (startDate: Date, endDate: Date) => {
     setPrefilledDates({ start: startDate, end: endDate });
@@ -446,12 +463,45 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
         </button>
       </div>
 
+      {/* Bundesland Filter */}
+      <div className="bg-surface rounded-xl p-4 border border-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-text-primary mb-1">Feiertage anzeigen</h3>
+            <p className="text-xs text-text-secondary">Wähle ein Bundesland für regionale Feiertage</p>
+          </div>
+          <select
+            value={selectedState || ''}
+            onChange={(e) => setSelectedState(e.target.value as GermanState || undefined)}
+            className="bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-cyan outline-none"
+          >
+            <option value="">Keine Feiertage</option>
+            {(Object.keys(GERMAN_STATE_NAMES) as GermanState[]).map((state) => (
+              <option key={state} value={state}>
+                {GERMAN_STATE_NAMES[state]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center space-x-4 mt-3 text-xs">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded border-green-500/50 bg-green-500/15"></div>
+            <span className="text-text-secondary">Feiertag</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded border-purple-500/30 bg-purple-500/5"></div>
+            <span className="text-text-secondary">Wochenende</span>
+          </div>
+        </div>
+      </div>
+
       {/* Calendar View */}
       <CalendarView
         absenceRequests={absenceRequests}
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
         onDateRangeSelect={handleDateRangeSelect}
+        selectedState={selectedState}
       />
 
       {/* Filters */}
