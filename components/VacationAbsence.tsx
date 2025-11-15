@@ -95,11 +95,12 @@ const CreateRequestModal: React.FC<{
     e.preventDefault();
     if (!startDate || !endDate) return;
 
+    // Verwende das Datum direkt im Format YYYY-MM-DD ohne Timezone-Konvertierung
     onSubmit({
       user: currentUser,
       type,
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
+      startDate: startDate, // Format: YYYY-MM-DD
+      endDate: endDate,     // Format: YYYY-MM-DD
       halfDay,
       reason: reason.trim() || undefined,
     });
@@ -253,8 +254,11 @@ const CalendarView: React.FC<{
   const emptyDays = Array.from({ length: firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1 }, (_, i) => i);
 
   const getAbsencesForDay = (day: number) => {
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    // Erstelle Datum-String direkt ohne Timezone-Konvertierung
+    const year = currentMonth.getFullYear();
+    const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateStr = `${year}-${month}-${dayStr}`; // YYYY-MM-DD
     
     return absenceRequests.filter((req) => {
       const startStr = req.startDate.split('T')[0];
