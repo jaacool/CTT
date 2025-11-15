@@ -75,10 +75,18 @@ const CreateRequestModal: React.FC<{
   onClose: () => void;
   onSubmit: (request: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void;
   currentUser: User;
-}> = ({ onClose, onSubmit, currentUser }) => {
+  prefilledDates?: { start: Date; end: Date } | null;
+}> = ({ onClose, onSubmit, currentUser, prefilledDates }) => {
+  const formatDateForInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [type, setType] = useState<AbsenceType>(AbsenceType.Vacation);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(prefilledDates ? formatDateForInput(prefilledDates.start) : '');
+  const [endDate, setEndDate] = useState(prefilledDates ? formatDateForInput(prefilledDates.end) : '');
   const [halfDay, setHalfDay] = useState<'morning' | 'afternoon' | undefined>(undefined);
   const [reason, setReason] = useState('');
 
@@ -217,7 +225,11 @@ const CalendarView: React.FC<{
   absenceRequests: AbsenceRequest[];
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
-}> = ({ absenceRequests, currentMonth, onMonthChange }) => {
+  onDateRangeSelect: (startDate: Date, endDate: Date) => void;
+}> = ({ absenceRequests, currentMonth, onMonthChange, onDateRangeSelect }) => {
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragEnd, setDragEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const monthName = currentMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
@@ -240,6 +252,38 @@ const CalendarView: React.FC<{
 
   const nextMonth = () => {
     onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const handleMouseDown = (day: number) => {
+    setDragStart(day);
+    setDragEnd(day);
+    setIsDragging(true);
+  };
+
+  const handleMouseEnter = (day: number) => {
+    if (isDragging && dragStart !== null) {
+      setDragEnd(day);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (dragStart !== null && dragEnd !== null) {
+      const start = Math.min(dragStart, dragEnd);
+      const end = Math.max(dragStart, dragEnd);
+      const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), start);
+      const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), end);
+      onDateRangeSelect(startDate, endDate);
+    }
+    setDragStart(null);
+    setDragEnd(null);
+    setIsDragging(false);
+  };
+
+  const isInDragRange = (day: number) => {
+    if (dragStart === null || dragEnd === null) return false;
+    const start = Math.min(dragStart, dragEnd);
+    const end = Math.max(dragStart, dragEnd);
+    return day >= start && day <= end;
   };
 
   return (
@@ -277,7 +321,11 @@ const CalendarView: React.FC<{
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div 
+        className="grid grid-cols-7 gap-2 select-none"
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {emptyDays.map((i) => (
           <div key={`empty-${i}`} className="aspect-square"></div>
         ))}
@@ -288,16 +336,21 @@ const CalendarView: React.FC<{
             day === new Date().getDate() &&
             currentMonth.getMonth() === new Date().getMonth() &&
             currentMonth.getFullYear() === new Date().getFullYear();
+          const inDragRange = isInDragRange(day);
 
           return (
             <div
               key={day}
-              className={`aspect-square p-1 rounded-lg border transition-all ${
-                isToday
+              onMouseDown={() => handleMouseDown(day)}
+              onMouseEnter={() => handleMouseEnter(day)}
+              className={`aspect-square p-1 rounded-lg border transition-all cursor-pointer ${
+                inDragRange
+                  ? 'border-glow-magenta bg-glow-magenta/20 scale-95'
+                  : isToday
                   ? 'border-glow-cyan bg-glow-cyan/10'
                   : hasAbsence
                   ? 'border-blue-500/30 bg-blue-500/10'
-                  : 'border-border bg-overlay'
+                  : 'border-border bg-overlay hover:border-glow-cyan/50 hover:bg-glow-cyan/5'
               }`}
             >
               <div className="text-xs font-semibold text-text-primary text-center">{day}</div>
@@ -336,9 +389,20 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   isAdmin,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [prefilledDates, setPrefilledDates] = useState<{ start: Date; end: Date } | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<AbsenceStatus | 'all'>('all');
   const [filterUser, setFilterUser] = useState<string | 'all'>('all');
+
+  const handleDateRangeSelect = (startDate: Date, endDate: Date) => {
+    setPrefilledDates({ start: startDate, end: endDate });
+    setShowCreateModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setPrefilledDates(null);
+  };
 
   const filteredRequests = useMemo(() => {
     return absenceRequests.filter((req) => {
@@ -387,6 +451,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
         absenceRequests={absenceRequests}
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
+        onDateRangeSelect={handleDateRangeSelect}
       />
 
       {/* Filters */}
@@ -524,9 +589,13 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
       {/* Create Modal */}
       {showCreateModal && (
         <CreateRequestModal
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={onCreateRequest}
+          onClose={handleCloseModal}
+          onSubmit={(request) => {
+            onCreateRequest(request);
+            handleCloseModal();
+          }}
           currentUser={currentUser}
+          prefilledDates={prefilledDates}
         />
       )}
     </div>
