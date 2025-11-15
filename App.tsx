@@ -620,6 +620,10 @@ const App: React.FC = () => {
     ));
   }, []);
 
+  const handleDeleteRequest = useCallback((requestId: string) => {
+    setAbsenceRequests(prev => prev.filter(req => req.id !== requestId));
+  }, []);
+
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
       req.id === requestId 
@@ -1135,6 +1139,7 @@ const App: React.FC = () => {
           onRejectRequest={handleRejectRequest}
           onAddComment={handleAddComment}
           onMarkCommentsRead={handleMarkCommentsRead}
+          onDeleteRequest={handleDeleteRequest}
           currentUser={currentUser!}
         />
       )}

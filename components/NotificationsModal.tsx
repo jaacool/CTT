@@ -9,6 +9,7 @@ interface NotificationsModalProps {
   onRejectRequest: (requestId: string, reason: string) => void;
   onAddComment: (requestId: string, message: string) => void;
   onMarkCommentsRead: (requestId: string) => void;
+  onDeleteRequest: (requestId: string) => void;
   currentUser: User;
 }
 
@@ -64,6 +65,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onRejectRequest,
   onAddComment,
   onMarkCommentsRead,
+  onDeleteRequest,
   currentUser,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(null);
@@ -81,6 +83,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     
     return false;
   });
+
+  // Trenne Pending und Erledigte Anträge
+  const pendingRequests = relevantRequests.filter(req => req.status === AbsenceStatus.Pending);
+  const completedRequests = relevantRequests.filter(req => 
+    req.status === AbsenceStatus.Approved || req.status === AbsenceStatus.Rejected
+  );
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('de-DE', {
@@ -138,7 +146,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           <div>
             <h2 className="text-xl font-bold text-text-primary">Benachrichtigungen</h2>
             <p className="text-sm text-text-secondary mt-1">
-              {relevantRequests.length} {isAdmin ? 'ausstehende Abwesenheitsanträge' : 'Abwesenheitsanträge'}
+              {pendingRequests.length} ausstehend • {completedRequests.length} erledigt
             </p>
           </div>
           <button
@@ -152,49 +160,144 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex">
           {/* Request List */}
-          <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-3">
+          <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-4">
             {relevantRequests.length === 0 ? (
               <div className="text-center py-12">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
                 <p className="text-text-secondary">Keine Anträge</p>
               </div>
             ) : (
-              relevantRequests.map((request) => {
-                const hasUnreadComments = request.comments?.some(c => !c.read && c.user.id !== currentUser.id) || false;
-                
-                return (
-                <div
-                  key={request.id}
-                  onClick={() => handleSelectRequest(request)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
-                    selectedRequest?.id === request.id
-                      ? 'border-glow-cyan bg-glow-cyan/10'
-                      : 'border-border bg-overlay hover:border-glow-cyan/50'
-                  }`}
-                >
-                  {hasUnreadComments && (
-                    <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></div>
-                  )}
-                  <div className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>
-                      {getAbsenceTypeIcon(request.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <img src={request.user.avatarUrl} alt={request.user.name} className="w-5 h-5 rounded-full" />
-                        <span className="font-semibold text-text-primary text-sm">{request.user.name}</span>
-                      </div>
-                      <div className="text-xs text-text-secondary">
-                        {getAbsenceTypeLabel(request.type)} • {formatDate(request.startDate)} - {formatDate(request.endDate)}
-                      </div>
-                      <div className="text-xs text-text-secondary mt-1">
-                        {calculateDays(request.startDate, request.endDate)} Tag{calculateDays(request.startDate, request.endDate) > 1 ? 'e' : ''}
-                      </div>
+              <>
+                {/* Ausstehende Anträge */}
+                {pendingRequests.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary mb-2 px-1">Ausstehend ({pendingRequests.length})</h3>
+                    <div className="space-y-2">
+                      {pendingRequests.map((request) => {
+                        const hasUnreadComments = request.comments?.some(c => !c.read && c.user.id !== currentUser.id) || false;
+                        
+                        return (
+                          <div
+                            key={request.id}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
+                              selectedRequest?.id === request.id
+                                ? 'border-glow-cyan bg-glow-cyan/10'
+                                : 'border-border bg-overlay hover:border-glow-cyan/50'
+                            }`}
+                          >
+                            {/* Delete Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                  onDeleteRequest(request.id);
+                                  if (selectedRequest?.id === request.id) {
+                                    setSelectedRequest(null);
+                                  }
+                                }
+                              }}
+                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all"
+                              title="Löschen"
+                            >
+                              <XCircleIcon className="w-4 h-4" />
+                            </button>
+                            
+                            {hasUnreadComments && (
+                              <div className="absolute top-2 right-8 w-2 h-2 bg-red-500 rounded-full"></div>
+                            )}
+                            
+                            <div onClick={() => handleSelectRequest(request)} className="flex items-start space-x-3">
+                              <div className={`p-2 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>
+                                {getAbsenceTypeIcon(request.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <img src={request.user.avatarUrl} alt={request.user.name} className="w-5 h-5 rounded-full" />
+                                  <span className="font-semibold text-text-primary text-sm">{request.user.name}</span>
+                                </div>
+                                <div className="text-xs text-text-secondary">
+                                  {getAbsenceTypeLabel(request.type)} • {formatDate(request.startDate)} - {formatDate(request.endDate)}
+                                </div>
+                                <div className="text-xs text-text-secondary mt-1">
+                                  {calculateDays(request.startDate, request.endDate)} Tag{calculateDays(request.startDate, request.endDate) > 1 ? 'e' : ''}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-                );
-              })
+                )}
+
+                {/* Erledigte Anträge */}
+                {completedRequests.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary mb-2 px-1">Erledigt ({completedRequests.length})</h3>
+                    <div className="space-y-2">
+                      {completedRequests.map((request) => {
+                        const hasUnreadComments = request.comments?.some(c => !c.read && c.user.id !== currentUser.id) || false;
+                        
+                        return (
+                          <div
+                            key={request.id}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative opacity-75 hover:opacity-100 ${
+                              selectedRequest?.id === request.id
+                                ? 'border-glow-cyan bg-glow-cyan/10'
+                                : 'border-border bg-overlay hover:border-glow-cyan/50'
+                            }`}
+                          >
+                            {/* Delete Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Möchtest du diesen Antrag wirklich löschen?')) {
+                                  onDeleteRequest(request.id);
+                                  if (selectedRequest?.id === request.id) {
+                                    setSelectedRequest(null);
+                                  }
+                                }
+                              }}
+                              className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded text-text-secondary hover:text-red-500 transition-all"
+                              title="Löschen"
+                            >
+                              <XCircleIcon className="w-4 h-4" />
+                            </button>
+                            
+                            {hasUnreadComments && (
+                              <div className="absolute top-2 right-8 w-2 h-2 bg-red-500 rounded-full"></div>
+                            )}
+                            
+                            <div onClick={() => handleSelectRequest(request)} className="flex items-start space-x-3">
+                              <div className={`p-2 rounded-lg border ${getAbsenceTypeColor(request.type)}`}>
+                                {getAbsenceTypeIcon(request.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <img src={request.user.avatarUrl} alt={request.user.name} className="w-5 h-5 rounded-full" />
+                                  <span className="font-semibold text-text-primary text-sm">{request.user.name}</span>
+                                  {request.status === AbsenceStatus.Approved && (
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded font-semibold">✓</span>
+                                  )}
+                                  {request.status === AbsenceStatus.Rejected && (
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-500 rounded font-semibold">✗</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-text-secondary">
+                                  {getAbsenceTypeLabel(request.type)} • {formatDate(request.startDate)} - {formatDate(request.endDate)}
+                                </div>
+                                <div className="text-xs text-text-secondary mt-1">
+                                  {calculateDays(request.startDate, request.endDate)} Tag{calculateDays(request.startDate, request.endDate) > 1 ? 'e' : ''}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
