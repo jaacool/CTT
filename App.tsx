@@ -81,6 +81,12 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
 
+  // Initial Sync: Speichere alle Users beim App-Start in Supabase
+  useEffect(() => {
+    // Speichere alle Mock-Users in Supabase (nur einmal beim Start)
+    users.forEach(user => saveUser(user));
+  }, []); // Leeres Dependency Array = nur beim Mount
+
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
     setHistory(prev => {

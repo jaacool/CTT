@@ -80,7 +80,7 @@ CREATE TABLE time_entries (
   project_id TEXT NOT NULL,
   project_name TEXT NOT NULL,
   start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE, -- NULL erlaubt für laufende Timer
   duration INTEGER NOT NULL,
   user_id TEXT NOT NULL,
   billable BOOLEAN DEFAULT false,
