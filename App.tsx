@@ -81,10 +81,52 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
 
-  // Initial Sync: Speichere alle Users beim App-Start in Supabase
+  // Initial Sync: Speichere alle Daten beim App-Start in Supabase (nur einmal)
   useEffect(() => {
-    // Speichere alle Mock-Users in Supabase (nur einmal beim Start)
-    users.forEach(user => saveUser(user));
+    const syncInitialData = async () => {
+      // Prüfe ob bereits synchronisiert wurde
+      const hasInitialSync = localStorage.getItem('supabase_initial_sync');
+      if (hasInitialSync === 'true') {
+        console.log('ℹ️ Initialer Sync bereits durchgeführt');
+        return;
+      }
+      
+      console.log('🔄 Initialer Sync mit Supabase...');
+      
+      try {
+        // 1. Users zuerst (wegen Foreign Keys)
+        for (const user of users) {
+          await saveUser(user);
+        }
+        console.log('✅ Users gespeichert');
+        
+        // 2. Dann Projekte
+        for (const project of projects) {
+          await saveProject(project);
+        }
+        console.log('✅ Projekte gespeichert');
+        
+        // 3. Dann Time Entries
+        for (const entry of timeEntries) {
+          await saveTimeEntry(entry);
+        }
+        console.log('✅ Zeiteinträge gespeichert');
+        
+        // 4. Dann Absence Requests
+        for (const request of absenceRequests) {
+          await saveAbsenceRequest(request);
+        }
+        console.log('✅ Abwesenheiten gespeichert');
+        
+        // Markiere als synchronisiert
+        localStorage.setItem('supabase_initial_sync', 'true');
+        console.log('🎉 Initialer Sync abgeschlossen!');
+      } catch (error) {
+        console.error('❌ Fehler beim initialen Sync:', error);
+      }
+    };
+    
+    syncInitialData();
   }, []); // Leeres Dependency Array = nur beim Mount
 
   // Undo/Redo system
