@@ -1,17 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, UserStatus, Role } from '../types';
+import { User, UserStatus, Role, TimeEntry, Project, AbsenceRequest } from '../types';
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
 import { RolesPage } from './RolesPage';
+import { TimeReportImportExport } from './TimeReportImportExport';
+import { SupabaseSettings } from './SupabaseSettings';
+import { ImportResult } from '../utils/timeReportImportExport';
 import { useGlow } from '../contexts/GlowContext';
 
 interface SettingsPageProps {
   users: User[];
   roles: Role[];
+  timeEntries: TimeEntry[];
+  projects: Project[];
+  absenceRequests: AbsenceRequest[];
   onAddUser: (userData: { name: string; title?: string; email: string; tags?: string[]; status: UserStatus }) => void;
   onUpdateUser: (userId: string, userData: Partial<User>) => void;
   onDeleteUser: (userId: string) => void;
   onChangeRole: (userId: string, roleId: string) => void;
+  onImportComplete: (result: ImportResult) => void;
 }
 
 const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => void; onDelete: (userId: string) => void; onChangeRole: (userId: string, roleId: string) => void }> = ({ user, roles, onEdit, onDelete, onChangeRole }) => {
@@ -87,7 +94,7 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
                   setShowRoleMenu(false);
                 }}
                 className={`w-full px-3 py-2 text-left text-sm hover:bg-overlay rounded-md transition-colors ${
-                  user.role === role.id ? 'bg-overlay text-glow-cyan font-semibold' : 'text-text-primary'
+                  user.role === role.id ? 'bg-overlay text-glow-purple font-semibold' : 'text-text-primary'
                 }`}
               >
                 {role.name}
@@ -167,10 +174,10 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddUser, onUpdateUser, onDeleteUser, onChangeRole }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase'>('users');
   const { themeMode, setThemeMode } = useGlow();
 
   return (
@@ -199,6 +206,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
           }`}
         >
           Erscheinungsbild
+        </button>
+        <button
+          onClick={() => setActiveTab('import-export')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'import-export' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
+          }`}
+        >
+          Import/Export
+        </button>
+        <button
+          onClick={() => setActiveTab('supabase')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'supabase' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
+          }`}
+        >
+          Supabase
         </button>
       </div>
 
@@ -247,6 +270,26 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, onAddU
         </>
       ) : activeTab === 'roles' ? (
         <RolesPage roles={roles} />
+      ) : activeTab === 'import-export' ? (
+        <div>
+          <h1 className="text-2xl font-bold glow-text mb-8">Import/Export</h1>
+          <TimeReportImportExport
+            timeEntries={timeEntries}
+            projects={projects}
+            users={users}
+            onImportComplete={onImportComplete}
+          />
+        </div>
+      ) : activeTab === 'supabase' ? (
+        <div>
+          <h1 className="text-2xl font-bold glow-text mb-8">Supabase Cloud Sync</h1>
+          <SupabaseSettings
+            projects={projects}
+            timeEntries={timeEntries}
+            users={users}
+            absenceRequests={absenceRequests}
+          />
+        </div>
       ) : (
         <div>
           <h1 className="text-2xl font-bold glow-text mb-8">Erscheinungsbild</h1>

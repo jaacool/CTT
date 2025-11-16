@@ -133,12 +133,11 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
       {/* Table Header */}
       <div className="glow-card rounded-t-xl">
         <div className="grid grid-cols-12 gap-4 px-6 py-3 text-text-secondary text-xs font-semibold border-b border-overlay">
-          <div className="col-span-3">Projekt</div>
+          <div className="col-span-4">Projekt</div>
           <div className="col-span-2">Typ</div>
-          <div className="col-span-2">Tags</div>
+          <div className="col-span-1">Tags</div>
           <div className="col-span-1">Fällig</div>
-          <div className="col-span-2">Aufgaben</div>
-          <div className="col-span-1">Fortschritt</div>
+          <div className="col-span-3">Aufgaben</div>
           <div className="col-span-1">Verantwortlich</div>
         </div>
       </div>
@@ -150,7 +149,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
             {/* Status Header */}
             <div className="flex items-center space-x-2 px-6 py-2">
               <div className={`w-2 h-2 rounded-full ${
-                status === 'AKTIV' ? 'bg-glow-cyan' : 
+                status === 'AKTIV' ? 'bg-glow-purple' : 
                 status === 'GEPLANT' ? 'bg-yellow-400' : 
                 'bg-text-secondary'
               }`}></div>
@@ -168,8 +167,13 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                   className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-overlay transition-colors cursor-pointer border-b border-overlay/50"
                 >
                   {/* Projekt Name */}
-                  <div className="col-span-3 flex items-center space-x-3">
-                    <span className="text-2xl">{project.icon}</span>
+                  <div className="col-span-4 flex items-center space-x-3">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                      style={{ backgroundColor: project.icon }}
+                    >
+                      {project.name.substring(0, 2).toUpperCase()}
+                    </div>
                     <div className="min-w-0">
                       <div className="text-text-primary font-semibold truncate">{project.name}</div>
                       <div className="text-text-secondary text-xs truncate">{project.client || '-'}</div>
@@ -182,7 +186,7 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                   </div>
 
                   {/* Tags */}
-                  <div className="col-span-2 flex items-center">
+                  <div className="col-span-1 flex items-center">
                     <span className="px-2 py-1 bg-overlay text-text-secondary text-xs rounded">None</span>
                   </div>
 
@@ -192,28 +196,23 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                   </div>
 
                   {/* Aufgaben */}
-                  <div className="col-span-2 flex items-center">
+                  <div className="col-span-3 flex items-center space-x-4">
                     <span className="text-text-primary text-sm">{stats.taskText}</span>
-                  </div>
-
-                  {/* Fortschritt */}
-                  <div className="col-span-1 flex items-center space-x-2">
                     {stats.progress > 0 && (
-                      <>
-                        <div className="flex-1 bg-overlay rounded-full h-2">
+                      <div className="flex items-center space-x-2 flex-1">
+                        <div className="flex-1 bg-overlay rounded-full h-2 max-w-[120px]">
                           <div
                             className={`h-2 rounded-full ${
                               stats.progress === 100 ? 'bg-red-500' :
-                              stats.progress > 50 ? 'bg-glow-cyan' :
-                              'bg-glow-cyan'
+                              stats.progress > 50 ? 'bg-glow-purple' :
+                              'bg-glow-purple'
                             }`}
                             style={{ width: `${stats.progress}%` }}
                           ></div>
                         </div>
                         <span className="text-text-secondary text-xs">{stats.progress}%</span>
-                      </>
+                      </div>
                     )}
-                    {stats.progress === 0 && <span className="text-text-secondary text-sm">-</span>}
                   </div>
 
                   {/* Verantwortlich */}

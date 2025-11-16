@@ -571,11 +571,11 @@ const App: React.FC = () => {
   }, []);
 
   // Vacation & Absence Handlers
-  const handleCreateAbsenceRequest = useCallback((request: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+  const handleCreateAbsenceRequest = useCallback((request: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>, autoApprove?: boolean) => {
     const newRequest: AbsenceRequest = {
       ...request,
-      id: `absence-${Date.now()}`,
-      status: AbsenceStatus.Pending,
+      id: `absence-${Date.now()}-${Math.random()}`,
+      status: autoApprove ? AbsenceStatus.Approved : AbsenceStatus.Pending,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -623,6 +623,14 @@ const App: React.FC = () => {
 
   const handleDeleteRequest = useCallback((requestId: string) => {
     setAbsenceRequests(prev => prev.filter(req => req.id !== requestId));
+  }, []);
+
+  const handleMarkSickLeaveReported = useCallback((requestId: string) => {
+    setAbsenceRequests(prev => prev.map(req =>
+      req.id === requestId
+        ? { ...req, sickLeaveReported: true, updatedAt: new Date().toISOString() }
+        : req
+    ));
   }, []);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
@@ -713,6 +721,27 @@ const App: React.FC = () => {
     
     setTimeEntries(prev => [...prev, newEntry]);
   }, [currentUser]);
+
+  const handleImportTimeEntries = useCallback((entries: Omit<TimeEntry, 'id'>[]) => {
+    const newEntries = entries.map((entry, index) => ({
+      ...entry,
+      id: `import-${Date.now()}-${index}`,
+    }));
+    
+    setTimeEntries(prev => [...prev, ...newEntries]);
+  }, []);
+
+  const handleImportAbsences = useCallback((absences: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>[]) => {
+    const newAbsences = absences.map((absence, index) => ({
+      ...absence,
+      id: `import-absence-${Date.now()}-${index}`,
+      status: AbsenceStatus.Approved, // Auto-approve imported absences
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    
+    setAbsenceRequests(prev => [...prev, ...newAbsences]);
+  }, []);
 
   const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: User[]) => {
     updateProjects(prevProjects => prevProjects.map(p => ({
@@ -929,11 +958,13 @@ const App: React.FC = () => {
             absenceRequests={absenceRequests}
             currentUser={currentUser}
             allUsers={users}
+            timeEntries={timeEntries}
             onCreateRequest={handleCreateAbsenceRequest}
             onApproveRequest={handleApproveRequest}
             onRejectRequest={handleRejectRequest}
             onCancelRequest={handleCancelRequest}
             onDeleteRequest={handleDeleteRequest}
+            onMarkSickLeaveReported={handleMarkSickLeaveReported}
             onOpenRequestChat={(request) => {
               setSelectedNotificationRequestId(request.id);
               setShowNotifications(true);
@@ -964,6 +995,8 @@ const App: React.FC = () => {
             onOpenSearchProjects={() => setShowSearchModal(true)}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            onImportEntries={handleImportTimeEntries}
+            onImportAbsences={handleImportAbsences}
             currentUser={currentUser}
             allUsers={MOCK_USERS}
             onUpdateTaskAssignees={handleUpdateTaskAssignees}
@@ -973,10 +1006,28 @@ const App: React.FC = () => {
             <SettingsPage 
               users={users}
               roles={MOCK_ROLES}
+              timeEntries={timeEntries}
+              projects={projects}
               onAddUser={handleAddUser}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
               onChangeRole={handleChangeRole}
+              onImportComplete={(result) => {
+                // Merge neue Projekte
+                const updatedProjects = [...projects];
+                result.projects.forEach(newProject => {
+                  const existingIndex = updatedProjects.findIndex(p => p.id === newProject.id);
+                  if (existingIndex >= 0) {
+                    updatedProjects[existingIndex] = newProject;
+                  } else {
+                    updatedProjects.push(newProject);
+                  }
+                });
+                setProjects(updatedProjects);
+                
+                // Füge neue Zeiteinträge hinzu
+                setTimeEntries([...timeEntries, ...result.timeEntries]);
+              }}
             />
           ) :
           <div className="flex items-center justify-center h-full text-text-secondary">
@@ -1149,6 +1200,7 @@ const App: React.FC = () => {
           onAddComment={handleAddComment}
           onMarkCommentsRead={handleMarkCommentsRead}
           onDeleteRequest={handleDeleteRequest}
+          onMarkSickLeaveReported={handleMarkSickLeaveReported}
           currentUser={currentUser!}
           initialSelectedRequestId={selectedNotificationRequestId}
         />

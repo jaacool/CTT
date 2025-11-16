@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Project, Task, TaskList as ITaskList, TaskStatus, Subtask, User, TimeEntry } from '../types';
+import React, { useMemo, useState } from 'react';
+import { Project, TimeEntry, Task, Subtask, TaskStatus, User, AbsenceRequest } from '../types';
 import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, CalendarIcon, PrinterIcon, ThumbsUpIcon, CheckIcon, ChevronDownIcon, PlayIcon, PauseIcon } from './Icons';
 import { formatTime, formatTimeCompact } from './utils';
 import { TimeView } from './TimeView';
@@ -31,6 +31,8 @@ interface TaskAreaProps {
     onOpenSearchProjects?: () => void;
     onDeleteTimeEntry?: (entryId: string) => void;
     onDuplicateTimeEntry?: (entry: TimeEntry) => void;
+    onImportEntries?: (entries: Omit<TimeEntry, 'id'>[]) => void;
+    onImportAbsences?: (absences: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>[]) => void;
     currentUser?: any;
     allUsers?: User[];
     onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
@@ -212,7 +214,7 @@ const EditableTitle: React.FC<{ id: string, title: string, onRename: (newName: s
                 onChange={(e) => setCurrentTitle(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-1 py-0 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-purple rounded px-1 py-0 w-full"
                 autoFocus
                 onClick={e => e.stopPropagation()}
             />
@@ -273,7 +275,7 @@ const SubtaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggleTimer(subtask.id); }}
                     onMouseEnter={() => setTimerHovered(true)}
                     onMouseLeave={() => setTimerHovered(false)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-purple/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
                 >
                     {timerHovered ? (
                         isActive ? (
@@ -375,7 +377,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onClick={(e) => { e.stopPropagation(); onToggleTimer(task.id); }}
                         onMouseEnter={() => setTimerHovered(true)}
                         onMouseLeave={() => setTimerHovered(false)}
-                        className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-cyan/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-md cursor-pointer border border-transparent bg-gradient-to-r from-transparent to-transparent will-change-[background-image,border-color,color] transition-[background-image,border-color,color] duration-300 ease-in-out ${isActive ? 'glow-button-highlight text-text-primary' : 'hover:from-glow-cyan/10 hover:to-glow-magenta/10 hover:border-glow-purple/10 hover:text-text-primary hover:shadow-[inset_0_0_30px_10px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(168,85,247,0.15),0_0_15px_-3px_rgba(168,85,247,0.3)]'}`}
                     >
                         {timerHovered ? (
                             isActive ? (
@@ -477,7 +479,7 @@ const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: 
                 onChange={e => setTitle(e.target.value)}
                 onBlur={handleSubmit}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-2 py-1 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-purple rounded px-2 py-1 w-full"
                 placeholder="Aufgabentitel eingeben..."
                 autoFocus
             />
@@ -594,7 +596,7 @@ const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAdd
                 onBlur={handleAdd}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
                 placeholder="Listentitel eingeben..."
-                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-2 py-2 w-full"
+                className="bg-surface text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-purple rounded px-2 py-2 w-full"
                 autoFocus
             />
         </div>
@@ -660,6 +662,8 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     onStartTimer={props.onToggleTimer}
                     onDeleteEntry={props.onDeleteTimeEntry}
                     onDuplicateEntry={props.onDuplicateTimeEntry}
+                    onImportEntries={props.onImportEntries}
+                    onImportAbsences={props.onImportAbsences}
                     currentUser={props.currentUser}
                 />
             )}

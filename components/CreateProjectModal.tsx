@@ -98,7 +98,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
                   }}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors border border-dashed ${
                     action.label === 'Kunde' && selectedClient
-                      ? 'bg-glow-cyan/20 border-glow-cyan text-text-primary'
+                      ? 'bg-glow-purple/20 border-glow-purple text-text-primary'
                       : 'bg-overlay hover:bg-surface border-text-secondary'
                   }`}
                 >

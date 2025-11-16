@@ -69,7 +69,7 @@ body {
 .c-text { @apply text-text-primary; }
 .c-subtle { @apply text-text-secondary; }
 .c-muted { @apply text-text-secondary; }
-.c-blue { @apply text-glow-cyan; }
+.c-blue { @apply text-glow-purple; }
 .c-yellow { @apply text-glow-lime; }
 
 .bg-c-bg { @apply bg-background; }
@@ -78,13 +78,13 @@ body {
 .text-c-text { @apply text-text-primary; }
 .text-c-subtle { @apply text-text-secondary; }
 .text-c-muted { @apply text-text-secondary; }
-.text-c-blue { @apply text-glow-cyan; }
+.text-c-blue { @apply text-glow-purple; }
 .text-c-yellow { @apply text-glow-lime; }
 
 .border-c-highlight { @apply border-border; }
 .hover\:bg-c-highlight:hover { @apply hover:bg-overlay; }
 .hover\:text-c-text:hover { @apply hover:text-text-primary; }
-.focus\:ring-c-blue:focus { @apply focus:ring-glow-cyan; }
+.focus\:ring-c-blue:focus { @apply focus:ring-glow-purple; }
 
 /* Liquid Glass Glow Effects */
 .glow-border {
@@ -605,8 +605,8 @@ body {
 }
 
 .hover-glow:hover {
-  background-image: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(236, 72, 153, 0.1));
-  border-color: rgba(34, 211, 238, 0.1);
+  background-image: linear-gradient(to right, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
+  border-color: rgba(168, 85, 247, 0.2);
   color: var(--color-text-primary);
   box-shadow: 
     inset 0 0 30px 10px rgba(0, 0, 0, 0.5),
@@ -922,7 +922,7 @@ textarea:focus {
   border: none;
 }
 
-.theme-blue .border-glow-cyan {
+.theme-blue .border-glow-purple {
   border-color: var(--color-accent-blue);
 }
 
@@ -1043,8 +1043,8 @@ textarea:focus {
 }
 
 .theme-light button.hover-glow:has(svg):hover {
-  background-image: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(236, 72, 153, 0.1));
-  border-color: rgba(34, 211, 238, 0.1);
+  background-image: linear-gradient(to right, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
+  border-color: rgba(168, 85, 247, 0.2);
   color: var(--color-text-primary);
   box-shadow: 
     inset 0 0 30px 10px rgba(255, 255, 255, 0.5),

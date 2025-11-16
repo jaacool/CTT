@@ -115,7 +115,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                                     ))}
                                     <button
                                         onClick={removeAllAssignees}
-                                        className="w-full text-center text-xs text-glow-cyan hover:text-glow-magenta transition-colors py-1"
+                                        className="w-full text-center text-xs text-glow-purple hover:text-glow-magenta transition-colors py-1"
                                     >
                                         Alle entfernen
                                     </button>
@@ -131,7 +131,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Suchen"
-                                    className="w-full bg-background text-text-primary text-sm pl-10 pr-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-glow-cyan"
+                                    className="w-full bg-background text-text-primary text-sm pl-10 pr-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-glow-purple"
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             </div>
@@ -154,13 +154,13 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                                             <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full flex-shrink-0" />
                                             <div className="flex-1 min-w-0 text-left">
                                                 <div className={`text-sm font-medium truncate ${
-                                                    isAssigned ? 'text-glow-cyan' : 'text-text-primary'
+                                                    isAssigned ? 'text-glow-purple' : 'text-text-primary'
                                                 }`}>{user.name}</div>
                                                 <div className="text-xs text-text-secondary truncate">{user.email}</div>
                                             </div>
                                         </div>
                                         {isAssigned && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-glow-cyan flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-glow-purple flex-shrink-0">
                                                 <polyline points="20 6 9 17 4 12"></polyline>
                                             </svg>
                                         )}

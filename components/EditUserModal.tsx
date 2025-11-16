@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Gender, UserStatus } from '../types';
+import { User, Gender, UserStatus, WorkSchedule } from '../types';
 
 interface EditUserModalProps {
   user: User;
@@ -8,10 +8,53 @@ interface EditUserModalProps {
 }
 
 export const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onUpdateUser }) => {
-  const [formData, setFormData] = useState<Partial<User>>(user);
+  // Initialisiere formData mit definierten Werten für alle Felder
+  const [formData, setFormData] = useState<Partial<User>>({
+    ...user,
+    title: user.title ?? '',
+    firstName: user.firstName ?? '',
+    lastName: user.lastName ?? '',
+    position: user.position ?? '',
+    birthday: user.birthday ?? '',
+    password: user.password ?? '',
+    employmentStartDate: user.employmentStartDate ?? ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [vacationDisplayMode, setVacationDisplayMode] = useState<'year' | 'month'>('year');
+  const [workSchedule, setWorkSchedule] = useState<WorkSchedule>(user.workSchedule || {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+    hoursPerDay: 8,
+    vacationDaysPerYear: 30
+  });
 
   useEffect(() => {
-    setFormData(user);
+    setFormData({
+      ...user,
+      title: user.title ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      position: user.position ?? '',
+      birthday: user.birthday ?? '',
+      password: user.password ?? '',
+      employmentStartDate: user.employmentStartDate ?? ''
+    });
+    setWorkSchedule(user.workSchedule || {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false,
+      hoursPerDay: 8,
+      vacationDaysPerYear: 30
+    });
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -21,46 +64,46 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onU
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateUser(user.id, formData);
+    onUpdateUser(user.id, { ...formData, workSchedule });
     onClose();
+  };
+
+  const handleWorkDayToggle = (day: keyof Omit<WorkSchedule, 'hoursPerDay' | 'vacationDaysPerYear'>) => {
+    setWorkSchedule(prev => ({ ...prev, [day]: !prev[day] }));
+  };
+
+  const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Erlaube Komma und Punkt als Dezimaltrennzeichen
+    const normalizedValue = e.target.value.replace(',', '.');
+    const value = parseFloat(normalizedValue) || 0;
+    setWorkSchedule(prev => ({ ...prev, hoursPerDay: Math.max(0, Math.min(24, value)) }));
+  };
+
+  const handleVacationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Erlaube Komma und Punkt als Dezimaltrennzeichen
+    const normalizedValue = e.target.value.replace(',', '.');
+    const value = parseFloat(normalizedValue) || 0;
+    const yearValue = vacationDisplayMode === 'year' ? value : value * 12;
+    setWorkSchedule(prev => ({ ...prev, vacationDaysPerYear: Math.max(0, yearValue) }));
+  };
+
+  const getVacationDisplayValue = () => {
+    return vacationDisplayMode === 'year' 
+      ? workSchedule.vacationDaysPerYear 
+      : (workSchedule.vacationDaysPerYear / 12).toFixed(1);
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="glow-card rounded-2xl p-8 w-full max-w-2xl border border-overlay max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-text-primary">'{user.name}' bearbeiten</h2>
+      <div className="glow-card rounded-2xl p-6 w-full max-w-xl border border-overlay max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-text-primary">'{user.name}' bearbeiten</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-overlay mb-6">
-          <button className="px-4 py-2 text-text-primary border-b-2 border-glow-cyan font-semibold flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>Details</span>
-          </button>
-          <button className="px-4 py-2 text-text-secondary hover:text-text-primary flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-            <span>Kontakt</span>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Avatar */}
-          <div className="flex items-center justify-center">
-            <div className="relative">
-              <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full" />
-              <button type="button" className="absolute bottom-0 left-0 bg-background p-1 rounded-full border border-overlay">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-              </button>
-              <button type="button" className="absolute top-0 right-0 bg-background p-1 rounded-full border border-overlay">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Form Fields */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Titel</label>
@@ -83,27 +126,141 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onU
             <input type="text" name="position" value={formData.position || ''} onChange={handleChange} className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary" />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Geburtstag</label>
-            <div className="relative">
-              <input type="text" name="birthday" value={formData.birthday || ''} onChange={handleChange} className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary" />
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Geburtstag</label>
+              <div className="relative">
+                <input type="date" name="birthday" value={formData.birthday || ''} onChange={handleChange} className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Angestellt ab</label>
+              <div className="relative">
+                <input type="date" name="employmentStartDate" value={formData.employmentStartDate || ''} onChange={handleChange} className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary" />
+              </div>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Passwort</label>
-            <input type="password" name="password" value={formData.password || ''} onChange={handleChange} className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary" />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                name="password" 
+                value={formData.password || ''} 
+                onChange={handleChange} 
+                className="w-full px-3 py-2 pr-10 bg-background border border-overlay rounded-md text-text-primary" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Tags</label>
-            <div className="flex items-center space-x-2">
-              {/* TODO: Implement tag editing */}
-              <button type="button" className="flex items-center space-x-2 px-3 py-2 border-2 border-dashed border-overlay rounded-md text-text-secondary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>Hinzufügen</span>
-              </button>
+          {/* Work Schedule */}
+          <div className="border-t border-overlay pt-4">
+            <label className="block text-sm font-medium text-text-primary mb-3">Arbeitszeitregelung</label>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-2">Arbeitstage</label>
+                <div className="grid grid-cols-7 gap-1">
+                  {[
+                    { key: 'monday' as const, label: 'Mo' },
+                    { key: 'tuesday' as const, label: 'Di' },
+                    { key: 'wednesday' as const, label: 'Mi' },
+                    { key: 'thursday' as const, label: 'Do' },
+                    { key: 'friday' as const, label: 'Fr' },
+                    { key: 'saturday' as const, label: 'Sa' },
+                    { key: 'sunday' as const, label: 'So' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleWorkDayToggle(key)}
+                      className={`py-2 px-1 text-xs rounded-md transition-colors ${
+                        workSchedule[key]
+                          ? 'bg-glow-purple text-background font-semibold'
+                          : 'bg-background border border-overlay text-text-secondary hover:border-glow-purple'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">Stunden pro Tag</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[,.]?[0-9]*"
+                  placeholder="8 oder 8,5"
+                  value={workSchedule.hoursPerDay}
+                  onChange={handleHoursChange}
+                  className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-text-secondary">Urlaubstage</label>
+                  <div className="flex items-center space-x-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setVacationDisplayMode('year')}
+                      className={`px-2 py-1 rounded transition-colors ${
+                        vacationDisplayMode === 'year'
+                          ? 'bg-glow-purple text-background font-semibold'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Jahr
+                    </button>
+                    <span className="text-text-secondary">/</span>
+                    <button
+                      type="button"
+                      onClick={() => setVacationDisplayMode('month')}
+                      className={`px-2 py-1 rounded transition-colors ${
+                        vacationDisplayMode === 'month'
+                          ? 'bg-glow-purple text-background font-semibold'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Monat
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[,.]?[0-9]*"
+                    placeholder={vacationDisplayMode === 'year' ? '30' : '2,5'}
+                    value={getVacationDisplayValue()}
+                    onChange={handleVacationChange}
+                    className="w-full px-3 py-2 bg-background border border-overlay rounded-md text-text-primary"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-secondary pointer-events-none">
+                    {vacationDisplayMode === 'year' ? 'Tage/Jahr' : 'Tage/Monat'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

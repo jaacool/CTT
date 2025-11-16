@@ -100,7 +100,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ onClose, onSelec
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
                     placeholder="z.B. Acme GmbH"
-                    className="w-full bg-overlay text-text-primary rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-glow-cyan"
+                    className="w-full bg-overlay text-text-primary rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-glow-purple"
                     autoFocus
                   />
                 </div>
@@ -111,7 +111,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ onClose, onSelec
                     value={newClientEmail}
                     onChange={(e) => setNewClientEmail(e.target.value)}
                     placeholder="kontakt@acme.de"
-                    className="w-full bg-overlay text-text-primary rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-glow-cyan"
+                    className="w-full bg-overlay text-text-primary rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-glow-purple"
                   />
                 </div>
                 <div className="flex space-x-3 pt-4">
@@ -136,10 +136,10 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ onClose, onSelec
                 {/* New Client Button */}
                 <button
                   onClick={() => setIsCreatingNew(true)}
-                  className="w-full flex items-center space-x-3 p-4 hover:bg-overlay rounded-lg transition-colors text-left border-2 border-dashed border-glow-cyan/50 mb-2"
+                  className="w-full flex items-center space-x-3 p-4 hover:bg-overlay rounded-lg transition-colors text-left border-2 border-dashed border-glow-purple/50 mb-2"
                 >
-                  <div className="w-10 h-10 rounded-full bg-glow-cyan/20 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-glow-cyan">
+                  <div className="w-10 h-10 rounded-full bg-glow-purple/20 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-glow-purple">
                       <line x1="12" y1="5" x2="12" y2="19"></line>
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>

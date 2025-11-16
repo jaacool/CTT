@@ -112,7 +112,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
             <input
               type="text"
               placeholder="Nach Zeiterfassung, Projekt oder Aufgabe suchen"
-              className="w-full bg-overlay text-text-secondary placeholder-text-secondary/50 rounded-xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-glow-cyan"
+              className="w-full bg-overlay text-text-secondary placeholder-text-secondary/50 rounded-xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-glow-purple"
             />
           </div>
         </div>
@@ -188,7 +188,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Woran arbeitest du gerade?"
-            className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-glow-cyan resize-none"
+            className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-glow-purple resize-none"
             rows={2}
           />
         </div>

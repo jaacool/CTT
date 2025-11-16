@@ -49,7 +49,7 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
                 onChange={(e) => setName(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-overlay text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-0 py-0"
+                className="w-full bg-overlay text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-purple rounded px-0 py-0"
                 autoFocus
             />
         );

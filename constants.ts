@@ -32,6 +32,18 @@ export const MOCK_USER_2: User = {
   position: 'Smuggler',
   birthday: '1980-05-25',
   password: 'password123',
+  employmentStartDate: '2025-08-08',
+  workSchedule: {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+    hoursPerDay: 6,
+    vacationDaysPerYear: 28
+  }
 };
 
 export const ADMIN_USER: User = {

@@ -10,6 +10,7 @@ interface NotificationsModalProps {
   onAddComment: (requestId: string, message: string) => void;
   onMarkCommentsRead: (requestId: string) => void;
   onDeleteRequest: (requestId: string) => void;
+  onMarkSickLeaveReported: (requestId: string) => void;
   currentUser: User;
   initialSelectedRequestId?: string;
 }
@@ -67,6 +68,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onAddComment,
   onMarkCommentsRead,
   onDeleteRequest,
+  onMarkSickLeaveReported,
   currentUser,
   initialSelectedRequestId,
 }) => {
@@ -77,13 +79,27 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     return null;
   });
   const [chatMessage, setChatMessage] = useState('');
+  const [showCompleted, setShowCompleted] = useState(false);
   
   const isAdmin = currentUser.role === 'role-1';
+  
+  // Aktualisiere selectedRequest wenn sich absenceRequests ändern
+  React.useEffect(() => {
+    if (selectedRequest) {
+      const updated = absenceRequests.find(req => req.id === selectedRequest.id);
+      if (updated) {
+        setSelectedRequest(updated);
+      }
+    }
+  }, [absenceRequests, selectedRequest?.id]);
   
   // Filtere relevante Anträge für den aktuellen User
   const relevantRequests = absenceRequests.filter(req => {
     // Admins sehen alle ausstehenden Anträge
     if (isAdmin && req.status === AbsenceStatus.Pending) return true;
+    
+    // Admins sehen alle genehmigten Krankmeldungen (auch gemeldete)
+    if (isAdmin && req.type === AbsenceType.Sick && req.status === AbsenceStatus.Approved) return true;
     
     // User sehen ihre eigenen Anträge
     if (req.user.id === currentUser.id) return true;
@@ -92,9 +108,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   });
 
   // Trenne Pending und Erledigte Anträge
-  const pendingRequests = relevantRequests.filter(req => req.status === AbsenceStatus.Pending);
+  // Genehmigte Krankmeldungen, die noch nicht gemeldet wurden, bleiben in Pending
+  const pendingRequests = relevantRequests.filter(req => 
+    req.status === AbsenceStatus.Pending || 
+    (req.type === AbsenceType.Sick && req.status === AbsenceStatus.Approved && !req.sickLeaveReported)
+  );
   const completedRequests = relevantRequests.filter(req => 
-    req.status === AbsenceStatus.Approved || req.status === AbsenceStatus.Rejected
+    (req.status === AbsenceStatus.Approved && !(req.type === AbsenceType.Sick && !req.sickLeaveReported)) || 
+    req.status === AbsenceStatus.Rejected
   );
 
   const formatDate = (isoString: string) => {
@@ -140,7 +161,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handleApprove = (requestId: string) => {
     onApproveRequest(requestId);
-    if (selectedRequest?.id === requestId) {
+    // Bei Krankmeldungen: Detail-Panel offen lassen, damit Admin noch melden kann
+    if (selectedRequest?.id === requestId && selectedRequest.type !== AbsenceType.Sick) {
       setSelectedRequest(null);
     }
   };
@@ -198,8 +220,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             key={request.id}
                             className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
                               selectedRequest?.id === request.id
-                                ? 'border-glow-cyan bg-glow-cyan/10'
-                                : 'border-border bg-overlay hover:border-glow-cyan/50'
+                                ? 'border-glow-purple bg-glow-purple/10'
+                                : 'border-border bg-overlay hover:border-glow-purple/50'
                             }`}
                           >
                             {/* Delete Button */}
@@ -252,9 +274,29 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 {/* Erledigte Anträge */}
                 {completedRequests.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-bold text-text-primary mb-2 px-1">Erledigt ({completedRequests.length})</h3>
-                    <div className="space-y-2">
-                      {completedRequests.map((request) => {
+                    <button
+                      onClick={() => setShowCompleted(!showCompleted)}
+                      className="w-full flex items-center justify-between text-sm font-bold text-text-primary mb-2 px-1 hover:text-glow-purple transition-colors"
+                    >
+                      <span>Erledigt ({completedRequests.length})</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform ${showCompleted ? 'rotate-180' : ''}`}
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+                    {showCompleted && (
+                      <div className="space-y-2">
+                        {completedRequests.map((request) => {
                         const hasUnreadComments = request.comments?.some(c => !c.read && c.user.id !== currentUser.id) || false;
                         
                         return (
@@ -262,8 +304,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             key={request.id}
                             className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative opacity-75 hover:opacity-100 ${
                               selectedRequest?.id === request.id
-                                ? 'border-glow-cyan bg-glow-cyan/10'
-                                : 'border-border bg-overlay hover:border-glow-cyan/50'
+                                ? 'border-glow-purple bg-glow-purple/10'
+                                : 'border-border bg-overlay hover:border-glow-purple/50'
                             }`}
                           >
                             {/* Delete Button */}
@@ -315,7 +357,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                           </div>
                         );
                       })}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -362,23 +405,69 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     )}
                   </div>
 
-                  {/* Action Buttons - nur für Admins bei ausstehenden Anträgen */}
-                  {isAdmin && selectedRequest.status === AbsenceStatus.Pending && (
-                    <div className="flex space-x-2 mt-4">
-                      <button
-                        onClick={() => handleApprove(selectedRequest.id)}
-                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-500 rounded-lg font-semibold transition-all"
-                      >
-                        <CheckCircleIcon className="w-4 h-4" />
-                        <span>Genehmigen</span>
-                      </button>
-                      <button
-                        onClick={() => handleReject(selectedRequest.id)}
-                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg font-semibold transition-all"
-                      >
-                        <XIcon className="w-4 h-4" />
-                        <span>Ablehnen</span>
-                      </button>
+                  {/* Action Buttons - nur für Admins */}
+                  {isAdmin && (
+                    <div className="space-y-2 mt-4">
+                      {/* Genehmigen/Ablehnen nur bei ausstehenden Anträgen */}
+                      {selectedRequest.status === AbsenceStatus.Pending && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleApprove(selectedRequest.id)}
+                            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-500 rounded-lg font-semibold transition-all"
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            <span>Genehmigen</span>
+                          </button>
+                          <button
+                            onClick={() => handleReject(selectedRequest.id)}
+                            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg font-semibold transition-all"
+                          >
+                            <XIcon className="w-4 h-4" />
+                            <span>Ablehnen</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Melden Button für Krankmeldungen (bei Pending und Approved) */}
+                      {selectedRequest.type === AbsenceType.Sick && 
+                       (selectedRequest.status === AbsenceStatus.Pending || selectedRequest.status === AbsenceStatus.Approved) && (
+                        <button
+                          onClick={() => {
+                            const startDate = new Date(selectedRequest.startDate).toLocaleDateString('de-DE');
+                            const endDate = new Date(selectedRequest.endDate).toLocaleDateString('de-DE');
+                            const dateRange = startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+                            
+                            // Vollständiger Name (Vorname + Nachname)
+                            const fullName = selectedRequest.user.firstName && selectedRequest.user.lastName
+                              ? `${selectedRequest.user.firstName} ${selectedRequest.user.lastName}`
+                              : selectedRequest.user.name;
+                            
+                            const subject = `Krankmeldung: ${fullName}`;
+                            const body = `Sehr geehrte Frau Helmig,
+
+ich möchte Sie darüber informieren, dass sich ${fullName} krankgemeldet hat.
+
+Zeitraum der Krankmeldung: ${dateRange}
+
+Sollten Sie weitere Informationen benötigen, stehe ich Ihnen gerne zur Verfügung.
+
+Mit freundlichen Grüßen`;
+                            
+                            const mailtoLink = `mailto:claudia.helmig@relog-potsdam.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                            window.location.href = mailtoLink;
+                            
+                            // Markiere als gemeldet
+                            onMarkSickLeaveReported(selectedRequest.id);
+                          }}
+                          className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 rounded-lg font-semibold transition-all"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="m2 7 8.97 5.7a1.94 1.94 0 0 0 2.06 0L22 7"></path>
+                          </svg>
+                          <span>{selectedRequest.sickLeaveReported ? 'Erneut melden?' : 'Krankmeldung melden'}</span>
+                        </button>
+                      )}
                     </div>
                   )}
                   
@@ -434,7 +523,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         onChange={(e) => setChatMessage(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Nachricht schreiben..."
-                        className="flex-1 bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-cyan outline-none"
+                        className="flex-1 bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-purple outline-none"
                       />
                       <button
                         onClick={handleSendMessage}

@@ -129,7 +129,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
                   onChange={e => setTitle(e.target.value)}
                   onBlur={handleTitleBlur}
                   onKeyDown={handleTitleKeyDown}
-                  className="w-full bg-overlay text-lg font-bold text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-cyan rounded px-1 -ml-1"
+                  className="w-full bg-overlay text-lg font-bold text-text-primary border-none outline-none focus:ring-1 focus:ring-glow-purple rounded px-1 -ml-1"
                   autoFocus
               />
           ) : (
@@ -193,7 +193,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
             onChange={(e) => setDescription(e.target.value)}
             onBlur={handleDescriptionBlur}
             placeholder="Beschreibung hinzufügen..."
-            className="w-full bg-background border border-overlay rounded-md p-2 outline-none focus:ring-2 focus:ring-glow-cyan text-text-primary text-xs h-24 resize-none"
+            className="w-full bg-background border border-overlay rounded-md p-2 outline-none focus:ring-2 focus:ring-glow-purple text-text-primary text-xs h-24 resize-none"
         />
       </Section>
 
@@ -305,7 +305,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
               <div className="flex items-center justify-between">
                 <span className={`text-xl font-bold ${themeMode === 'blue' ? 'text-white' : 'text-cyan-500'}`}>{Math.min(100, Math.round(progress))}%</span>
                 <div className="w-1/2 bg-overlay rounded-full h-1.5">
-                    <div className="bg-glow-cyan h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
+                    <div className="bg-glow-purple h-1.5 rounded-full" style={{width: `${Math.min(100, progress)}%`}}></div>
                 </div>
               </div>
           </div>

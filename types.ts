@@ -38,6 +38,18 @@ export enum ProjectStatus {
   Completed = 'ABGESCHLOSSEN'
 }
 
+export interface WorkSchedule {
+  monday: boolean;
+  tuesday: boolean;
+  wednesday: boolean;
+  thursday: boolean;
+  friday: boolean;
+  saturday: boolean;
+  sunday: boolean;
+  hoursPerDay: number; // Geregelte Stunden pro Tag
+  vacationDaysPerYear: number; // Urlaubstage pro Jahr
+}
+
 export interface User {
   id: string;
   name: string;
@@ -56,6 +68,8 @@ export interface User {
   password?: string;
   pinnedTasks?: string[]; // IDs of pinned tasks for dashboard
   dashboardNote?: string; // Personal note on dashboard
+  workSchedule?: WorkSchedule; // Arbeitszeitregelung
+  employmentStartDate?: string; // ISO 8601 string - Anstellungsdatum
 }
 
 export interface Todo {
@@ -138,6 +152,7 @@ export interface Project {
 
 export enum AbsenceType {
   Vacation = 'VACATION',
+  CompensatoryDay = 'COMPENSATORY_DAY',
   Sick = 'SICK',
   HomeOffice = 'HOME_OFFICE',
   BusinessTrip = 'BUSINESS_TRIP',
@@ -174,4 +189,17 @@ export interface AbsenceRequest {
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
   comments?: AbsenceRequestComment[];
+  sickLeaveReported?: boolean; // Krankmeldung wurde gemeldet (E-Mail versendet)
+}
+
+// Urlaubsbilanz für Berechnung verfügbarer Urlaubstage
+export interface VacationBalance {
+  userId: string;
+  year: number;
+  totalEntitlement: number; // Gesamtanspruch basierend auf Anstellungsdatum
+  used: number; // Bereits genommene Urlaubstage
+  pending: number; // Beantragte aber noch nicht genehmigte Tage
+  available: number; // Verfügbare Tage (totalEntitlement - used - pending)
+  overtimeHours: number; // Überstunden (aus getrackte Zeit vs. Sollzeit)
+  overtimeDaysEquivalent: number; // Überstunden umgerechnet in Ausgleichstage
 }
