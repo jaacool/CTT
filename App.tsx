@@ -17,6 +17,7 @@ import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
 import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
+import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest } from './utils/supabaseSync';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -148,6 +149,10 @@ const App: React.FC = () => {
       if (!skipHistory) {
         saveToHistory(newProjects);
       }
+      
+      // Auto-Save alle geänderten Projekte zu Supabase
+      newProjects.forEach(project => saveProject(project));
+      
       return newProjects;
     });
   }, [saveToHistory]);
@@ -273,11 +278,14 @@ const App: React.FC = () => {
     if (activeTimerTaskId === taskId) {
       // Stop timer - set endTime on active TimeEntry
       if (activeTimeEntryId) {
-        setTimeEntries(prev => prev.map(entry =>
-          entry.id === activeTimeEntryId
-            ? { ...entry, endTime: new Date().toISOString() }
-            : entry
-        ));
+        setTimeEntries(prev => prev.map(entry => {
+          if (entry.id === activeTimeEntryId) {
+            const updatedEntry = { ...entry, endTime: new Date().toISOString() };
+            saveTimeEntry(updatedEntry); // Auto-Save when timer stops
+            return updatedEntry;
+          }
+          return entry;
+        }));
       }
       setActiveTimerTaskId(null);
       setActiveTimeEntryId(null);
@@ -328,6 +336,7 @@ const App: React.FC = () => {
         billable: false,
       };
       
+      saveTimeEntry(newEntry); // Auto-Save when timer starts
       setTimeEntries(prev => [...prev, newEntry]);
       
       setActiveTimerTaskId(taskId);
@@ -436,6 +445,9 @@ const App: React.FC = () => {
     setSelectedProject(newProject);
     setShowDashboard(false);
     setShowProjectsOverview(false);
+    
+    // Auto-Save zu Supabase
+    saveProject(newProject);
   }, [updateProjects]);
 
   const handleAddNewList = (projectId: string, title: string) => {
@@ -579,58 +591,72 @@ const App: React.FC = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    saveAbsenceRequest(newRequest); // Auto-Save
     setAbsenceRequests(prev => [...prev, newRequest]);
   }, []);
 
   const handleApproveRequest = useCallback((requestId: string) => {
-    setAbsenceRequests(prev => prev.map(req => 
-      req.id === requestId 
-        ? { 
-            ...req, 
-            status: AbsenceStatus.Approved, 
-            approvedBy: currentUser!,
-            approvedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-        : req
-    ));
+    setAbsenceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const updatedRequest = { 
+          ...req, 
+          status: AbsenceStatus.Approved, 
+          approvedBy: currentUser!,
+          approvedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        saveAbsenceRequest(updatedRequest); // Auto-Save
+        return updatedRequest;
+      }
+      return req;
+    }));
   }, [currentUser]);
 
   const handleRejectRequest = useCallback((requestId: string, reason: string) => {
-    setAbsenceRequests(prev => prev.map(req => 
-      req.id === requestId 
-        ? { 
-            ...req, 
-            status: AbsenceStatus.Rejected, 
-            rejectedReason: reason,
-            updatedAt: new Date().toISOString()
-          }
-        : req
-    ));
+    setAbsenceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const updatedRequest = { 
+          ...req, 
+          status: AbsenceStatus.Rejected, 
+          rejectedReason: reason,
+          updatedAt: new Date().toISOString()
+        };
+        saveAbsenceRequest(updatedRequest); // Auto-Save
+        return updatedRequest;
+      }
+      return req;
+    }));
   }, []);
 
   const handleCancelRequest = useCallback((requestId: string) => {
-    setAbsenceRequests(prev => prev.map(req => 
-      req.id === requestId 
-        ? { 
-            ...req, 
-            status: AbsenceStatus.Cancelled,
-            updatedAt: new Date().toISOString()
-          }
-        : req
-    ));
+    setAbsenceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const updatedRequest = { 
+          ...req, 
+          status: AbsenceStatus.Cancelled,
+          updatedAt: new Date().toISOString()
+        };
+        saveAbsenceRequest(updatedRequest); // Auto-Save
+        return updatedRequest;
+      }
+      return req;
+    }));
   }, []);
 
   const handleDeleteRequest = useCallback((requestId: string) => {
+    deleteAbsenceRequest(requestId); // Auto-Delete from Supabase
     setAbsenceRequests(prev => prev.filter(req => req.id !== requestId));
   }, []);
 
   const handleMarkSickLeaveReported = useCallback((requestId: string) => {
-    setAbsenceRequests(prev => prev.map(req =>
-      req.id === requestId
-        ? { ...req, sickLeaveReported: true, updatedAt: new Date().toISOString() }
-        : req
-    ));
+    setAbsenceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const updatedRequest = { ...req, sickLeaveReported: true, updatedAt: new Date().toISOString() };
+        saveAbsenceRequest(updatedRequest); // Auto-Save
+        return updatedRequest;
+      }
+      return req;
+    }));
   }, []);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
@@ -684,13 +710,17 @@ const App: React.FC = () => {
           const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
           // Update taskTimers mit neuer duration
           setTaskTimers(prev => ({ ...prev, [entry.taskId]: duration }));
-          return { ...entry, startTime, duration, note };
+          const updatedEntry = { ...entry, startTime, duration, note };
+          saveTimeEntry(updatedEntry); // Auto-Save
+          return updatedEntry;
         }
         
         // Ansonsten normale Berechnung mit endTime
         const end = new Date(endTime);
         const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
-        return { ...entry, startTime, endTime, duration, note };
+        const updatedEntry = { ...entry, startTime, endTime, duration, note };
+        saveTimeEntry(updatedEntry); // Auto-Save
+        return updatedEntry;
       }
       return entry;
     }));
@@ -703,6 +733,7 @@ const App: React.FC = () => {
       setActiveTimeEntryId(null);
     }
     
+    deleteTimeEntry(entryId); // Auto-Delete from Supabase
     setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
   }, [activeTimeEntryId]);
 
@@ -719,6 +750,7 @@ const App: React.FC = () => {
       duration: entry.duration // Gleiche Duration wie Original
     };
     
+    saveTimeEntry(newEntry); // Auto-Save
     setTimeEntries(prev => [...prev, newEntry]);
   }, [currentUser]);
 
@@ -727,6 +759,9 @@ const App: React.FC = () => {
       ...entry,
       id: `import-${Date.now()}-${index}`,
     }));
+    
+    // Auto-Save alle importierten Einträge
+    newEntries.forEach(entry => saveTimeEntry(entry));
     
     setTimeEntries(prev => [...prev, ...newEntries]);
   }, []);
@@ -806,14 +841,23 @@ const App: React.FC = () => {
       tags: userData.tags,
       status: userData.status,
     };
+    saveUser(newUser); // Auto-Save
     setUsers(prev => [...prev, newUser]);
   }, []);
 
   const handleUpdateUser = useCallback((userId: string, userData: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...userData } : u));
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const updatedUser = { ...u, ...userData };
+        saveUser(updatedUser); // Auto-Save
+        return updatedUser;
+      }
+      return u;
+    }));
   }, []);
 
   const handleDeleteUser = useCallback((userId: string) => {
+    deleteUserFromSupabase(userId); // Auto-Delete from Supabase
     setUsers(prev => prev.filter(u => u.id !== userId));
   }, []);
 
