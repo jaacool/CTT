@@ -50,6 +50,9 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     const success = await saveAllData(projects, timeEntries, users, absenceRequests);
     
     if (success) {
+      // Setze das Initial-Sync-Flag, damit es nicht nochmal läuft
+      localStorage.setItem('supabase_initial_sync', 'true');
+      
       setMessage({ 
         type: 'success', 
         text: `✅ Alle Daten gespeichert (${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} Zeiteinträge, ${absenceRequests.length} Abwesenheiten)` 
@@ -59,6 +62,11 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     }
 
     setIsSaving(false);
+  };
+  
+  const handleResetSyncFlag = () => {
+    localStorage.removeItem('supabase_initial_sync');
+    setMessage({ type: 'info', text: 'ℹ️ Sync-Flag zurückgesetzt. Seite neu laden für erneuten Initial-Sync.' });
   };
 
   if (!SUPABASE_ENABLED) {
@@ -191,6 +199,19 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
                     <span>Alle Daten aus Supabase löschen</span>
                   </>
                 )}
+              </button>
+              
+              {/* Reset Sync Flag Button */}
+              <button
+                onClick={handleResetSyncFlag}
+                className="w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-500 font-semibold transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Sync-Flag zurücksetzen</span>
               </button>
             </div>
           </div>

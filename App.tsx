@@ -198,8 +198,9 @@ const App: React.FC = () => {
         saveToHistory(newProjects);
       }
       
-      // Auto-Save alle geänderten Projekte zu Supabase
-      newProjects.forEach(project => saveProject(project));
+      // DEAKTIVIERT: Auto-Save aller Projekte bei jedem Update
+      // Das führt zu zu vielen Schreiboperationen und Race Conditions
+      // Stattdessen: Gezieltes Speichern nur bei wichtigen Operationen
       
       return newProjects;
     });
