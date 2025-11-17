@@ -90,10 +90,16 @@ const App: React.FC = () => {
     const loadFromSupabase = async () => {
       // Versuche zuerst aus localStorage zu laden (instant!)
       console.log('🔍 Prüfe localStorage Cache...');
-      const cachedData = loadFromLocalStorage();
+      let cachedData = null;
+      try {
+        cachedData = loadFromLocalStorage();
+      } catch (error) {
+        console.error('❌ Fehler beim Laden aus localStorage:', error);
+      }
       
       if (cachedData) {
         console.log('⚡ Lade Daten aus localStorage Cache (instant)');
+        console.log(`   📊 ${cachedData.users.length} Users, ${cachedData.projects.length} Projekte, ${cachedData.timeEntries.length} TimeEntries`);
         // Lade aus Cache
         if (cachedData.users.length > 0) {
           setUsers(cachedData.users);
@@ -154,10 +160,11 @@ const App: React.FC = () => {
       }
       
       // Letzter Fallback: Lade aus einzelnen Tabellen (sehr langsam)
-      console.log('📥 Kein Backup gefunden, lade aus Tabellen (langsam)...');
+      console.log('📥 Kein Backup gefunden, lade aus Tabellen...');
       const data = await loadAllData();
       
       if (data) {
+        console.log(`✅ Daten aus Supabase Tabellen geladen: ${data.users.length} Users, ${data.projects.length} Projekte, ${data.timeEntries.length} TimeEntries`);
         // Lade Daten aus Supabase
         if (data.users.length > 0) {
           setUsers(data.users);
