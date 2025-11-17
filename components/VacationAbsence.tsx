@@ -384,18 +384,27 @@ const CalendarView: React.FC<{
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-text-primary capitalize">{monthName}</h3>
-        <div className="flex space-x-2">
+        <div className="flex items-center space-x-2">
           <button
             onClick={previousMonth}
             className="p-2 hover-glow rounded-lg text-text-secondary hover:text-text-primary"
+            title="Vorheriger Monat"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
           <button
+            onClick={() => onMonthChange(new Date())}
+            className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-glow-cyan/20 text-glow-cyan border border-glow-cyan/30 hover:bg-glow-cyan/30 transition-colors"
+            title="Zu heute springen"
+          >
+            Heute
+          </button>
+          <button
             onClick={nextMonth}
             className="p-2 hover-glow rounded-lg text-text-secondary hover:text-text-primary"
+            title="Nächster Monat"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6"></polyline>
@@ -793,16 +802,39 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<AbsenceStatus | 'all'>('all');
   const [filterUser, setFilterUser] = useState<string | 'all'>('all');
-  const [selectedState, setSelectedState] = useState<GermanState | undefined>('BY'); // Default: Bayern
+  const [selectedState, setSelectedState] = useState<GermanState | undefined>('BE'); // Default: Berlin
   const [showCompletedRequests, setShowCompletedRequests] = useState(false);
   
-  // Normale User haben separierte Home Office Ansicht, Admins haben integrierte Ansicht
-  const [separateHomeOffice, setSeparateHomeOffice] = useState(!isAdmin);
+  // Admin Tab-System: 'admin' für Admin-Ansicht, oder User-ID für User-spezifische Ansicht
+  const [selectedUserTab, setSelectedUserTab] = useState<'admin' | string>(isAdmin ? 'admin' : currentUser.id);
   
-  // Filtere Abwesenheiten: Normale User sehen nur ihre eigenen, Admins sehen alle
-  const visibleAbsenceRequests = isAdmin 
-    ? absenceRequests 
-    : absenceRequests.filter(req => req.user.id === currentUser.id);
+  // Normale User haben separierte Home Office Ansicht, Admins haben integrierte Ansicht
+  // Bei User-Tab-Auswahl: separierte Ansicht wie normale User
+  const [separateHomeOffice, setSeparateHomeOffice] = useState(!isAdmin || selectedUserTab !== 'admin');
+  
+  // Filtere Abwesenheiten basierend auf Tab-Auswahl
+  const visibleAbsenceRequests = useMemo(() => {
+    if (!isAdmin) {
+      // Normale User sehen nur ihre eigenen
+      return absenceRequests.filter(req => req.user.id === currentUser.id);
+    }
+    
+    if (selectedUserTab === 'admin') {
+      // Admin-Ansicht: Alle Abwesenheiten
+      return absenceRequests;
+    } else {
+      // User-spezifische Ansicht: Nur Abwesenheiten des ausgewählten Users
+      return absenceRequests.filter(req => req.user.id === selectedUserTab);
+    }
+  }, [isAdmin, selectedUserTab, absenceRequests, currentUser.id]);
+  
+  // Aktueller angezeigter User (für Übersicht)
+  const displayedUser = useMemo(() => {
+    if (!isAdmin || selectedUserTab === 'admin') {
+      return currentUser;
+    }
+    return allUsers.find(u => u.id === selectedUserTab) || currentUser;
+  }, [isAdmin, selectedUserTab, allUsers, currentUser]);
 
   const handleDateRangeSelect = (startDate: Date, endDate: Date) => {
     setPrefilledDates({ start: startDate, end: endDate });
@@ -874,11 +906,11 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
     return diffDays;
   };
 
-  // Berechne Urlaubsbilanz für aktuellen User
+  // Berechne Urlaubsbilanz für angezeigten User
   const currentYear = new Date().getFullYear();
-  const userAbsences = absenceRequests.filter(req => req.user.id === currentUser.id);
-  const userTimeEntries = timeEntries.filter(entry => entry.user.id === currentUser.id);
-  const vacationBalance = calculateVacationBalance(currentUser, userAbsences, userTimeEntries, currentYear);
+  const userAbsences = absenceRequests.filter(req => req.user.id === displayedUser.id);
+  const userTimeEntries = timeEntries.filter(entry => entry.user.id === displayedUser.id);
+  const vacationBalance = calculateVacationBalance(displayedUser, userAbsences, userTimeEntries, currentYear);
 
   // Berechne Krankheitstage
   const sickDays = userAbsences
@@ -889,9 +921,16 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
         return sum + 0.5;
       }
       // Sonst berechne die tatsächlichen Arbeitstage
-      const days = calculateWorkDays(req.startDate, req.endDate, currentUser.workSchedule);
+      const days = calculateWorkDays(req.startDate, req.endDate, displayedUser.workSchedule);
       return sum + days;
     }, 0);
+  
+  // Update separateHomeOffice wenn Tab wechselt
+  React.useEffect(() => {
+    if (isAdmin) {
+      setSeparateHomeOffice(selectedUserTab !== 'admin');
+    }
+  }, [selectedUserTab, isAdmin]);
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
@@ -958,9 +997,9 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
           </select>
         </div>
         
-        {/* Home Office View Toggle - Nur für Admins */}
-        {isAdmin && (
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+        {/* Home Office View Toggle - Nur für Admins in Admin-Ansicht */}
+        {isAdmin && selectedUserTab === 'admin' && (
+          <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-text-primary mb-1">Home Office Ansicht</h3>
               <p className="text-xs text-text-secondary">Separate Anzeige für Home Office</p>
@@ -979,76 +1018,64 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
             </button>
           </div>
         )}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 text-xs">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 border-green-400/60 bg-green-500/10"></div>
-            <span className="text-text-secondary">Feiertag</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 border-text-secondary/40 bg-background"></div>
-            <span className="text-text-secondary">Wochenende</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 border-glow-purple/80 bg-glow-purple/10"></div>
-            <span className="text-text-secondary">Heute</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fb923c' }}></div>
-            <span className="text-text-secondary">Urlaub</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-            <span className="text-text-secondary">Krankmeldung</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            {separateHomeOffice ? (
-              <div className="flex gap-0.5">
-                <div className="w-2 h-1 rounded-sm" style={{ backgroundColor: '#fbbf24' }}></div>
-                <div className="w-2 h-1 rounded-sm" style={{ backgroundColor: '#fbbf24' }}></div>
-              </div>
-            ) : (
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
-            )}
-            <span className="text-text-secondary">Home Office{separateHomeOffice ? ' (separiert)' : ''}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
-            <span className="text-text-secondary">Dienstreise</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 border-orange-500 border-dashed" style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)' }}></div>
-            <span className="text-text-secondary">Ausgleichstag</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-1 h-3 rounded-l" style={{ backgroundColor: '#fb923c' }}></div>
-            <span className="text-text-secondary">Ausstehend</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 border-orange-500 relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, rgba(251, 146, 60, 0.2) 50%, transparent 50%)' }}></div>
-            <span className="text-text-secondary">Halber Tag</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded border-2 relative overflow-hidden" style={{ 
-              borderLeft: '2px solid #fb923c',
-              borderTop: '2px solid #fb923c',
-              borderBottom: '2px solid #fb923c',
-              borderRight: '2px solid #ef4444',
-              background: 'linear-gradient(to right, rgba(251, 146, 60, 0.2) 50%, rgba(239, 68, 68, 0.2) 50%)'
-            }}></div>
-            <span className="text-text-secondary">Mehrere User</span>
-          </div>
-        </div>
       </div>
 
-      {/* User Vacation Balance */}
-      <div className="bg-surface rounded-xl p-6 border border-border">
-        <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center space-x-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <span>Meine Übersicht {currentYear}</span>
-        </h3>
+      {/* Admin User Tabs */}
+      {isAdmin && (
+        <div className="bg-surface rounded-xl p-4 border border-border">
+          <h3 className="text-sm font-bold text-text-primary mb-3">Ansicht wählen</h3>
+          <div className="flex flex-wrap gap-2">
+            {/* Admin Ansicht Tab */}
+            <button
+              onClick={() => setSelectedUserTab('admin')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                selectedUserTab === 'admin'
+                  ? 'bg-glow-purple text-white border-2 border-glow-purple'
+                  : 'bg-overlay text-text-secondary border-2 border-border hover:border-glow-purple/50'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>Admin Ansicht</span>
+              </div>
+            </button>
+            
+            {/* User Tabs */}
+            {allUsers.map(user => (
+              <button
+                key={user.id}
+                onClick={() => setSelectedUserTab(user.id)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  selectedUserTab === user.id
+                    ? 'bg-glow-cyan text-white border-2 border-glow-cyan'
+                    : 'bg-overlay text-text-secondary border-2 border-border hover:border-glow-cyan/50'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <img src={user.avatarUrl} alt={user.name} className="w-5 h-5 rounded-full" />
+                  <span>{user.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* User Vacation Balance - Nur in User-Ansicht (normale User oder Admin mit User-Tab) */}
+      {(!isAdmin || selectedUserTab !== 'admin') && (
+        <div className="bg-surface rounded-xl p-6 border border-border">
+          <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>{displayedUser.name} - Übersicht {currentYear}</span>
+          </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Krankheitstage */}
@@ -1110,19 +1137,65 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
             />
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* Calendar View */}
-      <CalendarView
-        absenceRequests={visibleAbsenceRequests}
-        currentMonth={currentMonth}
-        onMonthChange={setCurrentMonth}
-        onDateRangeSelect={handleDateRangeSelect}
-        selectedState={selectedState}
-        separateHomeOffice={separateHomeOffice}
-        isAdmin={isAdmin}
-        onDeleteRequest={onDeleteRequest}
-      />
+      {/* Calendar View mit Legende */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6">
+        <CalendarView
+          absenceRequests={visibleAbsenceRequests}
+          currentMonth={currentMonth}
+          onMonthChange={setCurrentMonth}
+          onDateRangeSelect={handleDateRangeSelect}
+          selectedState={selectedState}
+          separateHomeOffice={separateHomeOffice}
+          isAdmin={isAdmin && selectedUserTab === 'admin'}
+          onDeleteRequest={onDeleteRequest}
+        />
+        
+        {/* Legende - Vertikal */}
+        <div className="bg-surface rounded-xl p-4 border border-border h-fit">
+          <h3 className="text-sm font-bold text-text-primary mb-3">Legende</h3>
+          <div className="flex flex-col gap-2 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded border-2 border-green-400/60 bg-green-500/10 flex-shrink-0"></div>
+              <span className="text-text-secondary">Feiertag</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded border-2 border-text-secondary/40 bg-background flex-shrink-0"></div>
+              <span className="text-text-secondary">Wochenende</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded border-2 border-glow-purple/80 bg-glow-purple/10 flex-shrink-0"></div>
+              <span className="text-text-secondary">Heute</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: '#fb923c' }}></div>
+              <span className="text-text-secondary">Urlaub</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: '#ef4444' }}></div>
+              <span className="text-text-secondary">Krankmeldung</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded border-2 border-yellow-500 border-dashed flex-shrink-0" style={{ backgroundColor: 'rgba(251, 191, 36, 0.2)' }}></div>
+              <span className="text-text-secondary">Home Office</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: '#3b82f6' }}></div>
+              <span className="text-text-secondary">Dienstreise</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded border-2 border-orange-500 border-dashed flex-shrink-0" style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)' }}></div>
+              <span className="text-text-secondary">Ausgleichstag</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#fb923c' }}></div>
+              <span className="text-text-secondary">Ausstehend</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

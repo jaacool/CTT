@@ -136,12 +136,54 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return entries.reduce((sum, te) => sum + te.duration, 0);
   };
 
-  // Berechne Position im Tag (0-24h)
+  // Berechne früheste und späteste Zeit für dynamische Achse
+  const getTimeRange = useMemo(() => {
+    if (weekTimeEntries.length === 0) {
+      return { start: 7, end: 19 }; // Standard: 7-19 Uhr
+    }
+    
+    let earliest = 24;
+    let latest = 0;
+    
+    weekTimeEntries.forEach(te => {
+      const startDate = new Date(te.startTime);
+      const endDate = te.endTime ? new Date(te.endTime) : new Date(te.startTime);
+      
+      const startHour = startDate.getHours() + startDate.getMinutes() / 60;
+      const endHour = endDate.getHours() + endDate.getMinutes() / 60;
+      
+      earliest = Math.min(earliest, startHour);
+      latest = Math.max(latest, endHour);
+    });
+    
+    // Runde auf volle Stunden und füge Puffer hinzu
+    const start = Math.max(0, Math.floor(earliest) - 1);
+    const end = Math.min(24, Math.ceil(latest) + 1);
+    
+    // Mindestens 8 Stunden Anzeige
+    const range = end - start;
+    if (range < 8) {
+      const diff = 8 - range;
+      return { start: Math.max(0, start - Math.floor(diff / 2)), end: Math.min(24, end + Math.ceil(diff / 2)) };
+    }
+    
+    return { start, end };
+  }, [weekTimeEntries]);
+
+  // Berechne Position im Tag basierend auf dynamischer Zeitachse
   const getTimePosition = (time: string): number => {
     const date = new Date(time);
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    return hours + minutes / 60;
+    const totalHours = hours + minutes / 60;
+    return totalHours;
+  };
+
+  // Konvertiere absolute Zeit zu relativer Position (0-100%)
+  const getRelativePosition = (absoluteTime: number): number => {
+    const { start, end } = getTimeRange;
+    const range = end - start;
+    return ((absoluteTime - start) / range) * 100;
   };
 
   return (
@@ -246,85 +288,180 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
 
       {/* Content */}
       {viewMode === 'week' && (
-        <div className="flex-1 overflow-auto">
-          <div className="grid grid-cols-7 border-b border-border">
-            {weekDays.map((day, index) => {
-              const dateKey = day.toISOString().split('T')[0];
-              const dayTotal = getDayTotal(dateKey);
-              const isToday = day.toDateString() === new Date().toDateString();
-              
-              return (
-                <div
-                  key={index}
-                  className={`border-r border-border last:border-r-0 ${
-                    isToday ? 'bg-primary/5' : ''
-                  }`}
-                >
-                  {/* Day Header */}
-                  <div className="p-4 text-center border-b border-border">
-                    <div className={`text-sm ${isToday ? 'text-primary font-semibold' : 'text-text-secondary'}`}>
-                      {formatDayName(day)}
-                    </div>
-                    <div className={`text-lg font-semibold ${isToday ? 'text-primary' : 'text-text-primary'}`}>
-                      {formatDate(day)}
-                    </div>
-                    <div className="text-sm text-text-secondary mt-1">
-                      {formatTime(dayTotal)}
-                    </div>
-                  </div>
-
-                  {/* Time Entries */}
-                  <div className="relative min-h-[600px]">
-                    {/* Hour Grid */}
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-full border-b border-border/30"
-                        style={{ top: `${(i / 24) * 100}%`, height: `${(1 / 24) * 100}%` }}
-                      >
-                        {index === 0 && (
-                          <div className="absolute -left-12 -top-2 text-xs text-text-secondary">
-                            {i}h
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Time Entry Blocks */}
-                    {(entriesByDay.get(dateKey) || []).map((entry, idx) => {
-                      const startPos = getTimePosition(entry.startTime);
-                      const endPos = entry.endTime ? getTimePosition(entry.endTime) : startPos + entry.duration / 3600;
-                      const top = (startPos / 24) * 100;
-                      const height = ((endPos - startPos) / 24) * 100;
-                      
+        <div className="flex-1 overflow-auto p-6">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="bg-surface rounded-xl border border-border overflow-hidden">
+              {/* Week Grid */}
+              <div className="flex">
+                {/* Time Column */}
+                <div className="w-16 flex-shrink-0 border-r border-border">
+                  {/* Header Spacer */}
+                  <div className="h-20 border-b border-border"></div>
+                  
+                  {/* Time Labels */}
+                  <div className="relative" style={{ height: '600px' }}>
+                    {Array.from({ length: getTimeRange.end - getTimeRange.start + 1 }, (_, i) => {
+                      const hour = getTimeRange.start + i;
                       return (
                         <div
-                          key={entry.id}
-                          className="absolute left-1 right-1 bg-primary/80 rounded-lg p-2 text-white text-xs overflow-hidden cursor-pointer hover:bg-primary transition-colors"
-                          style={{
-                            top: `${top}%`,
-                            height: `${Math.max(height, 2)}%`,
-                          }}
-                          title={`${entry.projectName} - ${entry.taskTitle}`}
+                          key={hour}
+                          className="absolute w-full text-right pr-2 -translate-y-2"
+                          style={{ top: `${(i / (getTimeRange.end - getTimeRange.start)) * 100}%` }}
                         >
-                          <div className="font-semibold truncate">{entry.projectName}</div>
-                          <div className="truncate opacity-90">{entry.taskTitle}</div>
-                          <div className="mt-1 opacity-75">{formatTime(entry.duration)}</div>
+                          <span className="text-xs font-medium text-text-secondary">
+                            {hour.toString().padStart(2, '0')}:00
+                          </span>
                         </div>
                       );
                     })}
-
-                    {/* Add Button */}
-                    <button className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-surface hover:bg-border rounded-full flex items-center justify-center transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                    </button>
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Days Grid */}
+                <div className="flex-1 grid grid-cols-7">
+                  {weekDays.map((day, index) => {
+                    const dateKey = day.toISOString().split('T')[0];
+                    const dayTotal = getDayTotal(dateKey);
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`border-r border-border last:border-r-0 ${
+                          isToday ? 'bg-glow-cyan/5' : ''
+                        }`}
+                      >
+                        {/* Day Header */}
+                        <div className="h-20 p-3 text-center border-b border-border flex flex-col justify-center">
+                          <div className={`text-xs font-semibold uppercase tracking-wide ${
+                            isToday ? 'text-glow-cyan' : 'text-text-secondary'
+                          }`}>
+                            {formatDayName(day)}
+                          </div>
+                          <div className={`text-lg font-bold mt-1 ${
+                            isToday ? 'text-glow-cyan' : 'text-text-primary'
+                          }`}>
+                            {day.getDate()}
+                          </div>
+                          <div className="text-xs text-text-secondary mt-1 font-medium">
+                            {formatTime(dayTotal)}
+                          </div>
+                        </div>
+
+                        {/* Time Entries */}
+                        <div className="relative" style={{ height: '600px' }}>
+                          {/* Hour Grid Lines */}
+                          {Array.from({ length: getTimeRange.end - getTimeRange.start + 1 }, (_, i) => (
+                            <div
+                              key={i}
+                              className="absolute w-full border-b border-border/20"
+                              style={{ top: `${(i / (getTimeRange.end - getTimeRange.start)) * 100}%` }}
+                            />
+                          ))}
+
+                          {/* Time Entry Pills */}
+                          {(entriesByDay.get(dateKey) || []).map((entry, idx) => {
+                            const startPos = getTimePosition(entry.startTime);
+                            const endPos = entry.endTime ? getTimePosition(entry.endTime) : startPos + entry.duration / 3600;
+                            const top = getRelativePosition(startPos);
+                            const height = getRelativePosition(endPos) - top;
+                            
+                            // Projekt-basierte Farben
+                            const getProjectColor = (projectName: string) => {
+                              const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+                              const colors = [
+                                { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
+                                { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
+                                { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
+                                { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
+                                { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
+                              ];
+                              return colors[hash % colors.length];
+                            };
+                            
+                            const colors = getProjectColor(entry.projectName);
+                            
+                            // Dynamische Anzeigemodi basierend auf Höhe
+                            // Sehr klein: <5% (~12min) - Nur Balken
+                            // Klein: 5-8% (12-30min) - Nur Projektname
+                            // Mittel: 8-15% (30-60min) - Projektname + Dauer
+                            // Groß: >15% (>60min) - Projektname + Task + Dauer
+                            const displayMode = height < 5 ? 'tiny' : height < 8 ? 'small' : height < 15 ? 'medium' : 'large';
+                            
+                            return (
+                              <div
+                                key={entry.id}
+                                className={`absolute left-1 right-1 rounded-lg border-2 ${
+                                  colors.bg
+                                } ${
+                                  colors.border
+                                } ${
+                                  colors.text
+                                } cursor-pointer hover:scale-105 transition-transform overflow-hidden`}
+                                style={{
+                                  top: `${top}%`,
+                                  height: `${Math.max(height, 2)}%`,
+                                }}
+                                title={`${entry.projectName} - ${entry.taskTitle}\n${formatTime(entry.duration)}`}
+                              >
+                                {displayMode === 'tiny' && (
+                                  // Nur farbiger Balken, kein Text
+                                  <div className="h-full w-full" />
+                                )}
+                                
+                                {displayMode === 'small' && (
+                                  // Nur Projektname, zentriert, kleinere Schrift
+                                  <div className="h-full flex items-center justify-center px-1">
+                                    <div className="text-[8px] font-bold text-center truncate w-full">
+                                      {entry.projectName.split(' ')[0].toUpperCase()}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {displayMode === 'medium' && (
+                                  // Projektname + Dauer
+                                  <div className="h-full flex flex-col justify-center px-1.5 py-1">
+                                    <div className="text-[9px] font-bold uppercase tracking-wide truncate">
+                                      {entry.projectName}
+                                    </div>
+                                    <div className="text-[8px] font-semibold mt-0.5">
+                                      {formatTime(entry.duration)}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {displayMode === 'large' && (
+                                  // Volle Anzeige: Projektname + Task + Dauer
+                                  <div className="h-full flex flex-col p-1.5">
+                                    <div className="text-[10px] font-bold uppercase tracking-wide truncate">
+                                      {entry.projectName}
+                                    </div>
+                                    <div className="text-[9px] opacity-90 truncate mt-0.5 flex-1">
+                                      {entry.taskTitle}
+                                    </div>
+                                    <div className="text-[9px] font-semibold">
+                                      {formatTime(entry.duration)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {/* Add Button */}
+                          <button className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-7 h-7 bg-overlay hover:bg-glow-purple/20 border border-border hover:border-glow-purple rounded-full flex items-center justify-center transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -344,14 +481,328 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
         </div>
       )}
 
-      {viewMode === 'day' && (
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Mein Tag</h2>
-            <div className="text-text-secondary">Tagesansicht wird implementiert...</div>
+      {viewMode === 'day' && (() => {
+        const selectedDay = currentDate;
+        const dateKey = selectedDay.toISOString().split('T')[0];
+        const todayEntries = entriesByDay.get(dateKey) || [];
+        const todayTotal = getDayTotal(dateKey);
+        const isToday = selectedDay.toDateString() === new Date().toDateString();
+        
+        // Navigation
+        const goToPreviousDay = () => {
+          const newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() - 1);
+          setCurrentDate(newDate);
+        };
+        
+        const goToNextDay = () => {
+          const newDate = new Date(currentDate);
+          newDate.setDate(currentDate.getDate() + 1);
+          setCurrentDate(newDate);
+        };
+        
+        const goToToday = () => {
+          setCurrentDate(new Date());
+        };
+        
+        // Berechne Zeitbereich für heute
+        const getTodayTimeRange = () => {
+          if (todayEntries.length === 0) {
+            return { start: 7, end: 19 };
+          }
+          
+          let earliest = 24;
+          let latest = 0;
+          
+          todayEntries.forEach(te => {
+            const startDate = new Date(te.startTime);
+            const endDate = te.endTime ? new Date(te.endTime) : new Date(te.startTime);
+            
+            const startHour = startDate.getHours() + startDate.getMinutes() / 60;
+            const endHour = endDate.getHours() + endDate.getMinutes() / 60;
+            
+            earliest = Math.min(earliest, startHour);
+            latest = Math.max(latest, endHour);
+          });
+          
+          const start = Math.max(0, Math.floor(earliest) - 1);
+          const end = Math.min(24, Math.ceil(latest) + 1);
+          
+          const range = end - start;
+          if (range < 8) {
+            const diff = 8 - range;
+            return { start: Math.max(0, start - Math.floor(diff / 2)), end: Math.min(24, end + Math.ceil(diff / 2)) };
+          }
+          
+          return { start, end };
+        };
+        
+        const todayTimeRange = getTodayTimeRange();
+        
+        const getRelativePositionDay = (absoluteTime: number): number => {
+          const range = todayTimeRange.end - todayTimeRange.start;
+          return ((absoluteTime - todayTimeRange.start) / range) * 100;
+        };
+        
+        return (
+          <div className="flex-1 overflow-auto p-6">
+            <div className="w-full max-w-5xl mx-auto space-y-6">
+              {/* Header Card */}
+              <div className="bg-surface rounded-xl p-6 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-text-primary">
+                        {selectedDay.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      </h2>
+                      <p className="text-text-secondary mt-1">
+                        {isToday ? 'Deine Zeiteinträge für heute' : 'Zeiteinträge für diesen Tag'}
+                      </p>
+                    </div>
+                    
+                    {/* Day Navigation */}
+                    <div className="flex items-center space-x-2 ml-6">
+                      <button
+                        onClick={goToPreviousDay}
+                        className="p-2 hover:bg-overlay rounded-lg transition-colors"
+                        title="Vorheriger Tag"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                          <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                      </button>
+                      
+                      {!isToday && (
+                        <button
+                          onClick={goToToday}
+                          className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-glow-cyan/20 text-glow-cyan border border-glow-cyan/30 hover:bg-glow-cyan/30 transition-colors"
+                          title="Zu heute springen"
+                        >
+                          Heute
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={goToNextDay}
+                        className="p-2 hover:bg-overlay rounded-lg transition-colors"
+                        title="Nächster Tag"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="text-sm text-text-secondary">Gesamtzeit</div>
+                    <div className="text-3xl font-bold text-glow-cyan">{formatTime(todayTotal)}</div>
+                    <div className="text-sm text-text-secondary mt-1">{todayEntries.length} Einträge</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                <div className="flex">
+                  {/* Time Column */}
+                  <div className="w-20 flex-shrink-0 border-r border-border">
+                    <div className="h-16 border-b border-border flex items-center justify-center">
+                      <span className="text-xs font-bold text-text-secondary uppercase">Zeit</span>
+                    </div>
+                    
+                    <div className="relative" style={{ height: '800px' }}>
+                      {Array.from({ length: todayTimeRange.end - todayTimeRange.start + 1 }, (_, i) => {
+                        const hour = todayTimeRange.start + i;
+                        return (
+                          <div
+                            key={hour}
+                            className="absolute w-full text-right pr-3 -translate-y-2"
+                            style={{ top: `${(i / (todayTimeRange.end - todayTimeRange.start)) * 100}%` }}
+                          >
+                            <span className="text-sm font-semibold text-text-secondary">
+                              {hour.toString().padStart(2, '0')}:00
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Timeline Content */}
+                  <div className="flex-1">
+                    <div className="h-16 border-b border-border flex items-center justify-center">
+                      <span className="text-xs font-bold text-text-secondary uppercase">Aktivitäten</span>
+                    </div>
+                    
+                    <div className="relative" style={{ height: '800px' }}>
+                      {/* Hour Grid Lines */}
+                      {Array.from({ length: todayTimeRange.end - todayTimeRange.start + 1 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-full border-b border-border/20"
+                          style={{ top: `${(i / (todayTimeRange.end - todayTimeRange.start)) * 100}%` }}
+                        />
+                      ))}
+
+                      {/* Current Time Indicator */}
+                      {(() => {
+                        const now = new Date();
+                        const currentHour = now.getHours() + now.getMinutes() / 60;
+                        if (currentHour >= todayTimeRange.start && currentHour <= todayTimeRange.end) {
+                          const position = getRelativePositionDay(currentHour);
+                          return (
+                            <div
+                              className="absolute w-full flex items-center z-20"
+                              style={{ top: `${position}%` }}
+                            >
+                              <div className="w-3 h-3 rounded-full bg-glow-cyan border-2 border-background"></div>
+                              <div className="flex-1 h-0.5 bg-glow-cyan"></div>
+                              <div className="px-2 py-0.5 bg-glow-cyan text-background text-xs font-bold rounded">
+                                JETZT
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Time Entry Pills */}
+                      {todayEntries.map((entry, idx) => {
+                        const startPos = getTimePosition(entry.startTime);
+                        const endPos = entry.endTime ? getTimePosition(entry.endTime) : startPos + entry.duration / 3600;
+                        const top = getRelativePositionDay(startPos);
+                        const height = getRelativePositionDay(endPos) - top;
+                        
+                        const getProjectColor = (projectName: string) => {
+                          const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+                          const colors = [
+                            { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
+                            { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
+                            { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
+                            { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
+                            { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
+                          ];
+                          return colors[hash % colors.length];
+                        };
+                        
+                        const colors = getProjectColor(entry.projectName);
+                        const startTime = new Date(entry.startTime);
+                        const endTime = entry.endTime ? new Date(entry.endTime) : new Date(entry.startTime);
+                        
+                        return (
+                          <div
+                            key={entry.id}
+                            className={`absolute left-4 right-4 rounded-xl border-2 ${
+                              colors.bg
+                            } ${
+                              colors.border
+                            } ${
+                              colors.text
+                            } cursor-pointer hover:scale-[1.02] transition-transform shadow-lg`}
+                            style={{
+                              top: `${top}%`,
+                              height: `${Math.max(height, 3)}%`,
+                            }}
+                          >
+                            <div className="h-full flex items-center p-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-bold uppercase tracking-wide truncate">
+                                  {entry.projectName}
+                                </div>
+                                <div className="text-xs opacity-90 truncate mt-1">
+                                  {entry.taskTitle}
+                                </div>
+                                <div className="text-xs font-semibold mt-2">
+                                  {startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - {endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="ml-4 text-right">
+                                <div className="text-2xl font-bold">
+                                  {formatTime(entry.duration)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Empty State */}
+                      {todayEntries.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-text-secondary/30 mb-4">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <p className="text-text-secondary text-lg">Noch keine Zeiteinträge für heute</p>
+                            <p className="text-text-secondary/70 text-sm mt-2">Starte einen neuen Eintrag mit dem "+ Zeit" Button</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Entry List */}
+              {todayEntries.length > 0 && (
+                <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border">
+                    <h3 className="text-lg font-bold text-text-primary">Alle Einträge</h3>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {todayEntries.map((entry) => {
+                      const startTime = new Date(entry.startTime);
+                      const endTime = entry.endTime ? new Date(entry.endTime) : new Date(entry.startTime);
+                      
+                      const getProjectColor = (projectName: string) => {
+                        const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+                        const colors = [
+                          { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
+                          { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
+                          { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
+                          { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
+                          { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
+                        ];
+                        return colors[hash % colors.length];
+                      };
+                      
+                      const colors = getProjectColor(entry.projectName);
+                      
+                      return (
+                        <div key={entry.id} className="px-6 py-4 hover:bg-overlay/50 transition-colors cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              <div className={`w-1 h-12 rounded-full ${colors.border.replace('border-', 'bg-')}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <div className={`text-sm font-bold ${colors.text}`}>
+                                  {entry.projectName}
+                                </div>
+                                <div className="text-sm text-text-secondary truncate">
+                                  {entry.taskTitle}
+                                </div>
+                                <div className="text-xs text-text-secondary mt-1">
+                                  {startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - {endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <div className={`text-xl font-bold ${colors.text}`}>
+                                {formatTime(entry.duration)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

@@ -21,6 +21,7 @@ import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
 import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
 import { loadCompressedBackupFromSupabase } from './utils/supabaseBackup';
+import { startPollingSync, stopPollingSync } from './utils/supabasePolling';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -206,6 +207,43 @@ const App: React.FC = () => {
     loadFromSupabase();
   }, []); // Leeres Dependency Array = nur beim Mount
 
+  // Polling Sync - Prüft alle 3 Sekunden auf Änderungen (ressourcenschonend)
+  useEffect(() => {
+    console.log('🔄 Initialisiere Polling Sync (alle 3 Sekunden)...');
+    
+    startPollingSync((data) => {
+      console.log('📥 Sync: Änderungen empfangen', {
+        absenceRequests: data.absenceRequests.length,
+        projects: data.projects.length,
+        timeEntries: data.timeEntries.length,
+        users: data.users.length,
+      });
+      
+      // Update State mit neuen Daten
+      if (data.absenceRequests.length > 0) {
+        setAbsenceRequests(data.absenceRequests);
+      }
+      if (data.projects.length > 0) {
+        setProjects(data.projects);
+      }
+      if (data.timeEntries.length > 0) {
+        setTimeEntries(data.timeEntries);
+      }
+      if (data.users.length > 0) {
+        setUsers(data.users);
+      }
+      
+      // Update localStorage Cache
+      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+    }, 3); // 3 Sekunden Intervall
+    
+    // Cleanup beim Unmount
+    return () => {
+      console.log('🛑 Stoppe Polling Sync (Component Unmount)');
+      stopPollingSync();
+    };
+  }, []); // Leeres Dependency Array = nur beim Mount/Unmount
+
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
     setHistory(prev => {
@@ -357,6 +395,7 @@ const App: React.FC = () => {
     setShowDashboard(false);
     setShowProjectsOverview(false);
     setShowVacationAbsence(false);
+    setShowTimeTracking(false);
     setShowSettings(false);
   }, [projects]);
 

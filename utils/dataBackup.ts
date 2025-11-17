@@ -147,7 +147,10 @@ export function saveToLocalStorage(
 export function loadFromLocalStorage(): BackupData | null {
   try {
     const base64 = localStorage.getItem('ctt_backup');
-    if (!base64) return null;
+    if (!base64) {
+      console.log('ℹ️ Kein localStorage Backup gefunden');
+      return null;
+    }
 
     const compressed = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     const decompressed = pako.ungzip(compressed, { to: 'string' });
@@ -157,7 +160,17 @@ export function loadFromLocalStorage(): BackupData | null {
     
     return backup;
   } catch (error) {
-    console.error('❌ Fehler beim Laden aus localStorage:', error);
+    console.error('❌ Fehler beim Laden aus localStorage:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    // Lösche korrupte Daten
+    try {
+      localStorage.removeItem('ctt_backup');
+      console.log('🗑️ Korrupte localStorage Daten entfernt');
+    } catch (e) {
+      // Ignore cleanup errors
+    }
     return null;
   }
 }
