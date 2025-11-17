@@ -57,7 +57,14 @@ export async function saveCompressedBackupToSupabase(
         upsert: true // Überschreibe existierendes Backup
       });
 
-    if (error) throw error;
+    if (error) {
+      // Wenn Bucket nicht existiert, ist das OK - Feature ist optional
+      if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
+        console.log('ℹ️ Storage Bucket "backups" existiert nicht (optional)');
+        return false;
+      }
+      throw error;
+    }
 
     console.log('✅ Komprimiertes Backup in Supabase gespeichert');
     return true;
@@ -82,8 +89,9 @@ export async function loadCompressedBackupFromSupabase(): Promise<BackupData | n
       .download('latest-backup.json.gz');
 
     if (error) {
-      if (error.message.includes('not found')) {
-        console.log('ℹ️ Kein Backup gefunden');
+      // Wenn Bucket oder Datei nicht existiert, ist das OK
+      if (error.message?.includes('not found') || error.message?.includes('Bucket not found')) {
+        console.log('ℹ️ Kein Backup gefunden (Bucket oder Datei existiert nicht)');
         return null;
       }
       throw error;
