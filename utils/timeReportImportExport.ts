@@ -323,21 +323,55 @@ export function importTimeReport(
   
   // WICHTIG: Berechne timeTrackedSeconds für alle Tasks basierend auf TimeEntries
   console.log('📊 Berechne timeTrackedSeconds für Tasks...');
+  console.log(`Total TimeEntries: ${timeEntries.length}`);
+  
   for (const project of projects) {
+    console.log(`\n🔍 Projekt: ${project.name} (${project.id})`);
+    
     for (const list of project.taskLists) {
       for (const task of list.tasks) {
         // Summiere alle TimeEntries für diesen Task
         const taskTimeEntries = timeEntries.filter(te => te.taskId === task.id);
         task.timeTrackedSeconds = taskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
         
+        if (taskTimeEntries.length > 0) {
+          console.log(`  ✓ Task "${task.title}": ${taskTimeEntries.length} Einträge, ${task.timeTrackedSeconds}s (${Math.floor(task.timeTrackedSeconds / 3600)}h ${Math.floor((task.timeTrackedSeconds % 3600) / 60)}m)`);
+        }
+        
         // Summiere auch für alle Subtasks
         for (const subtask of task.subtasks) {
           const subtaskTimeEntries = timeEntries.filter(te => te.taskId === subtask.id);
           subtask.timeTrackedSeconds = subtaskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+          
+          if (subtaskTimeEntries.length > 0) {
+            console.log(`    ↳ Subtask "${subtask.title}": ${subtaskTimeEntries.length} Einträge, ${subtask.timeTrackedSeconds}s (${Math.floor(subtask.timeTrackedSeconds / 3600)}h ${Math.floor((subtask.timeTrackedSeconds % 3600) / 60)}m)`);
+          }
         }
       }
     }
   }
+  
+  // Prüfe ob es TimeEntries gibt, die keinem Task zugeordnet sind
+  const assignedTaskIds = new Set<string>();
+  for (const project of projects) {
+    for (const list of project.taskLists) {
+      for (const task of list.tasks) {
+        assignedTaskIds.add(task.id);
+        for (const subtask of task.subtasks) {
+          assignedTaskIds.add(subtask.id);
+        }
+      }
+    }
+  }
+  
+  const orphanedEntries = timeEntries.filter(te => !assignedTaskIds.has(te.taskId));
+  if (orphanedEntries.length > 0) {
+    console.warn(`⚠️ ${orphanedEntries.length} TimeEntries ohne zugeordneten Task gefunden:`);
+    orphanedEntries.slice(0, 5).forEach(te => {
+      console.warn(`  - TaskID: ${te.taskId}, Task: "${te.taskTitle}", Projekt: "${te.projectName}"`);
+    });
+  }
+  
   console.log('✅ timeTrackedSeconds berechnet');
   
   return {
