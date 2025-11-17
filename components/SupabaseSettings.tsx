@@ -95,22 +95,20 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
         console.error('⚠️ Fehler beim Speichern in localStorage (nicht kritisch):', error);
       }
       
-      // Speichere auch komprimiertes Backup in Supabase Storage (optional, nicht kritisch)
-      console.log('📦 Speichere komprimiertes Backup in Supabase...');
-      try {
-        await saveCompressedBackupToSupabase(users, projects, timeEntries, absenceRequests);
-      } catch (error) {
-        console.error('⚠️ Fehler beim Speichern des Backups (nicht kritisch):', error);
-      }
+      // Schließe Modal SOFORT
+      setIsSaving(false);
+      setShowSaveModal(false);
       
       setMessage({ 
         type: 'success', 
         text: `✅ Alle Daten gespeichert (${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} Zeiteinträge, ${absenceRequests.length} Abwesenheiten)` 
       });
       
-      // Schließe Modal sofort (nicht warten)
-      setIsSaving(false);
-      setShowSaveModal(false);
+      // Speichere komprimiertes Backup im Hintergrund (nicht blockierend)
+      console.log('📦 Speichere komprimiertes Backup in Supabase (Hintergrund)...');
+      saveCompressedBackupToSupabase(users, projects, timeEntries, absenceRequests)
+        .then(() => console.log('✅ Backup gespeichert'))
+        .catch(error => console.error('⚠️ Fehler beim Speichern des Backups (nicht kritisch):', error));
     } else {
       setMessage({ type: 'error', text: '❌ Fehler beim Speichern der Daten' });
       setIsSaving(false);
