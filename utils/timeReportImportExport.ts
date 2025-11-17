@@ -82,7 +82,25 @@ export function importTimeReport(
   const subtaskMap = new Map<string, Subtask>();
   
   // Initialisiere mit existierenden Projekten
-  existingProjects.forEach(p => projectMap.set(p.id, p));
+  // WICHTIG: Verwende den gleichen Key wie beim Import (projectName-companyName)
+  existingProjects.forEach(p => {
+    const projectKey = `${p.name}-${p.client || 'default'}`;
+    projectMap.set(projectKey, p);
+    
+    // Initialisiere auch Listen und Tasks
+    p.taskLists.forEach(list => {
+      listMap.set(list.id, list);
+      list.tasks.forEach(task => {
+        const taskKey = `${p.id}-${list.title}-${task.title}`;
+        taskMap.set(taskKey, task);
+        
+        task.subtasks.forEach(subtask => {
+          const subtaskKey = `${task.id}-${subtask.title}`;
+          subtaskMap.set(subtaskKey, subtask);
+        });
+      });
+    });
+  });
   
   const stats = {
     projectsCreated: 0,
