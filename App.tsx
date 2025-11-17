@@ -9,6 +9,7 @@ import { TimerMenu } from './components/TimerMenu';
 import { Dashboard } from './components/Dashboard';
 import { ProjectsOverview } from './components/ProjectsOverview';
 import { VacationAbsence } from './components/VacationAbsence';
+import { TimeTracking } from './components/TimeTracking';
 import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
@@ -77,6 +78,7 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
+  const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -1000,6 +1002,17 @@ const App: React.FC = () => {
           setShowVacationAbsence(true);
           setShowDashboard(false);
           setShowProjectsOverview(false);
+          setShowTimeTracking(false);
+          setSelectedProject(null);
+          setSelectedTask(null);
+          setShowSettings(false);
+          setIsSidebarOpen(false); // Close sidebar
+        }}
+        onSelectTimeTracking={() => {
+          setShowTimeTracking(true);
+          setShowDashboard(false);
+          setShowProjectsOverview(false);
+          setShowVacationAbsence(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -1010,6 +1023,7 @@ const App: React.FC = () => {
           setShowDashboard(false);
           setShowProjectsOverview(false);
           setShowVacationAbsence(false);
+          setShowTimeTracking(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setIsSidebarOpen(false); // Close sidebar
@@ -1057,6 +1071,11 @@ const App: React.FC = () => {
               setShowNotifications(true);
             }}
             isAdmin={currentUser?.role === 'role-1'}
+          />
+        ) : showTimeTracking ? (
+          <TimeTracking
+            timeEntries={timeEntries}
+            currentUser={currentUser}
           />
         ) : selectedProject ? (
           <TaskArea 
