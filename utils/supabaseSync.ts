@@ -68,17 +68,46 @@ export async function saveTimeEntry(entry: TimeEntry): Promise<boolean> {
     await saveUser(entry.user);
 
     // 2) Stelle sicher, dass das Projekt existiert (FK: time_entries.project_id -> projects.id)
-    //    Projekte können aus dem Import kommen. Wir upserten minimal mit id/name und legen ein kleines JSON in data ab,
-    //    da die Spalte NOT NULL ist.
-    const { error: projectError } = await supabase!
+    //    Projekte können aus dem Import kommen. Wir erstellen ein minimal-valides Projekt.
+    //    WICHTIG: Nur upserten wenn das Projekt noch nicht existiert (onConflict: 'id', ignoreDuplicates: true)
+    const { data: existingProject } = await supabase!
       .from('projects')
-      .upsert({
+      .select('id')
+      .eq('id', entry.projectId)
+      .single();
+    
+    if (!existingProject) {
+      // Erstelle minimal-valides Projekt mit allen erforderlichen Feldern
+      const minimalProject: Project = {
         id: entry.projectId,
         name: entry.projectName || 'Unbenanntes Projekt',
-        data: { id: entry.projectId, name: entry.projectName },
-        updated_at: new Date().toISOString()
-      });
-    if (projectError) throw projectError;
+        icon: '📁',
+        status: 'active' as any,
+        taskLists: [],
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // +1 Jahr
+        budgetHours: 0,
+        members: []
+      };
+      
+      const { error: projectError } = await supabase!
+        .from('projects')
+        .insert({
+          id: minimalProject.id,
+          name: minimalProject.name,
+          icon: minimalProject.icon,
+          status: minimalProject.status,
+          start_date: minimalProject.startDate,
+          end_date: minimalProject.endDate,
+          budget_hours: minimalProject.budgetHours,
+          data: minimalProject,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (projectError && projectError.code !== '23505') { // Ignore duplicate key errors
+        throw projectError;
+      }
+    }
 
     // 3) Speichere den Zeiteintrag (end_time darf null sein bei laufenden Timern)
     const { error } = await supabase!
