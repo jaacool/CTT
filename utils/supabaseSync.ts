@@ -432,12 +432,33 @@ export async function loadAllData(): Promise<{
       supabase!.from('absence_requests').select('data')
     ]);
     
-    // TimeEntries separat laden mit erhöhtem Limit (max 100.000)
-    console.log('📥 Lade TimeEntries (kann viele sein)...');
-    const timeEntriesResult = await supabase!
-      .from('time_entries')
-      .select('data')
-      .limit(100000); // Erhöhe Limit für große Datenmengen
+    // TimeEntries in Batches laden (Supabase hat max 1000 pro Query)
+    console.log('📥 Lade TimeEntries in Batches...');
+    const allTimeEntries: any[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const { data, error } = await supabase!
+        .from('time_entries')
+        .select('data')
+        .range(from, from + batchSize - 1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allTimeEntries.push(...data);
+        console.log(`   📦 Batch geladen: ${data.length} Einträge (Total: ${allTimeEntries.length})`);
+        from += batchSize;
+        hasMore = data.length === batchSize; // Wenn weniger als batchSize, sind wir fertig
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`✅ Alle TimeEntries geladen: ${allTimeEntries.length} Einträge`);
+    const timeEntriesResult = { data: allTimeEntries, error: null };
     
     if (usersResult.error) throw usersResult.error;
     if (projectsResult.error) throw projectsResult.error;
