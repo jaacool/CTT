@@ -286,39 +286,84 @@ export async function deleteAllData(): Promise<boolean> {
 }
 
 /**
- * Speichert alle Daten in Supabase (Bulk Upload)
+ * Speichert alle Daten in Supabase (Bulk Upload mit Progress)
  */
 export async function saveAllData(
   projects: Project[],
   timeEntries: TimeEntry[],
   users: User[],
-  absenceRequests: AbsenceRequest[]
+  absenceRequests: AbsenceRequest[],
+  onProgress?: (current: number, total: number, phase: string) => void
 ): Promise<boolean> {
   if (!isSupabaseAvailable()) return false;
   
   try {
     console.log('💾 Speichere alle Daten in Supabase...');
+    const totalSteps = users.length + projects.length + timeEntries.length + absenceRequests.length;
+    let currentStep = 0;
     
     // Speichere Users zuerst (wegen Foreign Keys)
+    onProgress?.(currentStep, totalSteps, 'Users');
     for (const user of users) {
       await saveUser(user);
+      currentStep++;
+      if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Users');
     }
     
     // Dann Projects
+    onProgress?.(currentStep, totalSteps, 'Projekte');
     for (const project of projects) {
       await saveProject(project);
+      currentStep++;
+      if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Projekte');
     }
     
-    // Dann Time Entries
-    for (const entry of timeEntries) {
-      await saveTimeEntry(entry);
+    // Dann Time Entries (in Batches für Performance)
+    onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < timeEntries.length; i += BATCH_SIZE) {
+      const batch = timeEntries.slice(i, i + BATCH_SIZE);
+      
+      // Batch Insert
+      const batchData = batch.map(entry => ({
+        id: entry.id,
+        task_id: entry.taskId,
+        task_title: entry.taskTitle,
+        list_title: entry.listTitle,
+        project_id: entry.projectId,
+        project_name: entry.projectName,
+        start_time: entry.startTime,
+        end_time: entry.endTime,
+        duration: entry.duration,
+        user_id: entry.user.id,
+        billable: entry.billable,
+        note: entry.note,
+        data: entry,
+        updated_at: new Date().toISOString()
+      }));
+      
+      const { error } = await supabase!.from('time_entries').upsert(batchData);
+      if (error) {
+        console.error('❌ Batch-Fehler bei TimeEntries:', error);
+        // Fallback: einzeln speichern
+        for (const entry of batch) {
+          await saveTimeEntry(entry);
+        }
+      }
+      
+      currentStep += batch.length;
+      onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
     }
     
     // Zuletzt Absence Requests
+    onProgress?.(currentStep, totalSteps, 'Abwesenheiten');
     for (const request of absenceRequests) {
       await saveAbsenceRequest(request);
+      currentStep++;
+      if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Abwesenheiten');
     }
     
+    onProgress?.(totalSteps, totalSteps, 'Fertig');
     console.log('✅ Alle Daten gespeichert');
     return true;
   } catch (error) {

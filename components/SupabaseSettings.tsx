@@ -21,6 +21,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
+  const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, phase: '' });
 
   const handleDeleteAll = async () => {
     console.log('🗑️ Delete All Button geklickt');
@@ -63,8 +64,17 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     console.log('🔄 Starte Speichervorgang...');
     setIsSaving(true);
     setMessage(null);
+    setSaveProgress({ current: 0, total: 0, phase: 'Starte...' });
 
-    const success = await saveAllData(projects, timeEntries, users, absenceRequests);
+    const success = await saveAllData(
+      projects, 
+      timeEntries, 
+      users, 
+      absenceRequests,
+      (current, total, phase) => {
+        setSaveProgress({ current, total, phase });
+      }
+    );
     
     if (success) {
       // Setze das Initial-Sync-Flag, damit es nicht nochmal läuft
@@ -160,6 +170,23 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               Dies überschreibt bestehende Datensätze. Zu speichern: {users?.length || 0} Users, {projects?.length || 0} Projekte, {timeEntries?.length || 0} Zeiteinträge, {absenceRequests?.length || 0} Abwesenheiten.
             </p>
+            
+            {/* Progress Bar */}
+            {isSaving && saveProgress.total > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  <span>{saveProgress.phase}</span>
+                  <span>{saveProgress.current} / {saveProgress.total} ({Math.round((saveProgress.current / saveProgress.total) * 100)}%)</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div 
+                    className="bg-green-500 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${(saveProgress.current / saveProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center justify-end space-x-2">
               <button
                 onClick={() => setShowSaveModal(false)}
