@@ -54,7 +54,12 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     console.log('💾 Save All Button geklickt');
     console.log(`Daten: ${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} TimeEntries, ${absenceRequests.length} Abwesenheiten`);
     
-    if (!confirm('💾 Alle lokalen Daten in Supabase speichern? Bestehende Daten werden überschrieben.')) {
+    // WARNUNG: Bei sehr vielen Daten (>10000 TimeEntries) kann das Speichern sehr lange dauern!
+    if (timeEntries.length > 10000) {
+      alert(`⚠️ WARNUNG: ${timeEntries.length} TimeEntries werden gespeichert. Das kann 5-10 Minuten dauern!`);
+    }
+    
+    if (!window.confirm('💾 Alle lokalen Daten in Supabase speichern? Bestehende Daten werden überschrieben.')) {
       console.log('ℹ️ Speichern abgebrochen');
       return;
     }
@@ -164,6 +169,17 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
             <h3 className="text-text-primary font-semibold mb-3">Daten-Verwaltung</h3>
             
             <div className="space-y-3">
+              {/* TEST Button */}
+              <button
+                onClick={() => {
+                  console.log('🧪 TEST BUTTON CLICKED!');
+                  alert('Test Button funktioniert!');
+                }}
+                className="w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-500 font-semibold transition-colors"
+              >
+                🧪 Test Button (zum Debuggen)
+              </button>
+
               {/* Save All Button */}
               <button
                 onClick={(e) => {
