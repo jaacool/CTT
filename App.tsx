@@ -1154,7 +1154,7 @@ const App: React.FC = () => {
         )}
         </main>
 
-        <div className={`fixed top-16 right-0 h-full w-96 bg-surface shadow-2xl transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0 md:block`}>
+        <div className={`fixed top-16 right-0 h-full w-96 bg-surface shadow-2xl transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'} md:translate-x-0 md:block`}>
           <TaskDetailPanel 
             item={selectedTask}
             onItemUpdate={handleTaskUpdate}

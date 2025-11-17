@@ -19,6 +19,8 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   const handleDeleteAll = async () => {
     console.log('🗑️ Delete All Button geklickt');
@@ -53,17 +55,11 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   const handleSaveAll = async () => {
     console.log('💾 Save All Button geklickt');
     console.log(`Daten: ${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} TimeEntries, ${absenceRequests.length} Abwesenheiten`);
-    
-    // WARNUNG: Bei sehr vielen Daten (>10000 TimeEntries) kann das Speichern sehr lange dauern!
-    if (timeEntries.length > 10000) {
-      alert(`⚠️ WARNUNG: ${timeEntries.length} TimeEntries werden gespeichert. Das kann 5-10 Minuten dauern!`);
-    }
-    
-    if (!window.confirm('💾 Alle lokalen Daten in Supabase speichern? Bestehende Daten werden überschrieben.')) {
-      console.log('ℹ️ Speichern abgebrochen');
-      return;
-    }
+    // Öffne eigenes Modal
+    setShowSaveModal(true);
+  };
 
+  const confirmSaveAll = async () => {
     console.log('🔄 Starte Speichervorgang...');
     setIsSaving(true);
     setMessage(null);
@@ -83,6 +79,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     }
 
     setIsSaving(false);
+    setShowSaveModal(false);
   };
   
   const handleResetSyncFlag = () => {
@@ -145,6 +142,65 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
         </div>
       </div>
 
+      {/* Modals */}
+      {showSaveModal && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.7)' }}
+          onClick={() => !isSaving && setShowSaveModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 m-4"
+            style={{ zIndex: 10000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Alle Daten in Supabase speichern?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Dies überschreibt bestehende Datensätze. Zu speichern: {users?.length || 0} Users, {projects?.length || 0} Projekte, {timeEntries?.length || 0} Zeiteinträge, {absenceRequests?.length || 0} Abwesenheiten.
+            </p>
+            <div className="flex items-center justify-end space-x-2">
+              <button
+                onClick={() => setShowSaveModal(false)}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmSaveAll}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 flex items-center space-x-2"
+              >
+                {isSaving && (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                <span>{isSaving ? 'Speichere…' : 'Jetzt speichern'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTestModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowTestModal(false)} />
+          <div className="relative bg-surface border border-border rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-2">Test-Modal</h3>
+            <p className="text-text-secondary mb-4">Der Button funktioniert. Dieses Modal wurde per Klick geöffnet.</p>
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => setShowTestModal(false)}
+                className="px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90"
+              >Schließen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Message */}
       {message && (
         <div className={`bg-overlay rounded-lg p-4 border ${
@@ -173,7 +229,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
               <button
                 onClick={() => {
                   console.log('🧪 TEST BUTTON CLICKED!');
-                  alert('Test Button funktioniert!');
+                  setShowTestModal(true);
                 }}
                 className="w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-500 font-semibold transition-colors"
               >
@@ -182,12 +238,11 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
 
               {/* Save All Button */}
               <button
-                onClick={(e) => {
-                  console.log('🖱️ Save Button Click Event:', e);
-                  handleSaveAll();
+                onClick={() => {
+                  console.log('🖱️ Save Button Click Event');
+                  setShowSaveModal(true);
                 }}
-                disabled={isSaving}
-                className="w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-green-500 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className={`w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-green-500 font-semibold transition-colors flex items-center justify-center space-x-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
               >
                 {isSaving ? (
                   <>
