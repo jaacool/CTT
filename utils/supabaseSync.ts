@@ -322,30 +322,40 @@ export async function saveAllData(
     onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
     const BATCH_SIZE = 100;
     for (let i = 0; i < timeEntries.length; i += BATCH_SIZE) {
-      const batch = timeEntries.slice(i, i + BATCH_SIZE);
-      
-      // Batch Insert
-      const batchData = batch.map(entry => ({
-        id: entry.id,
-        task_id: entry.taskId,
-        task_title: entry.taskTitle,
-        list_title: entry.listTitle,
-        project_id: entry.projectId,
-        project_name: entry.projectName,
-        start_time: entry.startTime,
-        end_time: entry.endTime,
-        duration: entry.duration,
-        user_id: entry.user.id,
-        billable: entry.billable,
-        note: entry.note,
-        data: entry,
-        updated_at: new Date().toISOString()
-      }));
-      
-      const { error } = await supabase!.from('time_entries').upsert(batchData);
+      try {
+        const batch = timeEntries.slice(i, i + BATCH_SIZE);
+        
+        // Batch Insert
+        const batchData = batch.map(entry => ({
+          id: entry.id,
+          task_id: entry.taskId,
+          task_title: entry.taskTitle,
+          list_title: entry.listTitle,
+          project_id: entry.projectId,
+          project_name: entry.projectName,
+          start_time: entry.startTime,
+          end_time: entry.endTime,
+          duration: entry.duration,
+          user_id: entry.user.id,
+          billable: entry.billable,
+          note: entry.note,
+          data: entry,
+          updated_at: new Date().toISOString()
+        }));
+        
+        const { error } = await supabase!.from('time_entries').upsert(batchData);
       if (error) {
         console.error('❌ Batch-Fehler bei TimeEntries:', error);
+        console.error('Batch details:', {
+          batchSize: batch.length,
+          firstEntry: batch[0]?.id,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint,
+          errorCode: error.code
+        });
         // Fallback: einzeln speichern
+        console.log('⚠️ Fallback: Speichere Batch einzeln...');
         for (const entry of batch) {
           await saveTimeEntry(entry);
         }
@@ -353,6 +363,11 @@ export async function saveAllData(
       
       currentStep += batch.length;
       onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
+      } catch (batchError) {
+        console.error('❌ Kritischer Fehler im Batch-Loop:', batchError);
+        console.error('Batch-Index:', i, 'von', timeEntries.length);
+        throw batchError; // Re-throw um den äußeren catch zu triggern
+      }
     }
     
     // Zuletzt Absence Requests
@@ -368,6 +383,12 @@ export async function saveAllData(
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Speichern aller Daten:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+      error: JSON.stringify(error, null, 2)
+    });
     return false;
   }
 }
