@@ -82,21 +82,20 @@ export function importTimeReport(
   const subtaskMap = new Map<string, Subtask>();
   
   // Initialisiere mit existierenden Projekten
-  // WICHTIG: Verwende den gleichen Key wie beim Import (projectName-companyName)
+  // WICHTIG: Verwende die Projekt-ID als Key
   existingProjects.forEach(p => {
-    const projectKey = `${p.name}-${p.client || 'default'}`;
-    projectMap.set(projectKey, p);
+    projectMap.set(p.id, p);
     
     // Initialisiere auch Listen und Tasks
     p.taskLists.forEach(list => {
       listMap.set(list.id, list);
       list.tasks.forEach(task => {
-        const taskKey = `${p.id}-${list.title}-${task.title}`;
-        taskMap.set(taskKey, task);
+        // Verwende die Task-ID selbst als Key (aus Excel)
+        taskMap.set(task.id, task);
         
         task.subtasks.forEach(subtask => {
-          const subtaskKey = `${task.id}-${subtask.title}`;
-          subtaskMap.set(subtaskKey, subtask);
+          // Verwende die Subtask-ID selbst als Key (aus Excel)
+          subtaskMap.set(subtask.id, subtask);
         });
       });
     });
@@ -128,6 +127,7 @@ export function importTimeReport(
     // Finde oder erstelle Projekt
     const rawProjectName = row['Project Name']?.trim();
     const rawCompanyName = row['Company Name']?.trim();
+    const excelProjectId = row['Project Id']?.trim();
     
     if (!rawProjectName) return;
     
@@ -135,14 +135,11 @@ export function importTimeReport(
     const projectName = cleanProjectName(rawProjectName);
     const companyName = rawCompanyName ? cleanProjectName(rawCompanyName) : undefined;
     
-    // Verwende Projektname als eindeutigen Key (ignoriere Excel Project Id)
-    const projectKey = `${projectName}-${companyName || 'default'}`;
+    // WICHTIG: Verwende Excel Project ID wenn vorhanden, sonst generiere eine
+    const projectId = excelProjectId || `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    let project = projectMap.get(projectKey);
+    let project = projectMap.get(projectId);
     if (!project) {
-      // Generiere neue UUID für das Projekt
-      const projectId = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
       project = {
         id: projectId,
         name: projectName,
@@ -155,7 +152,7 @@ export function importTimeReport(
         members: [],
         client: companyName,
       };
-      projectMap.set(projectKey, project);
+      projectMap.set(projectId, project);
       projects.push(project);
       stats.projectsCreated++;
     }
@@ -183,14 +180,15 @@ export function importTimeReport(
     
     // Finde oder erstelle Parent Task (falls vorhanden)
     const rawParentTaskName = row['Parent Task Name']?.trim();
+    const excelParentTaskId = row['Parent Task Id']?.trim();
     
-    // Verwende Task-Name als Key für Deduplizierung
-    const parentTaskKey = rawParentTaskName ? `${project.id}-${cleanProjectName(rawParentTaskName)}` : null;
+    // Verwende Excel Task ID wenn vorhanden, sonst Task-Name als Key
+    const parentTaskKey = excelParentTaskId || (rawParentTaskName ? `${project.id}-${cleanProjectName(rawParentTaskName)}` : null);
     let parentTaskId: string | null = null;
     
     if (parentTaskKey && rawParentTaskName && !taskMap.has(parentTaskKey)) {
-      // Generiere neue UUID für Parent Task
-      parentTaskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Verwende Excel Task ID wenn vorhanden, sonst generiere neue
+      parentTaskId = excelParentTaskId || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const parentTask: Task = {
         id: parentTaskId,
@@ -223,15 +221,16 @@ export function importTimeReport(
     
     // Finde oder erstelle Task/Subtask
     const rawTaskName = row['Task Name']?.trim();
+    const excelTaskId = row['Task Id']?.trim();
     
     if (!rawTaskName) return;
     
     const taskName = cleanProjectName(rawTaskName);
     
-    // Verwende Task-Name + Parent als Key für Deduplizierung
-    const taskKey = parentTaskId 
+    // Verwende Excel Task ID wenn vorhanden, sonst Task-Name + Parent als Key
+    const taskKey = excelTaskId || (parentTaskId 
       ? `${parentTaskId}-${taskName}` 
-      : `${project.id}-${listName}-${taskName}`;
+      : `${project.id}-${listName}-${taskName}`);
     
     let taskId: string;
     
@@ -239,8 +238,8 @@ export function importTimeReport(
     if (parentTaskId) {
       let subtask = subtaskMap.get(taskKey);
       if (!subtask) {
-        // Generiere neue UUID für Subtask
-        taskId = `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Verwende Excel Task ID wenn vorhanden, sonst generiere neue
+        taskId = excelTaskId || `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         subtask = {
           id: taskId,
@@ -272,8 +271,8 @@ export function importTimeReport(
       // Es ist ein Haupt-Task
       let task = taskMap.get(taskKey);
       if (!task) {
-        // Generiere neue UUID für Task
-        taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Verwende Excel Task ID wenn vorhanden, sonst generiere neue
+        taskId = excelTaskId || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         task = {
           id: taskId,
