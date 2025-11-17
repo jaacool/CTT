@@ -425,12 +425,19 @@ export async function loadAllData(): Promise<{
     console.log('📥 Lade Daten aus Supabase...');
     
     // Lade alle Daten parallel
-    const [usersResult, projectsResult, timeEntriesResult, absenceRequestsResult] = await Promise.all([
+    // WICHTIG: Supabase hat ein Default-Limit von 1000, wir müssen das explizit erhöhen
+    const [usersResult, projectsResult, absenceRequestsResult] = await Promise.all([
       supabase!.from('users').select('data'),
       supabase!.from('projects').select('data'),
-      supabase!.from('time_entries').select('data'),
       supabase!.from('absence_requests').select('data')
     ]);
+    
+    // TimeEntries separat laden mit erhöhtem Limit (max 100.000)
+    console.log('📥 Lade TimeEntries (kann viele sein)...');
+    const timeEntriesResult = await supabase!
+      .from('time_entries')
+      .select('data')
+      .limit(100000); // Erhöhe Limit für große Datenmengen
     
     if (usersResult.error) throw usersResult.error;
     if (projectsResult.error) throw projectsResult.error;
