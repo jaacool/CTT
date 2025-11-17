@@ -97,8 +97,10 @@ const App: React.FC = () => {
         
         if (data.projects.length > 0) {
           setProjects(data.projects);
-          // Setze selectedProject auf das erste Projekt
-          setSelectedProject(data.projects[0]);
+          // Initialisiere History mit geladenen Projekten
+          setHistory([data.projects]);
+          setHistoryIndex(0);
+          // NICHT automatisch ein Projekt auswählen - User soll selbst wählen
         }
         
         if (data.timeEntries.length > 0) {
