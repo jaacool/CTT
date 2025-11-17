@@ -99,18 +99,32 @@ export function saveToLocalStorage(
     };
 
     const jsonString = JSON.stringify(backup);
+    console.log(`📦 JSON Größe: ${(jsonString.length / 1024 / 1024).toFixed(2)} MB`);
+    
     const compressed = pako.gzip(jsonString);
+    console.log(`📦 Komprimiert: ${(compressed.length / 1024).toFixed(2)} KB`);
+    
     const base64 = btoa(String.fromCharCode(...compressed));
+    console.log(`📦 Base64: ${(base64.length / 1024).toFixed(2)} KB`);
     
     localStorage.setItem('ctt_backup', base64);
     
-    console.log(`✅ Daten in localStorage gespeichert:`);
-    console.log(`   📦 Original: ${(jsonString.length / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`   📦 Komprimiert: ${(compressed.length / 1024).toFixed(2)} KB`);
-    console.log(`   📦 Base64: ${(base64.length / 1024).toFixed(2)} KB`);
+    console.log(`✅ Daten in localStorage gespeichert!`);
     console.log(`   🗜️ Kompressionsrate: ${((1 - compressed.length / jsonString.length) * 100).toFixed(1)}%`);
   } catch (error) {
     console.error('❌ Fehler beim Speichern in localStorage:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+      error: error
+    });
+    
+    // Prüfe localStorage Quota
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      console.error('⚠️ localStorage ist voll! localStorage hat meist nur 5-10 MB Platz');
+    }
   }
 }
 
