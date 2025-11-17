@@ -299,12 +299,25 @@ export async function saveAllData(
   
   try {
     console.log('💾 Speichere alle Daten in Supabase...');
-    const totalSteps = users.length + projects.length + timeEntries.length + absenceRequests.length;
+    console.log('Daten-Check:', {
+      users: users?.length ?? 'undefined',
+      projects: projects?.length ?? 'undefined',
+      timeEntries: timeEntries?.length ?? 'undefined',
+      absenceRequests: absenceRequests?.length ?? 'undefined'
+    });
+    
+    // Defensive: Stelle sicher, dass alle Arrays definiert sind
+    const safeUsers = users || [];
+    const safeProjects = projects || [];
+    const safeTimeEntries = timeEntries || [];
+    const safeAbsenceRequests = absenceRequests || [];
+    
+    const totalSteps = safeUsers.length + safeProjects.length + safeTimeEntries.length + safeAbsenceRequests.length;
     let currentStep = 0;
     
     // Speichere Users zuerst (wegen Foreign Keys)
     onProgress?.(currentStep, totalSteps, 'Users');
-    for (const user of users) {
+    for (const user of safeUsers) {
       await saveUser(user);
       currentStep++;
       if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Users');
@@ -312,7 +325,7 @@ export async function saveAllData(
     
     // Dann Projects
     onProgress?.(currentStep, totalSteps, 'Projekte');
-    for (const project of projects) {
+    for (const project of safeProjects) {
       await saveProject(project);
       currentStep++;
       if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Projekte');
@@ -321,9 +334,9 @@ export async function saveAllData(
     // Dann Time Entries (in Batches für Performance)
     onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
     const BATCH_SIZE = 100;
-    for (let i = 0; i < timeEntries.length; i += BATCH_SIZE) {
+    for (let i = 0; i < safeTimeEntries.length; i += BATCH_SIZE) {
       try {
-        const batch = timeEntries.slice(i, i + BATCH_SIZE);
+        const batch = safeTimeEntries.slice(i, i + BATCH_SIZE);
         
         // Batch Insert
         const batchData = batch.map(entry => ({
@@ -365,14 +378,14 @@ export async function saveAllData(
       onProgress?.(currentStep, totalSteps, 'Zeiteinträge');
       } catch (batchError) {
         console.error('❌ Kritischer Fehler im Batch-Loop:', batchError);
-        console.error('Batch-Index:', i, 'von', timeEntries.length);
+        console.error('Batch-Index:', i, 'von', safeTimeEntries.length);
         throw batchError; // Re-throw um den äußeren catch zu triggern
       }
     }
     
     // Zuletzt Absence Requests
     onProgress?.(currentStep, totalSteps, 'Abwesenheiten');
-    for (const request of absenceRequests) {
+    for (const request of safeAbsenceRequests) {
       await saveAbsenceRequest(request);
       currentStep++;
       if (currentStep % 10 === 0) onProgress?.(currentStep, totalSteps, 'Abwesenheiten');
