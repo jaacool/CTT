@@ -21,19 +21,30 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const handleDeleteAll = async () => {
+    console.log('🗑️ Delete All Button geklickt');
+    
     if (!confirm('⚠️ Wirklich ALLE Daten aus Supabase löschen? Dies kann nicht rückgängig gemacht werden!')) {
+      console.log('ℹ️ Löschen abgebrochen');
       return;
     }
 
+    console.log('🔄 Starte Löschvorgang...');
     setIsDeleting(true);
     setMessage(null);
 
-    const success = await deleteAllData();
-    
-    if (success) {
-      setMessage({ type: 'success', text: '✅ Alle Daten wurden aus Supabase gelöscht' });
-    } else {
-      setMessage({ type: 'error', text: '❌ Fehler beim Löschen der Daten' });
+    try {
+      const success = await deleteAllData();
+      
+      if (success) {
+        console.log('✅ Daten erfolgreich gelöscht');
+        setMessage({ type: 'success', text: '✅ Alle Daten wurden aus Supabase gelöscht' });
+      } else {
+        console.log('❌ Löschen fehlgeschlagen');
+        setMessage({ type: 'error', text: '❌ Fehler beim Löschen der Daten' });
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen:', error);
+      setMessage({ type: 'error', text: '❌ Fehler: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler') });
     }
 
     setIsDeleting(false);
