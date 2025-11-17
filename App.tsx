@@ -802,8 +802,13 @@ const App: React.FC = () => {
       id: `import-${Date.now()}-${index}`,
     }));
     
-    // Auto-Save alle importierten Einträge
-    newEntries.forEach(entry => saveTimeEntry(entry));
+    // DEAKTIVIERT: Auto-Save beim Import führt zu zu vielen parallelen Requests
+    // und Foreign Key Errors wenn User nicht in Supabase existieren.
+    // Stattdessen: Nutze "Alle Daten in Supabase speichern" nach dem Import.
+    // newEntries.forEach(entry => saveTimeEntry(entry));
+    
+    console.log(`✅ ${newEntries.length} TimeEntries importiert (noch nicht in Supabase gespeichert)`);
+    console.log(`ℹ️ Gehe zu Settings → Supabase → "Alle Daten in Supabase speichern" um die Daten zu persistieren`);
     
     setTimeEntries(prev => [...prev, ...newEntries]);
   }, []);
@@ -1130,12 +1135,16 @@ const App: React.FC = () => {
                   }
                 });
                 setProjects(updatedProjects);
-                // Auto-Save: importierte Projekte sofort in Supabase upserten
-                result.projects.forEach(p => saveProject(p));
                 
-                // Füge neue Zeiteinträge hinzu und speichere sie in Supabase
+                // DEAKTIVIERT: Auto-Save beim Import - zu viele parallele Requests
+                // result.projects.forEach(p => saveProject(p));
+                // result.timeEntries.forEach(te => saveTimeEntry(te));
+                
+                console.log(`✅ Import abgeschlossen: ${result.projects.length} Projekte, ${result.timeEntries.length} TimeEntries`);
+                console.log(`ℹ️ Gehe zu Settings → Supabase → "Alle Daten in Supabase speichern" um die Daten zu persistieren`);
+                
+                // Füge neue Zeiteinträge hinzu (nur lokal)
                 setTimeEntries([...timeEntries, ...result.timeEntries]);
-                result.timeEntries.forEach(te => saveTimeEntry(te));
               }}
             />
           ) :
