@@ -64,6 +64,23 @@ export async function saveTimeEntry(entry: TimeEntry): Promise<boolean> {
   if (!isSupabaseAvailable()) return false;
   
   try {
+    // 1) Stelle sicher, dass der User existiert (FK: time_entries.user_id -> users.id)
+    await saveUser(entry.user);
+
+    // 2) Stelle sicher, dass das Projekt existiert (FK: time_entries.project_id -> projects.id)
+    //    Projekte können aus dem Import kommen. Wir upserten minimal mit id/name und legen ein kleines JSON in data ab,
+    //    da die Spalte NOT NULL ist.
+    const { error: projectError } = await supabase!
+      .from('projects')
+      .upsert({
+        id: entry.projectId,
+        name: entry.projectName || 'Unbenanntes Projekt',
+        data: { id: entry.projectId, name: entry.projectName },
+        updated_at: new Date().toISOString()
+      });
+    if (projectError) throw projectError;
+
+    // 3) Speichere den Zeiteintrag (end_time darf null sein bei laufenden Timern)
     const { error } = await supabase!
       .from('time_entries')
       .upsert({
@@ -74,7 +91,7 @@ export async function saveTimeEntry(entry: TimeEntry): Promise<boolean> {
         project_id: entry.projectId,
         project_name: entry.projectName,
         start_time: entry.startTime,
-        end_time: entry.endTime,
+        end_time: entry.endTime ?? null,
         duration: entry.duration,
         user_id: entry.user.id,
         billable: entry.billable,
@@ -82,7 +99,7 @@ export async function saveTimeEntry(entry: TimeEntry): Promise<boolean> {
         data: entry, // Speichere das komplette Objekt als JSON
         updated_at: new Date().toISOString()
       });
-    
+
     if (error) throw error;
     console.log('✅ Zeiteintrag gespeichert:', entry.id);
     return true;
@@ -278,5 +295,55 @@ export async function saveAllData(
   } catch (error) {
     console.error('❌ Fehler beim Speichern aller Daten:', error);
     return false;
+  }
+}
+
+// ============================================
+// LOAD FROM SUPABASE
+// ============================================
+
+/**
+ * Lädt alle Daten aus Supabase
+ */
+export async function loadAllData(): Promise<{
+  projects: Project[];
+  timeEntries: TimeEntry[];
+  users: User[];
+  absenceRequests: AbsenceRequest[];
+} | null> {
+  if (!isSupabaseAvailable()) return null;
+  
+  try {
+    console.log('📥 Lade Daten aus Supabase...');
+    
+    // Lade alle Daten parallel
+    const [usersResult, projectsResult, timeEntriesResult, absenceRequestsResult] = await Promise.all([
+      supabase!.from('users').select('data'),
+      supabase!.from('projects').select('data'),
+      supabase!.from('time_entries').select('data'),
+      supabase!.from('absence_requests').select('data')
+    ]);
+    
+    if (usersResult.error) throw usersResult.error;
+    if (projectsResult.error) throw projectsResult.error;
+    if (timeEntriesResult.error) throw timeEntriesResult.error;
+    if (absenceRequestsResult.error) throw absenceRequestsResult.error;
+    
+    const users = usersResult.data?.map(row => row.data as User) || [];
+    const projects = projectsResult.data?.map(row => row.data as Project) || [];
+    const timeEntries = timeEntriesResult.data?.map(row => row.data as TimeEntry) || [];
+    const absenceRequests = absenceRequestsResult.data?.map(row => row.data as AbsenceRequest) || [];
+    
+    console.log(`✅ Daten geladen: ${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} Zeiteinträge, ${absenceRequests.length} Abwesenheiten`);
+    
+    return {
+      users,
+      projects,
+      timeEntries,
+      absenceRequests
+    };
+  } catch (error) {
+    console.error('❌ Fehler beim Laden der Daten:', error);
+    return null;
   }
 }

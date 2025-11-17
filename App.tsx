@@ -17,7 +17,7 @@ import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
 import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
-import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest } from './utils/supabaseSync';
+import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -81,52 +81,41 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
 
-  // Initial Sync: Speichere alle Daten beim App-Start in Supabase (nur einmal)
+  // Load from Supabase beim App-Start
   useEffect(() => {
-    const syncInitialData = async () => {
-      // Prüfe ob bereits synchronisiert wurde
-      const hasInitialSync = localStorage.getItem('supabase_initial_sync');
-      if (hasInitialSync === 'true') {
-        console.log('ℹ️ Initialer Sync bereits durchgeführt');
-        return;
-      }
+    const loadFromSupabase = async () => {
+      const data = await loadAllData();
       
-      console.log('🔄 Initialer Sync mit Supabase...');
-      
-      try {
-        // 1. Users zuerst (wegen Foreign Keys)
-        for (const user of users) {
-          await saveUser(user);
+      if (data) {
+        // Lade Daten aus Supabase
+        if (data.users.length > 0) {
+          setUsers(data.users);
+          // Setze currentUser auf den ersten Admin oder ersten User
+          const adminUser = data.users.find(u => u.role === 'admin');
+          setCurrentUser(adminUser || data.users[0]);
         }
-        console.log('✅ Users gespeichert');
         
-        // 2. Dann Projekte
-        for (const project of projects) {
-          await saveProject(project);
+        if (data.projects.length > 0) {
+          setProjects(data.projects);
+          // Setze selectedProject auf das erste Projekt
+          setSelectedProject(data.projects[0]);
         }
-        console.log('✅ Projekte gespeichert');
         
-        // 3. Dann Time Entries
-        for (const entry of timeEntries) {
-          await saveTimeEntry(entry);
+        if (data.timeEntries.length > 0) {
+          setTimeEntries(data.timeEntries);
         }
-        console.log('✅ Zeiteinträge gespeichert');
         
-        // 4. Dann Absence Requests
-        for (const request of absenceRequests) {
-          await saveAbsenceRequest(request);
+        if (data.absenceRequests.length > 0) {
+          setAbsenceRequests(data.absenceRequests);
         }
-        console.log('✅ Abwesenheiten gespeichert');
         
-        // Markiere als synchronisiert
-        localStorage.setItem('supabase_initial_sync', 'true');
-        console.log('🎉 Initialer Sync abgeschlossen!');
-      } catch (error) {
-        console.error('❌ Fehler beim initialen Sync:', error);
+        console.log('🎉 Daten aus Supabase geladen!');
+      } else {
+        console.log('ℹ️ Keine Daten in Supabase gefunden, verwende Mock-Daten');
       }
     };
     
-    syncInitialData();
+    loadFromSupabase();
   }, []); // Leeres Dependency Array = nur beim Mount
 
   // Undo/Redo system
@@ -824,6 +813,9 @@ const App: React.FC = () => {
       updatedAt: new Date().toISOString(),
     }));
     
+    // Auto-Save: importierte Abwesenheiten direkt in Supabase speichern
+    newAbsences.forEach(abs => saveAbsenceRequest(abs));
+
     setAbsenceRequests(prev => [...prev, ...newAbsences]);
   }, []);
 
@@ -1117,9 +1109,12 @@ const App: React.FC = () => {
                   }
                 });
                 setProjects(updatedProjects);
+                // Auto-Save: importierte Projekte sofort in Supabase upserten
+                result.projects.forEach(p => saveProject(p));
                 
-                // Füge neue Zeiteinträge hinzu
+                // Füge neue Zeiteinträge hinzu und speichere sie in Supabase
                 setTimeEntries([...timeEntries, ...result.timeEntries]);
+                result.timeEntries.forEach(te => saveTimeEntry(te));
               }}
             />
           ) :
