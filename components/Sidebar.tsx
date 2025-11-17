@@ -61,17 +61,29 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
 };
 
 
-const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: () => void; onRename: (id: string, newName: string) => void }> = ({ project, isSelected, onClick, onRename }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md ${
-      isSelected ? 'glow-button text-white' : 'hover-glow text-text-primary'
-    }`}
-  >
-    <span className="text-lg">{project.icon}</span>
-    <EditableProjectName project={project} onRename={onRename} />
-  </button>
-);
+const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: () => void; onRename: (id: string, newName: string) => void }> = ({ project, isSelected, onClick, onRename }) => {
+  // Prüfe ob icon ein Farbcode ist (z.B. #d946ef)
+  const isColorCode = project.icon?.startsWith('#');
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md ${
+        isSelected ? 'glow-button text-white' : 'hover-glow text-text-primary'
+      }`}
+    >
+      {isColorCode ? (
+        <div 
+          className="w-5 h-5 rounded-md flex-shrink-0" 
+          style={{ backgroundColor: project.icon }}
+        />
+      ) : (
+        <span className="text-lg">{project.icon}</span>
+      )}
+      <EditableProjectName project={project} onRename={onRename} />
+    </button>
+  );
+};
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
   <a href="#" className="flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md">
