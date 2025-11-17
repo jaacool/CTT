@@ -40,7 +40,18 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
 
   // Filtere TimeEntries für aktuellen User
   const userTimeEntries = useMemo(() => {
-    return timeEntries.filter(te => te.user.id === currentUser.id);
+    console.log('🔍 Filtere TimeEntries für User:', currentUser.name, currentUser.id);
+    console.log('Total TimeEntries:', timeEntries.length);
+    const filtered = timeEntries.filter(te => te.user.id === currentUser.id);
+    console.log('Gefilterte TimeEntries für User:', filtered.length);
+    console.log('Erste 3 Einträge:', filtered.slice(0, 3).map(te => ({
+      id: te.id,
+      userId: te.user.id,
+      userName: te.user.name,
+      duration: te.duration,
+      task: te.taskTitle
+    })));
+    return filtered;
   }, [timeEntries, currentUser]);
 
   // Filtere TimeEntries für aktuelle Woche
@@ -58,7 +69,9 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
 
   // Berechne Gesamtzeit seit Anfang
   const totalSeconds = useMemo(() => {
-    return userTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+    const total = userTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+    console.log('📊 Gesamtzeit berechnet:', total, 'Sekunden =', Math.floor(total / 3600), 'Stunden');
+    return total;
   }, [userTimeEntries]);
 
   // Generiere 7 Tage der Woche
