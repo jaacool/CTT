@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { saveAllData, deleteAllData, isSupabaseAvailable, SUPABASE_ENABLED } from '../utils/supabaseSync';
+import { saveAllData, deleteAllData } from '../utils/supabaseSync';
 import { saveToLocalStorage } from '../utils/dataBackup';
 import { saveCompressedBackupToSupabase } from '../utils/supabaseBackup';
 import { Project, TimeEntry, User, AbsenceRequest } from '../types';
+
+// Prüfe ob Supabase konfiguriert ist
+const SUPABASE_ENABLED = !!(import.meta as any).env?.VITE_SUPABASE_URL && !!(import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
 interface SupabaseSettingsProps {
   projects: Project[];
@@ -135,7 +138,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     );
   }
 
-  const isAvailable = isSupabaseAvailable();
+  const isAvailable = SUPABASE_ENABLED;
 
   return (
     <div className="p-6 space-y-6">
