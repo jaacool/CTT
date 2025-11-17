@@ -25,6 +25,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
+  const [showClearCacheModal, setShowClearCacheModal] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, phase: '' });
 
   const handleDeleteAll = async () => {
@@ -117,13 +118,14 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   };
 
   const handleClearCache = () => {
-    if (!confirm('🗑️ Wirklich den localStorage Cache löschen? Die App lädt dann beim nächsten Reload aus Supabase.')) {
-      return;
-    }
-    
     localStorage.removeItem('ctt_backup');
     localStorage.removeItem('supabase_initial_sync');
-    setMessage({ type: 'success', text: '✅ Cache gelöscht! Seite neu laden (F5) um aus Supabase zu laden.' });
+    setShowClearCacheModal(true);
+    
+    // Schließe Modal nach 3 Sekunden
+    setTimeout(() => {
+      setShowClearCacheModal(false);
+    }, 3000);
   };
 
   if (!SUPABASE_ENABLED) {
@@ -394,6 +396,49 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
                 <p><strong className="text-text-primary">Reset:</strong> Löscht alle Daten aus der Cloud (lokale Daten bleiben erhalten).</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Cache Success Modal */}
+      {showClearCacheModal && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setShowClearCacheModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 m-4"
+            style={{ zIndex: 10000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
+              ✅ Cache gelöscht!
+            </h3>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-4 text-center">
+              Der localStorage Cache wurde erfolgreich gelöscht.
+            </p>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-600 dark:text-blue-400 text-center">
+                💡 Lade die Seite neu (F5), um Daten aus Supabase zu laden
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowClearCacheModal(false)}
+              className="w-full px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
