@@ -116,6 +116,16 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     setMessage({ type: 'info', text: 'ℹ️ Sync-Flag zurückgesetzt. Seite neu laden für erneuten Initial-Sync.' });
   };
 
+  const handleClearCache = () => {
+    if (!confirm('🗑️ Wirklich den localStorage Cache löschen? Die App lädt dann beim nächsten Reload aus Supabase.')) {
+      return;
+    }
+    
+    localStorage.removeItem('ctt_backup');
+    localStorage.removeItem('supabase_initial_sync');
+    setMessage({ type: 'success', text: '✅ Cache gelöscht! Seite neu laden (F5) um aus Supabase zu laden.' });
+  };
+
   if (!SUPABASE_ENABLED) {
     return (
       <div className="p-6">
@@ -308,6 +318,21 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
                     <span>Alle Daten in Supabase speichern</span>
                   </>
                 )}
+              </button>
+
+              {/* Clear Cache Button */}
+              <button
+                onClick={handleClearCache}
+                className="w-full px-4 py-3 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-500 font-semibold transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>localStorage Cache löschen</span>
               </button>
 
               {/* Delete All Button */}
