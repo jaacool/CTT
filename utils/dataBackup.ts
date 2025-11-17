@@ -103,7 +103,12 @@ export function saveToLocalStorage(
     const base64 = btoa(String.fromCharCode(...compressed));
     
     localStorage.setItem('ctt_backup', base64);
-    console.log(`✅ Daten in localStorage gespeichert (${(base64.length / 1024).toFixed(2)} KB)`);
+    
+    console.log(`✅ Daten in localStorage gespeichert:`);
+    console.log(`   📦 Original: ${(jsonString.length / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`   📦 Komprimiert: ${(compressed.length / 1024).toFixed(2)} KB`);
+    console.log(`   📦 Base64: ${(base64.length / 1024).toFixed(2)} KB`);
+    console.log(`   🗜️ Kompressionsrate: ${((1 - compressed.length / jsonString.length) * 100).toFixed(1)}%`);
   } catch (error) {
     console.error('❌ Fehler beim Speichern in localStorage:', error);
   }
