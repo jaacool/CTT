@@ -51,10 +51,15 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
   };
 
   const handleSaveAll = async () => {
+    console.log('💾 Save All Button geklickt');
+    console.log(`Daten: ${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} TimeEntries, ${absenceRequests.length} Abwesenheiten`);
+    
     if (!confirm('💾 Alle lokalen Daten in Supabase speichern? Bestehende Daten werden überschrieben.')) {
+      console.log('ℹ️ Speichern abgebrochen');
       return;
     }
 
+    console.log('🔄 Starte Speichervorgang...');
     setIsSaving(true);
     setMessage(null);
 
@@ -161,7 +166,10 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
             <div className="space-y-3">
               {/* Save All Button */}
               <button
-                onClick={handleSaveAll}
+                onClick={(e) => {
+                  console.log('🖱️ Save Button Click Event:', e);
+                  handleSaveAll();
+                }}
                 disabled={isSaving}
                 className="w-full px-4 py-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-green-500 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
