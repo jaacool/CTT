@@ -3,6 +3,7 @@ import { AbsenceRequest, AbsenceType, AbsenceStatus, User, TimeEntry } from '../
 import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, PlusIcon, CalendarIcon, CheckCircleIcon, XIcon, XCircleIcon, ClockIcon } from './Icons';
 import { GermanState, GERMAN_STATE_NAMES, isHoliday, isWeekend } from '../utils/holidays';
 import { calculateVacationBalance, calculateWorkDays } from '../utils/vacationCalculations';
+import { parseAbsencesFromExcel } from '../utils/parseAbsences';
 
 interface VacationAbsenceProps {
   absenceRequests: AbsenceRequest[];
@@ -823,11 +824,24 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
 
     try {
       console.log('📥 Importiere Abwesenheiten aus:', file.name);
-      // TODO: Parser implementieren
-      alert('Import-Funktion wird implementiert...');
+      
+      // Lese Datei als ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Parse Abwesenheiten
+      const parsedAbsences = parseAbsencesFromExcel(arrayBuffer, currentUser);
+      
+      console.log(`✅ ${parsedAbsences.length} Abwesenheiten geparst`);
+      
+      // Erstelle alle Abwesenheitsanträge (auto-approve für eigene Importe)
+      parsedAbsences.forEach(absence => {
+        onCreateRequest(absence, true); // true = auto-approve
+      });
+      
+      alert(`✅ ${parsedAbsences.length} Abwesenheiten erfolgreich importiert!`);
     } catch (error) {
       console.error('❌ Fehler beim Import:', error);
-      alert('Fehler beim Import der Datei');
+      alert(`Fehler beim Import: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
 
     // Reset input
