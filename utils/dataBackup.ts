@@ -1,0 +1,131 @@
+import { Project, TimeEntry, User, AbsenceRequest } from '../types';
+import pako from 'pako';
+
+interface BackupData {
+  version: string;
+  timestamp: string;
+  users: User[];
+  projects: Project[];
+  timeEntries: TimeEntry[];
+  absenceRequests: AbsenceRequest[];
+}
+
+/**
+ * Exportiert alle Daten als komprimierte JSON-Datei
+ */
+export function exportDataToFile(
+  users: User[],
+  projects: Project[],
+  timeEntries: TimeEntry[],
+  absenceRequests: AbsenceRequest[]
+): void {
+  const backup: BackupData = {
+    version: '1.0',
+    timestamp: new Date().toISOString(),
+    users,
+    projects,
+    timeEntries,
+    absenceRequests
+  };
+
+  // Konvertiere zu JSON
+  const jsonString = JSON.stringify(backup);
+  console.log(`📦 Original Größe: ${(jsonString.length / 1024 / 1024).toFixed(2)} MB`);
+
+  // Komprimiere mit gzip
+  const compressed = pako.gzip(jsonString);
+  console.log(`📦 Komprimiert: ${(compressed.length / 1024 / 1024).toFixed(2)} MB`);
+
+  // Erstelle Blob und Download
+  const blob = new Blob([compressed], { type: 'application/gzip' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `ctt-backup-${new Date().toISOString().split('T')[0]}.json.gz`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  console.log('✅ Backup-Datei heruntergeladen');
+}
+
+/**
+ * Importiert Daten aus einer komprimierten JSON-Datei
+ */
+export async function importDataFromFile(file: File): Promise<BackupData | null> {
+  try {
+    console.log('📥 Lade Backup-Datei...');
+    
+    // Lese Datei als ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    const compressed = new Uint8Array(arrayBuffer);
+    
+    console.log(`📦 Komprimierte Größe: ${(compressed.length / 1024 / 1024).toFixed(2)} MB`);
+    
+    // Dekomprimiere
+    const decompressed = pako.ungzip(compressed, { to: 'string' });
+    console.log(`📦 Dekomprimierte Größe: ${(decompressed.length / 1024 / 1024).toFixed(2)} MB`);
+    
+    // Parse JSON
+    const backup: BackupData = JSON.parse(decompressed);
+    
+    console.log(`✅ Backup geladen: ${backup.users.length} Users, ${backup.projects.length} Projekte, ${backup.timeEntries.length} TimeEntries`);
+    
+    return backup;
+  } catch (error) {
+    console.error('❌ Fehler beim Laden der Backup-Datei:', error);
+    return null;
+  }
+}
+
+/**
+ * Speichert Daten in localStorage (für schnellen Zugriff)
+ */
+export function saveToLocalStorage(
+  users: User[],
+  projects: Project[],
+  timeEntries: TimeEntry[],
+  absenceRequests: AbsenceRequest[]
+): void {
+  try {
+    const backup: BackupData = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      users,
+      projects,
+      timeEntries,
+      absenceRequests
+    };
+
+    const jsonString = JSON.stringify(backup);
+    const compressed = pako.gzip(jsonString);
+    const base64 = btoa(String.fromCharCode(...compressed));
+    
+    localStorage.setItem('ctt_backup', base64);
+    console.log(`✅ Daten in localStorage gespeichert (${(base64.length / 1024).toFixed(2)} KB)`);
+  } catch (error) {
+    console.error('❌ Fehler beim Speichern in localStorage:', error);
+  }
+}
+
+/**
+ * Lädt Daten aus localStorage
+ */
+export function loadFromLocalStorage(): BackupData | null {
+  try {
+    const base64 = localStorage.getItem('ctt_backup');
+    if (!base64) return null;
+
+    const compressed = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    const decompressed = pako.ungzip(compressed, { to: 'string' });
+    const backup: BackupData = JSON.parse(decompressed);
+    
+    console.log(`✅ Daten aus localStorage geladen: ${backup.users.length} Users, ${backup.projects.length} Projekte, ${backup.timeEntries.length} TimeEntries`);
+    
+    return backup;
+  } catch (error) {
+    console.error('❌ Fehler beim Laden aus localStorage:', error);
+    return null;
+  }
+}

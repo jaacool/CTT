@@ -19,6 +19,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
+import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -83,9 +84,42 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
 
-  // Load from Supabase beim App-Start
+  // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
     const loadFromSupabase = async () => {
+      // Versuche zuerst aus localStorage zu laden (instant!)
+      console.log('🔍 Prüfe localStorage Cache...');
+      const cachedData = loadFromLocalStorage();
+      
+      if (cachedData) {
+        console.log('⚡ Lade Daten aus localStorage Cache (instant)');
+        // Lade aus Cache
+        if (cachedData.users.length > 0) {
+          setUsers(cachedData.users);
+          const adminUser = cachedData.users.find(u => u.role === 'admin');
+          setCurrentUser(adminUser || cachedData.users[0]);
+        }
+        
+        if (cachedData.projects.length > 0) {
+          setProjects(cachedData.projects);
+          setHistory([cachedData.projects]);
+          setHistoryIndex(0);
+        }
+        
+        if (cachedData.timeEntries.length > 0) {
+          setTimeEntries(cachedData.timeEntries);
+        }
+        
+        if (cachedData.absenceRequests.length > 0) {
+          setAbsenceRequests(cachedData.absenceRequests);
+        }
+        
+        console.log('✅ Daten aus Cache geladen!');
+        return; // Fertig, kein Supabase-Load nötig
+      }
+      
+      // Fallback: Lade aus Supabase (langsam)
+      console.log('📥 Kein Cache gefunden, lade aus Supabase...');
       const data = await loadAllData();
       
       if (data) {
@@ -114,6 +148,10 @@ const App: React.FC = () => {
         }
         
         console.log('🎉 Daten aus Supabase geladen!');
+        
+        // Speichere in localStorage Cache für nächsten Load
+        console.log('💾 Speichere in localStorage Cache...');
+        saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
       } else {
         console.log('ℹ️ Keine Daten in Supabase gefunden, verwende Mock-Daten');
       }

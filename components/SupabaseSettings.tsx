@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { isSupabaseAvailable, SUPABASE_ENABLED } from '../utils/supabaseClient';
-import { deleteAllData, saveAllData } from '../utils/supabaseSync';
+import { saveAllData, deleteAllData, isSupabaseAvailable, SUPABASE_ENABLED } from '../utils/supabaseSync';
+import { saveToLocalStorage } from '../utils/dataBackup';
 import { Project, TimeEntry, User, AbsenceRequest } from '../types';
 
 interface SupabaseSettingsProps {
@@ -81,6 +81,10 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     if (success) {
       // Setze das Initial-Sync-Flag, damit es nicht nochmal läuft
       localStorage.setItem('supabase_initial_sync', 'true');
+      
+      // Aktualisiere localStorage Cache
+      console.log('💾 Aktualisiere localStorage Cache...');
+      saveToLocalStorage(users, projects, timeEntries, absenceRequests);
       
       setMessage({ 
         type: 'success', 
