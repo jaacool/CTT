@@ -71,7 +71,7 @@ export function importTimeReport(
     const worksheet = workbook.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json<TimeReportRow>(worksheet);
     
-    console.log(`Import gestartet: ${rows.length} Zeilen gefunden`);
+    console.log(`📊 Import gestartet: ${rows.length} Zeilen in Excel gefunden`);
   
   const projects: Project[] = [];
   const timeEntries: TimeEntry[] = [];
@@ -315,8 +315,9 @@ export function importTimeReport(
       return;
     }
     
+    // WICHTIG: Generiere IMMER neue IDs für TimeEntries, da Excel-IDs nicht eindeutig sein könnten
     const timeEntry: TimeEntry = {
-      id: row['Id']?.trim() || `import-${Date.now()}-${Math.random()}`,
+      id: `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${stats.timeEntriesImported}`,
       taskId: taskId,
       taskTitle: taskName,
       listTitle: listName,
@@ -390,6 +391,17 @@ export function importTimeReport(
   }
   
   console.log('✅ timeTrackedSeconds berechnet');
+  
+  console.log(`\n📈 Import-Statistik:`);
+  console.log(`  - ${rows.length} Zeilen in Excel`);
+  console.log(`  - ${stats.timeEntriesImported} TimeEntries importiert`);
+  console.log(`  - ${stats.projectsCreated} Projekte erstellt`);
+  console.log(`  - ${stats.tasksCreated} Tasks erstellt`);
+  console.log(`  - ${stats.subtasksCreated} Subtasks erstellt`);
+  
+  if (stats.timeEntriesImported < rows.length) {
+    console.warn(`⚠️ ${rows.length - stats.timeEntriesImported} Zeilen wurden übersprungen!`);
+  }
   
   return {
     projects,
