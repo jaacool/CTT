@@ -159,43 +159,47 @@ const App: React.FC = () => {
         return;
       }
       
-      // Letzter Fallback: Lade aus einzelnen Tabellen (sehr langsam)
+      // Letzter Fallback: Lade aus einzelnen Tabellen
       console.log('📥 Kein Backup gefunden, lade aus Tabellen...');
       const data = await loadAllData();
       
       if (data) {
         console.log(`✅ Daten aus Supabase Tabellen geladen: ${data.users.length} Users, ${data.projects.length} Projekte, ${data.timeEntries.length} TimeEntries`);
-        // Lade Daten aus Supabase
+        
+        // WICHTIG: Setze Daten auch wenn Arrays leer sind
+        setUsers(data.users.length > 0 ? data.users : users);
+        setProjects(data.projects.length > 0 ? data.projects : projects);
+        setTimeEntries(data.timeEntries.length > 0 ? data.timeEntries : timeEntries);
+        setAbsenceRequests(data.absenceRequests.length > 0 ? data.absenceRequests : absenceRequests);
+        
+        // Setze currentUser wenn vorhanden
         if (data.users.length > 0) {
-          setUsers(data.users);
-          // Setze currentUser auf den ersten Admin oder ersten User
           const adminUser = data.users.find(u => u.role === 'admin');
           setCurrentUser(adminUser || data.users[0]);
         }
         
+        // Setze History wenn Projekte vorhanden
         if (data.projects.length > 0) {
-          setProjects(data.projects);
-          // Initialisiere History mit geladenen Projekten
           setHistory([data.projects]);
           setHistoryIndex(0);
-          // NICHT automatisch ein Projekt auswählen - User soll selbst wählen
-        }
-        
-        if (data.timeEntries.length > 0) {
-          setTimeEntries(data.timeEntries);
-        }
-        
-        if (data.absenceRequests.length > 0) {
-          setAbsenceRequests(data.absenceRequests);
         }
         
         console.log('🎉 Daten aus Supabase geladen!');
         
-        // Speichere in localStorage Cache für nächsten Load
-        console.log('💾 Speichere in localStorage Cache...');
-        saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+        // Speichere in localStorage Cache für nächsten Load (nur wenn Daten vorhanden)
+        if (data.users.length > 0 || data.projects.length > 0 || data.timeEntries.length > 0) {
+          console.log('💾 Speichere in localStorage Cache...');
+          try {
+            saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+            console.log('✅ Cache gespeichert');
+          } catch (error) {
+            console.error('⚠️ Fehler beim Speichern des Cache:', error);
+          }
+        } else {
+          console.log('ℹ️ Keine Daten zum Cachen vorhanden');
+        }
       } else {
-        console.log('ℹ️ Keine Daten in Supabase gefunden, verwende Mock-Daten');
+        console.log('❌ Fehler beim Laden aus Supabase - verwende Mock-Daten');
       }
     };
     
