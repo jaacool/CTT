@@ -76,6 +76,8 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
       }
     );
     
+    console.log('✅ Speichervorgang abgeschlossen, success:', success);
+    
     if (success) {
       // Setze das Initial-Sync-Flag, damit es nicht nochmal läuft
       localStorage.setItem('supabase_initial_sync', 'true');
@@ -84,12 +86,17 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
         type: 'success', 
         text: `✅ Alle Daten gespeichert (${users.length} Users, ${projects.length} Projekte, ${timeEntries.length} Zeiteinträge, ${absenceRequests.length} Abwesenheiten)` 
       });
+      
+      // Warte 2 Sekunden, dann schließe Modal
+      setTimeout(() => {
+        setIsSaving(false);
+        setShowSaveModal(false);
+      }, 2000);
     } else {
       setMessage({ type: 'error', text: '❌ Fehler beim Speichern der Daten' });
+      setIsSaving(false);
+      // Modal bleibt offen bei Fehler
     }
-
-    setIsSaving(false);
-    setShowSaveModal(false);
   };
   
   const handleResetSyncFlag = () => {
