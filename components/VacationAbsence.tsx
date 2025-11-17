@@ -788,6 +788,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [prefilledDates, setPrefilledDates] = useState<{ start: Date; end: Date } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<AbsenceStatus | 'all'>('all');
   const [filterUser, setFilterUser] = useState<string | 'all'>('all');
@@ -810,6 +811,29 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setPrefilledDates(null);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      console.log('📥 Importiere Abwesenheiten aus:', file.name);
+      // TODO: Parser implementieren
+      alert('Import-Funktion wird implementiert...');
+    } catch (error) {
+      console.error('❌ Fehler beim Import:', error);
+      alert('Fehler beim Import der Datei');
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const filteredRequests = useMemo(() => {
@@ -867,13 +891,36 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
               : 'Verwalte deine Abwesenheiten und Urlaubsanträge'}
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 glow-button px-4 py-2 rounded-lg font-semibold"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Neue Abwesenheit</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 glow-button px-4 py-2 rounded-lg font-semibold"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Neue Abwesenheit</span>
+          </button>
+          
+          <button
+            onClick={handleImportClick}
+            className="flex items-center space-x-2 px-4 py-2 bg-glow-purple/20 text-glow-purple border border-glow-purple/30 rounded-lg hover:bg-glow-purple/30 transition-colors font-semibold"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Abwesenheiten importieren</span>
+          </button>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
       </div>
 
       {/* Bundesland Filter & View Toggle */}
