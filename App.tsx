@@ -20,6 +20,7 @@ import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
 import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
+import { loadCompressedBackupFromSupabase } from './utils/supabaseBackup';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -118,8 +119,42 @@ const App: React.FC = () => {
         return; // Fertig, kein Supabase-Load nötig
       }
       
-      // Fallback: Lade aus Supabase (langsam)
-      console.log('📥 Kein Cache gefunden, lade aus Supabase...');
+      // Fallback: Versuche komprimiertes Backup aus Supabase (schnell!)
+      console.log('📥 Kein Cache gefunden, versuche Supabase Backup...');
+      const backupData = await loadCompressedBackupFromSupabase();
+      
+      if (backupData) {
+        console.log('⚡ Lade aus Supabase Backup (schnell!)');
+        // Lade aus Backup
+        if (backupData.users.length > 0) {
+          setUsers(backupData.users);
+          const adminUser = backupData.users.find(u => u.role === 'admin');
+          setCurrentUser(adminUser || backupData.users[0]);
+        }
+        
+        if (backupData.projects.length > 0) {
+          setProjects(backupData.projects);
+          setHistory([backupData.projects]);
+          setHistoryIndex(0);
+        }
+        
+        if (backupData.timeEntries.length > 0) {
+          setTimeEntries(backupData.timeEntries);
+        }
+        
+        if (backupData.absenceRequests.length > 0) {
+          setAbsenceRequests(backupData.absenceRequests);
+        }
+        
+        console.log('✅ Daten aus Supabase Backup geladen!');
+        
+        // Speichere auch in localStorage Cache
+        saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests);
+        return;
+      }
+      
+      // Letzter Fallback: Lade aus einzelnen Tabellen (sehr langsam)
+      console.log('📥 Kein Backup gefunden, lade aus Tabellen (langsam)...');
       const data = await loadAllData();
       
       if (data) {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { saveAllData, deleteAllData, isSupabaseAvailable, SUPABASE_ENABLED } from '../utils/supabaseSync';
 import { saveToLocalStorage } from '../utils/dataBackup';
+import { saveCompressedBackupToSupabase } from '../utils/supabaseBackup';
 import { Project, TimeEntry, User, AbsenceRequest } from '../types';
 
 interface SupabaseSettingsProps {
@@ -85,6 +86,10 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
       // Aktualisiere localStorage Cache
       console.log('💾 Aktualisiere localStorage Cache...');
       saveToLocalStorage(users, projects, timeEntries, absenceRequests);
+      
+      // Speichere auch komprimiertes Backup in Supabase Storage
+      console.log('📦 Speichere komprimiertes Backup in Supabase...');
+      await saveCompressedBackupToSupabase(users, projects, timeEntries, absenceRequests);
       
       setMessage({ 
         type: 'success', 
