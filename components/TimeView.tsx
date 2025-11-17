@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Project, TimeEntry, User, AbsenceRequest } from '../types';
+import { Project, TimeEntry } from '../types';
 import { formatTime } from './utils';
-import { ImportWorkHoursModal } from './ImportWorkHoursModal';
 
 interface TimeViewProps {
   project: Project;
@@ -11,18 +10,14 @@ interface TimeViewProps {
   onStartTimer?: (taskId: string) => void;
   onDeleteEntry?: (entryId: string) => void;
   onDuplicateEntry?: (entry: TimeEntry) => void;
-  onImportEntries?: (entries: Omit<TimeEntry, 'id'>[]) => void;
-  onImportAbsences?: (absences: Omit<AbsenceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>[]) => void;
-  currentUser?: User;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onImportEntries, onImportAbsences, currentUser }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
   const [contextMenuEntryId, setContextMenuEntryId] = useState<string | null>(null);
   const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<string | null>(null);
-  const [showImportModal, setShowImportModal] = useState(false);
 
   // Build a lookup for billable by taskId from current project tasks/subtasks
   const billableByTaskId = useMemo(() => {
@@ -95,14 +90,6 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold glow-text">Zeiterfassung</h2>
         <div className="flex items-center gap-4">
-          {onImportEntries && currentUser && (
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="px-3 py-1.5 text-sm bg-glow-purple/20 text-glow-purple border border-glow-purple/30 rounded-lg hover:bg-glow-purple/30 transition-colors font-semibold"
-            >
-              Importieren
-            </button>
-          )}
           <div className="text-text-secondary text-sm">
             Gesamt: <span className="text-text-primary font-bold">{formatTime(totalDuration)}</span>
           </div>
@@ -449,18 +436,6 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
           </svg>
           <p>Noch keine Zeiteinträge erfasst</p>
         </div>
-      )}
-
-      {/* Import Modal */}
-      {showImportModal && currentUser && onImportEntries && (
-        <ImportWorkHoursModal
-          onClose={() => setShowImportModal(false)}
-          onImport={(entries) => {
-            onImportEntries(entries);
-          }}
-          onImportAbsences={onImportAbsences}
-          user={currentUser}
-        />
       )}
     </div>
   );
