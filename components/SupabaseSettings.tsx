@@ -161,6 +161,18 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
     }, 3000);
   };
 
+  const handleReloadFromSupabase = () => {
+    // Lösche Cache und lade Seite neu
+    localStorage.removeItem('ctt_backup');
+    localStorage.removeItem('supabase_initial_sync');
+    setMessage({ type: 'info', text: '🔄 Lade Daten aus Supabase neu...' });
+    
+    // Reload nach kurzer Verzögerung
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
   if (!SUPABASE_ENABLED) {
     return (
       <div className="p-6">
@@ -399,6 +411,19 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
                     <span>Alle Daten in Supabase speichern</span>
                   </>
                 )}
+              </button>
+
+              {/* Reload from Supabase Button */}
+              <button
+                onClick={handleReloadFromSupabase}
+                className="w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-500 font-semibold transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Daten aus Supabase neu laden</span>
               </button>
 
               {/* Clear Cache Button */}
