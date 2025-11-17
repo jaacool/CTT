@@ -321,6 +321,25 @@ export function importTimeReport(
     }
   });
   
+  // WICHTIG: Berechne timeTrackedSeconds für alle Tasks basierend auf TimeEntries
+  console.log('📊 Berechne timeTrackedSeconds für Tasks...');
+  for (const project of projects) {
+    for (const list of project.taskLists) {
+      for (const task of list.tasks) {
+        // Summiere alle TimeEntries für diesen Task
+        const taskTimeEntries = timeEntries.filter(te => te.taskId === task.id);
+        task.timeTrackedSeconds = taskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+        
+        // Summiere auch für alle Subtasks
+        for (const subtask of task.subtasks) {
+          const subtaskTimeEntries = timeEntries.filter(te => te.taskId === subtask.id);
+          subtask.timeTrackedSeconds = subtaskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+        }
+      }
+    }
+  }
+  console.log('✅ timeTrackedSeconds berechnet');
+  
   return {
     projects,
     timeEntries,
