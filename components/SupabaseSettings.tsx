@@ -187,7 +187,10 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
 
               {/* Delete All Button */}
               <button
-                onClick={handleDeleteAll}
+                onClick={(e) => {
+                  console.log('🖱️ Button Click Event:', e);
+                  handleDeleteAll();
+                }}
                 disabled={isDeleting}
                 className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-500 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
