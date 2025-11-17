@@ -104,7 +104,20 @@ export function saveToLocalStorage(
     const compressed = pako.gzip(jsonString);
     console.log(`📦 Komprimiert: ${(compressed.length / 1024).toFixed(2)} KB`);
     
-    const base64 = btoa(String.fromCharCode(...compressed));
+    // Prüfe ob Daten zu groß für localStorage sind (>5MB komprimiert)
+    if (compressed.length > 5 * 1024 * 1024) {
+      console.warn('⚠️ Daten zu groß für localStorage (>5MB). Überspringe localStorage Cache.');
+      console.log('💡 Verwende stattdessen Supabase Storage Backup für schnellen Load.');
+      return;
+    }
+    
+    // Konvertiere zu Base64 in kleineren Chunks (verhindert Stack Overflow)
+    const chunkSize = 8192;
+    let base64 = '';
+    for (let i = 0; i < compressed.length; i += chunkSize) {
+      const chunk = compressed.slice(i, i + chunkSize);
+      base64 += btoa(String.fromCharCode(...chunk));
+    }
     console.log(`📦 Base64: ${(base64.length / 1024).toFixed(2)} KB`);
     
     localStorage.setItem('ctt_backup', base64);
