@@ -167,6 +167,56 @@ export const TimeReportImportExport: React.FC<TimeReportImportExportProps> = ({
                     <span className="font-medium text-text-primary">{importResult.stats.timeEntriesImported}</span> Zeiteinträge importiert
                   </div>
                 </div>
+
+                {/* Zeit-Analyse pro User */}
+                {importResult.timeAnalysis && importResult.timeAnalysis.size > 0 && (
+                  <div className="mt-4 pt-4 border-t border-green-500/20">
+                    <h5 className="font-semibold text-green-500 mb-3">🔬 Zeit-Analyse pro User</h5>
+                    <div className="space-y-3 text-xs">
+                      {Array.from(importResult.timeAnalysis.entries()).map(([userName, analysis]) => {
+                        const methods = [
+                          { name: 'Duration Seconds', value: analysis.fromDurationSeconds, color: 'text-blue-400' },
+                          { name: 'Duration Hours', value: Math.floor(analysis.fromDurationHours), color: 'text-green-400' },
+                          { name: 'Duration Formatted', value: analysis.fromDurationFormatted, color: 'text-purple-400' },
+                          { name: 'Start/End Diff', value: analysis.fromStartEndDiff, color: 'text-orange-400' },
+                        ];
+                        
+                        const max = Math.max(...methods.map(m => m.value));
+                        const min = Math.min(...methods.filter(m => m.value > 0).map(m => m.value));
+                        const hasDifference = max !== min;
+                        
+                        return (
+                          <div key={userName} className="bg-green-500/5 rounded-lg p-3 border border-green-500/20">
+                            <div className="font-semibold text-text-primary mb-2">
+                              {userName} <span className="text-text-secondary font-normal">({analysis.entryCount} Einträge)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {methods.map((method, idx) => {
+                                const hours = Math.floor(method.value / 3600);
+                                const minutes = Math.floor((method.value % 3600) / 60);
+                                const isMax = method.value === max && hasDifference;
+                                return (
+                                  <div key={idx} className={`${method.color} ${isMax ? 'font-bold' : ''}`}>
+                                    [{idx + 1}] {hours}h {minutes}m
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {hasDifference && (
+                              <div className="mt-2 text-yellow-500 font-medium">
+                                ⚠️ Differenz: {Math.floor((max - min) / 3600)}h {Math.floor(((max - min) % 3600) / 60)}m
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 text-xs text-text-secondary">
+                      <strong className="text-text-primary">Legende:</strong> [1] Duration in Seconds (aktuell verwendet), 
+                      [2] Duration in Hours, [3] Duration Formatted, [4] Start/End Differenz
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

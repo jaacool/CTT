@@ -227,13 +227,23 @@ const App: React.FC = () => {
         setProjects(data.projects);
       }
       if (data.timeEntries.length > 0) {
-        setTimeEntries(data.timeEntries);
+        // WICHTIG: Nicht überschreiben, sondern MERGEN, damit lokal importierte Einträge erhalten bleiben
+        setTimeEntries(prev => {
+          const map = new Map<string, TimeEntry>();
+          // Bestehende behalten
+          prev.forEach(e => map.set(e.id, e));
+          // Eingehende updaten/hinzufügen
+          data.timeEntries.forEach(e => map.set(e.id, e));
+          return Array.from(map.values());
+        });
       }
       if (data.users.length > 0) {
         setUsers(data.users);
       }
       
-      // Update localStorage Cache
+      // Update localStorage Cache (TimeEntries werden gemergt asynchron gesetzt)
+      // Wir speichern hier die vom Server empfangenen Daten; die gemergten Einträge
+      // werden beim nächsten Cache-Write mit übernommen.
       saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
     }, 3); // 3 Sekunden Intervall
     

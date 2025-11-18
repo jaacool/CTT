@@ -48,6 +48,13 @@ export interface ImportResult {
     subtasksCreated: number;
     timeEntriesImported: number;
   };
+  timeAnalysis?: Map<string, {
+    fromDurationSeconds: number;
+    fromDurationHours: number;
+    fromDurationFormatted: number;
+    fromStartEndDiff: number;
+    entryCount: number;
+  }>;
 }
 
 /**
@@ -129,14 +136,14 @@ export function importTimeReport(
     const rawCompanyName = row['Company Name']?.trim();
     const excelProjectId = row['Project Id']?.trim();
     
-    if (!rawProjectName) return;
-    
     // Bereinige Projektnamen und Kundennamen (entferne # und andere Code-Zeichen)
-    const projectName = cleanProjectName(rawProjectName);
+    const projectName = rawProjectName ? cleanProjectName(rawProjectName) : 'Unbekanntes Projekt';
     const companyName = rawCompanyName ? cleanProjectName(rawCompanyName) : undefined;
     
-    // WICHTIG: Verwende Excel Project ID wenn vorhanden, sonst generiere eine
-    const projectId = excelProjectId || `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // WICHTIG: Verwende Excel Project ID wenn vorhanden
+    // Fallback: Stabile ID aus Company oder global
+    const fallbackKey = companyName ? `unknown-${companyName.replace(/\s+/g, '-').toLowerCase()}` : 'unknown-global';
+    const projectId = excelProjectId || (rawProjectName ? `project-${projectName.replace(/\s+/g, '-').toLowerCase()}` : `project-${fallbackKey}`);
     
     let project = projectMap.get(projectId);
     if (!project) {
@@ -223,9 +230,8 @@ export function importTimeReport(
     const rawTaskName = row['Task Name']?.trim();
     const excelTaskId = row['Task Id']?.trim();
     
-    if (!rawTaskName) return;
-    
-    const taskName = cleanProjectName(rawTaskName);
+    // Importiere auch Einträge ohne Task-Namen mit Platzhalter
+    const taskName = rawTaskName ? cleanProjectName(rawTaskName) : 'Unbenannte Aufgabe';
     
     // Verwende Excel Task ID wenn vorhanden, sonst Task-Name + Parent als Key
     const taskKey = excelTaskId || (parentTaskId 
@@ -306,13 +312,59 @@ export function importTimeReport(
     const startTimeStr = row['Start Time'];
     const endTimeStr = row['End Time'];
     
-    const startTime = parseExcelDateTime(dateStr, startTimeStr);
-    const endTime = parseExcelDateTime(dateStr, endTimeStr);
-    const durationSeconds = parseInt(row['Duration in Seconds']) || 0;
+    // Dauer robust bestimmen: Seconds -> Hours -> Formatted
+    let durationSeconds = parseInt(row['Duration in Seconds']);
+    if (!durationSeconds || isNaN(durationSeconds) || durationSeconds <= 0) {
+      const durationHours = parseFloat(row['Duration in Hours']);
+      if (!isNaN(durationHours) && durationHours > 0) {
+        durationSeconds = Math.floor(durationHours * 3600);
+      } else {
+        const durationFormatted = row['Duration Formatted']?.trim();
+        if (durationFormatted) {
+          const parts = durationFormatted.split(':');
+          if (parts.length === 3) {
+            const h = parseInt(parts[0]) || 0;
+            const m = parseInt(parts[1]) || 0;
+            const s = parseInt(parts[2]) || 0;
+            durationSeconds = h * 3600 + m * 60 + s;
+          } else {
+            durationSeconds = 0;
+          }
+        } else {
+          durationSeconds = 0;
+        }
+      }
+    }
     
-    if (!startTime || !endTime || durationSeconds <= 0) {
-      console.warn(`Ungültige Zeitdaten für Task "${taskName}", überspringe`);
+    if (durationSeconds <= 0) {
+      console.warn(`Ungültige Dauer für Task "${taskName}", überspringe`);
       return;
+    }
+    
+    // Zeiten robust bestimmen
+    // Start: bevorzugt Date + Start Time, sonst Date + 12:00
+    let startTime = '';
+    if (dateStr) {
+      const tryStart = startTimeStr ? parseExcelDateTime(dateStr, startTimeStr) : '';
+      if (tryStart) {
+        startTime = tryStart;
+      } else {
+        const base = new Date(parseExcelDate(dateStr));
+        base.setHours(12, 0, 0, 0);
+        startTime = base.toISOString();
+      }
+    }
+    
+    // Ende: bevorzugt Date + End Time, sonst start + duration
+    let endTime = '';
+    if (dateStr && endTimeStr) {
+      const tryEnd = parseExcelDateTime(dateStr, endTimeStr);
+      if (tryEnd) endTime = tryEnd;
+    }
+    if (!endTime && startTime) {
+      const end = new Date(startTime);
+      end.setSeconds(end.getSeconds() + durationSeconds);
+      endTime = end.toISOString();
     }
     
     // WICHTIG: Generiere IMMER neue IDs für TimeEntries, da Excel-IDs nicht eindeutig sein könnten
@@ -398,15 +450,138 @@ export function importTimeReport(
   console.log(`  - ${stats.projectsCreated} Projekte erstellt`);
   console.log(`  - ${stats.tasksCreated} Tasks erstellt`);
   console.log(`  - ${stats.subtasksCreated} Subtasks erstellt`);
-  
+
+  // Analysiere Zeit pro User mit verschiedenen Berechnungsmethoden
+  console.log(`\n🔬 ZEIT-ANALYSE PRO USER (verschiedene Berechnungsmethoden):`);
+  console.log(`=`.repeat(80));
+
+  // Sammle alle Berechnungsmethoden pro User
+  const userAnalysis = new Map<string, {
+    fromDurationSeconds: number;
+    fromDurationHours: number;
+    fromDurationFormatted: number;
+    fromStartEndDiff: number;
+    entryCount: number;
+  }>();
+
+  rows.forEach((row, index) => {
+    const userName = row['User']?.trim();
+    if (!userName) return;
+
+    // Initialisiere User-Daten wenn noch nicht vorhanden
+    if (!userAnalysis.has(userName)) {
+      userAnalysis.set(userName, {
+        fromDurationSeconds: 0,
+        fromDurationHours: 0,
+        fromDurationFormatted: 0,
+        fromStartEndDiff: 0,
+        entryCount: 0,
+      });
+    }
+
+    const analysis = userAnalysis.get(userName)!;
+    analysis.entryCount++;
+
+    // Methode 1: Duration in Seconds (direkt aus Excel)
+    const durationSeconds = parseInt(row['Duration in Seconds']) || 0;
+    analysis.fromDurationSeconds += durationSeconds;
+
+    // Methode 2: Duration in Hours (konvertiert zu Sekunden)
+    const durationHours = parseFloat(row['Duration in Hours']) || 0;
+    const durationInSeconds = Math.floor(durationHours * 3600);
+    analysis.fromDurationHours += durationInSeconds;
+
+    // Methode 3: Duration Formatted (z.B. "1:30:00" = 1h 30m)
+    const durationFormatted = row['Duration Formatted']?.trim();
+    if (durationFormatted) {
+      const parts = durationFormatted.split(':');
+      if (parts.length === 3) {
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        const seconds = parseInt(parts[2]) || 0;
+        analysis.fromDurationFormatted += (hours * 3600 + minutes * 60 + seconds);
+      }
+    }
+
+    // Methode 4: Differenz zwischen Start und End Time
+    const dateStr = row['Date'];
+    const startTimeStr = row['Start Time'];
+    const endTimeStr = row['End Time'];
+
+    if (dateStr && startTimeStr && endTimeStr) {
+      const startTime = parseExcelDateTime(dateStr, startTimeStr);
+      const endTime = parseExcelDateTime(dateStr, endTimeStr);
+
+      if (startTime && endTime) {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const diffMs = end.getTime() - start.getTime();
+        const diffSeconds = Math.floor(diffMs / 1000);
+        analysis.fromStartEndDiff += diffSeconds;
+      }
+    }
+  });
+
+  // Zeige Analyse für jeden User
+  userAnalysis.forEach((analysis, userName) => {
+    console.log(`\n📊 ${userName} (${analysis.entryCount} Einträge):`);
+    console.log(`   ┌─────────────────────────────────────────────────────────────┐`);
+
+    // Methode 1: Duration in Seconds
+    const h1 = Math.floor(analysis.fromDurationSeconds / 3600);
+    const m1 = Math.floor((analysis.fromDurationSeconds % 3600) / 60);
+    console.log(`   │ [1] Duration in Seconds:    ${h1}h ${m1}m (${analysis.fromDurationSeconds}s)`);
+
+    // Methode 2: Duration in Hours
+    const h2 = Math.floor(analysis.fromDurationHours / 3600);
+    const m2 = Math.floor((analysis.fromDurationHours % 3600) / 60);
+    console.log(`   │ [2] Duration in Hours:      ${h2}h ${m2}m (${Math.floor(analysis.fromDurationHours)}s)`);
+
+    // Methode 3: Duration Formatted
+    const h3 = Math.floor(analysis.fromDurationFormatted / 3600);
+    const m3 = Math.floor((analysis.fromDurationFormatted % 3600) / 60);
+    console.log(`   │ [3] Duration Formatted:     ${h3}h ${m3}m (${analysis.fromDurationFormatted}s)`);
+
+    // Methode 4: Start/End Differenz
+    const h4 = Math.floor(analysis.fromStartEndDiff / 3600);
+    const m4 = Math.floor((analysis.fromStartEndDiff % 3600) / 60);
+    console.log(`   │ [4] Start/End Differenz:    ${h4}h ${m4}m (${analysis.fromStartEndDiff}s)`);
+
+    console.log(`   └─────────────────────────────────────────────────────────────┘`);
+
+    // Zeige Differenzen
+    const methods = [
+      { name: '[1] Duration in Seconds', value: analysis.fromDurationSeconds },
+      { name: '[2] Duration in Hours', value: Math.floor(analysis.fromDurationHours) },
+      { name: '[3] Duration Formatted', value: analysis.fromDurationFormatted },
+      { name: '[4] Start/End Differenz', value: analysis.fromStartEndDiff },
+    ];
+
+    const max = Math.max(...methods.map(m => m.value));
+    const min = Math.min(...methods.filter(m => m.value > 0).map(m => m.value));
+
+    if (max !== min) {
+      const diffSeconds = max - min;
+      const diffHours = Math.floor(diffSeconds / 3600);
+      const diffMinutes = Math.floor((diffSeconds % 3600) / 60);
+      console.log(`   ⚠️  DIFFERENZ: ${diffHours}h ${diffMinutes}m zwischen höchstem und niedrigstem Wert!`);
+    } else {
+      console.log(`   ✅ Alle Methoden stimmen überein!`);
+    }
+  });
+
+  console.log(`\n` + `=`.repeat(80));
+  console.log(`\n💡 HINWEIS: Vergleiche diese Werte mit der Original-App!`);
+
   if (stats.timeEntriesImported < rows.length) {
     console.warn(`⚠️ ${rows.length - stats.timeEntriesImported} Zeilen wurden übersprungen!`);
   }
-  
+
   return {
     projects,
     timeEntries,
     stats,
+    timeAnalysis: userAnalysis,
   };
   } catch (error) {
     console.error('Import Error Details:', {
