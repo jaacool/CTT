@@ -615,6 +615,23 @@ const App: React.FC = () => {
     saveProject(newProject);
   }, [updateProjects]);
 
+  const handleDeleteProject = useCallback((projectId: string) => {
+    // Lösche aus State
+    updateProjects(prev => prev.filter(p => p.id !== projectId));
+    
+    // Lösche zugehörige TimeEntries
+    setTimeEntries(prev => prev.filter(te => te.projectId !== projectId));
+    
+    // Wenn das gelöschte Projekt ausgewählt war, deselektiere es
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(null);
+      setSelectedTask(null);
+    }
+    
+    // Lösche aus Supabase
+    deleteProjectFromSupabase(projectId);
+  }, [updateProjects, selectedProject]);
+
   const handleAddNewList = (projectId: string, title: string) => {
     const newList: TaskList = {
       id: `list-${Date.now()}`,
@@ -1181,6 +1198,7 @@ const App: React.FC = () => {
           <ProjectsOverview
             projects={projects}
             onSelectProject={handleSelectProject}
+            onDeleteProject={handleDeleteProject}
           />
         ) : showVacationAbsence ? (
           <VacationAbsence

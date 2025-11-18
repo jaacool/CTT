@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project, TaskStatus } from '../types';
 
 interface ProjectsOverviewProps {
   projects: Project[];
   onSelectProject: (projectId: string) => void;
+  onDeleteProject: (projectId: string) => void;
 }
 
-export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, onSelectProject }) => {
+export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, onSelectProject, onDeleteProject }) => {
   const [view, setView] = useState<'list' | 'timeline'>('list');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterStandard, setFilterStandard] = useState<string>('all');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectId: string } | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ projectId: string; projectName: string } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   // Berechne Projekt-Statistiken
   const getProjectStats = (project: Project) => {
@@ -33,6 +37,41 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
     acc[status].push(project);
     return acc;
   }, {} as Record<string, Project[]>);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [contextMenu]);
+
+  const handleContextMenu = (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, projectId });
+  };
+
+  const handleDeleteClick = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setDeleteConfirmModal({ projectId, projectName: project.name });
+      setContextMenu(null);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmModal) {
+      onDeleteProject(deleteConfirmModal.projectId);
+      setDeleteConfirmModal(null);
+    }
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
@@ -222,7 +261,13 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                       alt={project.owner?.name || 'User'}
                       className="w-6 h-6 rounded-full"
                     />
-                    <button className="text-text-secondary hover:text-text-primary">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleContextMenu(e, project.id);
+                      }}
+                      className="text-text-secondary hover:text-text-primary"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="1"></circle>
                         <circle cx="12" cy="5" r="1"></circle>
@@ -236,6 +281,70 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
           </div>
         ))}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed bg-surface border border-border rounded-lg shadow-2xl py-2 z-50"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button
+            onClick={() => handleDeleteClick(contextMenu.projectId)}
+            className="w-full px-4 py-2 text-left text-red-500 hover:bg-overlay transition-colors flex items-center space-x-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span>Projekt löschen</span>
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface rounded-xl p-6 max-w-md w-full border border-border shadow-2xl">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-text-primary mb-2">Projekt löschen?</h3>
+                <p className="text-text-secondary text-sm mb-4">
+                  Möchtest du das Projekt <span className="font-semibold text-text-primary">"{deleteConfirmModal.projectName}"</span> wirklich löschen? 
+                  Diese Aktion kann nicht rückgängig gemacht werden.
+                </p>
+                <p className="text-red-500 text-xs font-semibold mb-4">
+                  ⚠️ Alle Tasks, Listen und Zeiteinträge werden ebenfalls gelöscht!
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="flex-1 px-4 py-2 bg-overlay border border-border rounded-lg text-text-secondary hover:text-text-primary transition-all"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold"
+              >
+                Löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

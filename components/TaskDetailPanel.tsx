@@ -188,13 +188,20 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       </div>
       
       <Section title="Beschreibung" icon={<MessageSquareIcon className="w-4 h-4"/>}>
-        <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleDescriptionBlur}
-            placeholder="Beschreibung hinzufügen..."
-            className="w-full bg-background border border-overlay rounded-md p-2 outline-none focus:ring-2 focus:ring-glow-purple text-text-primary text-xs h-24 resize-none"
-        />
+        <div className="rounded-lg focus-within:ring-2 focus-within:ring-glow-purple p-2">
+          <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={handleDescriptionBlur}
+              placeholder="Beschreibung hinzufügen..."
+              className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-text-primary placeholder-text-secondary text-sm h-24 resize-none"
+              style={{ 
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none'
+              }}
+          />
+        </div>
       </Section>
 
       <Section title="Checkliste" icon={<CheckSquareIcon className="w-5 h-5"/>}>
@@ -248,9 +255,36 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
         <Section title={`Unteraufgaben (${item.subtasks.length})`} icon={<PlannerIcon className="w-5 h-5"/>}>
           <div className="space-y-2.5">
             {item.subtasks.map(subtask => (
-              <div key={subtask.id} onClick={() => onSelectItem?.(subtask)} className="flex items-center space-x-3 text-text-primary text-sm cursor-pointer">
-                <div className="w-5 h-5 rounded-full border-2 border-text-secondary"></div>
-                <span>{subtask.title}</span>
+              <div key={subtask.id} className="flex items-center space-x-3 text-text-primary text-sm">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Toggle Status: TODO -> IN_PROGRESS -> DONE -> TODO
+                    const statusCycle = {
+                      'TODO': 'IN_PROGRESS',
+                      'IN_PROGRESS': 'DONE',
+                      'DONE': 'TODO'
+                    };
+                    const newStatus = statusCycle[subtask.status] || 'TODO';
+                    onItemUpdate({ ...subtask, status: newStatus as any });
+                  }}
+                  className="w-5 h-5 rounded-full border-2 border-text-secondary cursor-pointer hover:border-glow-purple transition-colors flex items-center justify-center"
+                >
+                  {subtask.status === 'DONE' && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-glow-lime">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  )}
+                  {subtask.status === 'IN_PROGRESS' && (
+                    <div className="w-2 h-2 rounded-full bg-glow-purple"></div>
+                  )}
+                </div>
+                <span 
+                  onClick={() => onSelectItem?.(subtask)}
+                  className="flex-1 cursor-pointer hover:text-glow-purple transition-colors"
+                >
+                  {subtask.title}
+                </span>
               </div>
             ))}
             {isAddingSubtask ? (
