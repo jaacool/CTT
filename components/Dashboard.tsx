@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Project, TimeEntry, Task, Subtask, User } from '../types';
 import { formatTime } from './utils';
 import { TimerMenu } from './TimerMenu';
+import { ConfirmModal } from './ConfirmModal';
 
 interface DashboardProps {
   user: User;
@@ -37,6 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedAnchorRect, setSelectedAnchorRect] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
   const [contextMenuEntry, setContextMenuEntry] = useState<TimeEntry | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number; y: number} | null>(null);
+  const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<TimeEntry | null>(null);
 
   // Finde alle gepinnten Tasks
   const pinnedTasks: (Task | Subtask)[] = [];
@@ -522,9 +524,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           >
             <button
               onClick={() => {
-                if (onDeleteTimeEntry && window.confirm('Möchtest du diesen Zeiteintrag wirklich löschen?')) {
-                  onDeleteTimeEntry(contextMenuEntry.id);
-                }
+                setDeleteConfirmEntry(contextMenuEntry);
                 setContextMenuEntry(null);
                 setContextMenuPosition(null);
               }}
@@ -539,6 +539,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </>
       )}
+
+      {/* Lösch-Bestätigungs-Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmEntry}
+        title="Zeiteintrag löschen"
+        message="Möchtest du diesen Zeiteintrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+        confirmText="Löschen"
+        cancelText="Abbrechen"
+        isDangerous={true}
+        onConfirm={() => {
+          if (deleteConfirmEntry && onDeleteTimeEntry) {
+            onDeleteTimeEntry(deleteConfirmEntry.id);
+          }
+          setDeleteConfirmEntry(null);
+        }}
+        onCancel={() => setDeleteConfirmEntry(null)}
+      />
     </div>
   );
 };

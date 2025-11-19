@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChatChannel, ChatMessage, ChatViewMode, Project, User, ChatChannelType } from '../types';
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, MessageCircleIcon, EditIcon, TrashIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
+import { ConfirmModal } from './ConfirmModal';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const [userRemovedProject, setUserRemovedProject] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
+  const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -167,9 +169,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   };
 
   const handleDeleteMessage = (messageId: string) => {
-    if (window.confirm('Möchtest du diese Nachricht wirklich löschen?')) {
-      onDeleteMessage(messageId);
-    }
+    setDeleteConfirmMessageId(messageId);
   };
 
   const isAdmin = currentUser?.role === 'role-1' || currentUser?.role === 'admin';
@@ -797,6 +797,23 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Lösch-Bestätigungs-Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmMessageId}
+        title="Nachricht löschen"
+        message="Möchtest du diese Nachricht wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+        confirmText="Löschen"
+        cancelText="Abbrechen"
+        isDangerous={true}
+        onConfirm={() => {
+          if (deleteConfirmMessageId) {
+            onDeleteMessage(deleteConfirmMessageId);
+          }
+          setDeleteConfirmMessageId(null);
+        }}
+        onCancel={() => setDeleteConfirmMessageId(null)}
+      />
     </div>
   );
 };
