@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatChannel, ChatMessage, ChatViewMode, Project, User, ChatChannelType } from '../types';
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, MessageCircleIcon } from './Icons';
+import { LinkPreview } from './LinkPreview';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -139,6 +140,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         localStorage.setItem(`lastChannel_${currentProject.id}`, currentChannel.id);
       }
     }
+  };
+
+  const extractUrls = (text: string): string[] => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.match(urlRegex) || [];
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -648,6 +654,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         )}
                       </div>
                       <p className="text-text-primary mt-1 text-sm md:text-base break-words">{message.content}</p>
+                      {/* Link Previews */}
+                      {extractUrls(message.content).map((url, index) => (
+                        <LinkPreview key={`${message.id}-link-${index}`} url={url} />
+                      ))}
                     </div>
                   </div>
                 ))
