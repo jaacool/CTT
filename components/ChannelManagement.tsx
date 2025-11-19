@@ -1,0 +1,311 @@
+import React, { useState } from 'react';
+import { ChatChannel, ChatChannelType, User } from '../types';
+import { XIcon, PlusIcon, HashIcon, TrashIcon, EditIcon, UsersIcon } from './Icons';
+
+interface ChannelManagementProps {
+  channels: ChatChannel[];
+  users: User[];
+  currentUser: User;
+  onCreateChannel: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
+  onUpdateChannel: (channelId: string, name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
+  onDeleteChannel: (channelId: string) => void;
+}
+
+export const ChannelManagement: React.FC<ChannelManagementProps> = ({
+  channels,
+  users,
+  currentUser,
+  onCreateChannel,
+  onUpdateChannel,
+  onDeleteChannel,
+}) => {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<ChatChannel | null>(null);
+  const [channelName, setChannelName] = useState('');
+  const [channelDescription, setChannelDescription] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter nur Group Channels (keine Direct Messages)
+  const groupChannels = channels.filter(c => c.type === ChatChannelType.Group);
+
+  const handleOpenCreate = () => {
+    setChannelName('');
+    setChannelDescription('');
+    setSelectedMembers([currentUser.id]);
+    setIsPrivate(false);
+    setEditingChannel(null);
+    setShowCreateModal(true);
+  };
+
+  const handleOpenEdit = (channel: ChatChannel) => {
+    setChannelName(channel.name);
+    setChannelDescription(channel.description || '');
+    setSelectedMembers(channel.members.map(m => m.id));
+    setIsPrivate(channel.isPrivate || false);
+    setEditingChannel(channel);
+    setShowCreateModal(true);
+  };
+
+  const handleSave = () => {
+    if (!channelName.trim() || selectedMembers.length === 0) return;
+
+    if (editingChannel) {
+      onUpdateChannel(
+        editingChannel.id,
+        channelName.trim(),
+        channelDescription.trim(),
+        selectedMembers,
+        isPrivate
+      );
+    } else {
+      onCreateChannel(
+        channelName.trim(),
+        channelDescription.trim(),
+        selectedMembers,
+        isPrivate
+      );
+    }
+
+    setShowCreateModal(false);
+  };
+
+  const toggleMember = (userId: string) => {
+    if (selectedMembers.includes(userId)) {
+      setSelectedMembers(selectedMembers.filter(id => id !== userId));
+    } else {
+      setSelectedMembers([...selectedMembers, userId]);
+    }
+  };
+
+  const filteredChannels = groupChannels.filter(channel =>
+    channel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    channel.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Channel Verwaltung</h1>
+          <p className="text-text-secondary text-sm mt-1">
+            Erstelle und verwalte Channels für dein Team
+          </p>
+        </div>
+        <button
+          onClick={handleOpenCreate}
+          className="glow-button px-4 py-2 rounded-lg flex items-center space-x-2"
+        >
+          <PlusIcon className="w-5 h-5" />
+          <span>Neuer Channel</span>
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Channels durchsuchen..."
+          className="w-full bg-surface text-text-primary border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-glow-purple"
+        />
+      </div>
+
+      {/* Channels Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredChannels.map(channel => (
+          <div
+            key={channel.id}
+            className="glow-card rounded-xl p-4 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <HashIcon className="w-5 h-5 text-glow-purple shrink-0" />
+                <h3 className="font-semibold text-text-primary truncate">{channel.name}</h3>
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => handleOpenEdit(channel)}
+                  className="p-1.5 hover:bg-overlay rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <EditIcon className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Channel "${channel.name}" wirklich löschen?`)) {
+                      onDeleteChannel(channel.id);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-overlay rounded-lg text-text-secondary hover:text-red-500 transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {channel.description && (
+              <p className="text-text-secondary text-sm mb-3 line-clamp-2">
+                {channel.description}
+              </p>
+            )}
+
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-1 text-text-secondary">
+                <UsersIcon className="w-4 h-4" />
+                <span>{channel.members.length} Mitglieder</span>
+              </div>
+              {channel.isPrivate && (
+                <span className="px-2 py-0.5 rounded bg-overlay text-text-secondary">
+                  Privat
+                </span>
+              )}
+            </div>
+
+            {/* Members Preview */}
+            <div className="flex items-center mt-3 -space-x-2">
+              {channel.members.slice(0, 5).map(member => (
+                <img
+                  key={member.id}
+                  src={member.avatarUrl}
+                  alt={member.name}
+                  title={member.name}
+                  className="w-6 h-6 rounded-full border-2 border-surface"
+                />
+              ))}
+              {channel.members.length > 5 && (
+                <div className="w-6 h-6 rounded-full border-2 border-surface bg-overlay flex items-center justify-center text-xs text-text-secondary">
+                  +{channel.members.length - 5}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredChannels.length === 0 && (
+        <div className="text-center py-12">
+          <HashIcon className="w-12 h-12 text-text-secondary mx-auto mb-3 opacity-50" />
+          <p className="text-text-secondary">
+            {searchQuery ? 'Keine Channels gefunden' : 'Noch keine Channels vorhanden'}
+          </p>
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl border border-border">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-text-primary">
+                {editingChannel ? 'Channel bearbeiten' : 'Neuer Channel'}
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Channel Name */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Channel Name *
+                </label>
+                <input
+                  type="text"
+                  value={channelName}
+                  onChange={(e) => setChannelName(e.target.value)}
+                  placeholder="z.B. entwicklung, marketing, allgemein"
+                  className="w-full bg-surface text-text-primary border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Beschreibung
+                </label>
+                <textarea
+                  value={channelDescription}
+                  onChange={(e) => setChannelDescription(e.target.value)}
+                  placeholder="Wofür ist dieser Channel?"
+                  rows={3}
+                  className="w-full bg-surface text-text-primary border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-glow-purple resize-none"
+                />
+              </div>
+
+              {/* Privacy */}
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="isPrivate"
+                  checked={isPrivate}
+                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-glow-purple focus:ring-glow-purple"
+                />
+                <label htmlFor="isPrivate" className="text-sm text-text-primary">
+                  Privater Channel (nur eingeladene Mitglieder können beitreten)
+                </label>
+              </div>
+
+              {/* Members */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Mitglieder * ({selectedMembers.length} ausgewählt)
+                </label>
+                <div className="bg-surface border border-border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
+                  {users.map(user => (
+                    <label
+                      key={user.id}
+                      className="flex items-center space-x-3 p-2 hover:bg-overlay rounded-lg cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMembers.includes(user.id)}
+                        onChange={() => toggleMember(user.id)}
+                        className="w-4 h-4 rounded border-border text-glow-purple focus:ring-glow-purple"
+                      />
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm text-text-primary">{user.name}</div>
+                        <div className="text-xs text-text-secondary">{user.email}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-border">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 rounded-lg bg-overlay text-text-primary hover:bg-surface transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!channelName.trim() || selectedMembers.length === 0}
+                className="glow-button px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingChannel ? 'Speichern' : 'Erstellen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

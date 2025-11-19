@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType } from './types';
+import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, loadAllChatData } from './utils/supabaseSync';
+import { startChatRealtime } from './utils/chatRealtime';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
 import { hasPermission } from './utils/permissions';
 import { Sidebar } from './components/Sidebar';
@@ -13,6 +15,7 @@ import { TimeTracking } from './components/TimeTracking';
 import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
+import { ChatModal } from './components/ChatModal';
 import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
@@ -85,6 +88,60 @@ const App: React.FC = () => {
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
+  
+  // Chat State
+  const [showChat, setShowChat] = useState(false);
+  const [chatChannels, setChatChannels] = useState<ChatChannel[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [currentChatChannel, setCurrentChatChannel] = useState<ChatChannel | null>(null);
+  const [currentChatProject, setCurrentChatProject] = useState<Project | null>(selectedProject);
+
+  // Initialize chat channels (Group channels + Direct message channels for each user pair)
+  useEffect(() => {
+    if (chatChannels.length === 0 && users.length > 0) {
+      const initialChannels: ChatChannel[] = [
+        {
+          id: 'channel-1',
+          name: 'allgemein',
+          description: 'Allgemeiner Channel für alle',
+          members: users,
+          createdAt: new Date().toISOString(),
+          createdBy: ADMIN_USER,
+          type: ChatChannelType.Group,
+          isPrivate: false,
+        },
+        {
+          id: 'channel-2',
+          name: 'entwicklung',
+          description: 'Entwicklungs-Diskussionen',
+          members: users.filter(u => u.id === 'user-1' || u.id === 'user-2'),
+          createdAt: new Date().toISOString(),
+          createdBy: ADMIN_USER,
+          type: ChatChannelType.Group,
+          isPrivate: false,
+        },
+      ];
+
+      // Create Direct Message channels for each user pair
+      const dmChannels: ChatChannel[] = [];
+      for (let i = 0; i < users.length; i++) {
+        for (let j = i + 1; j < users.length; j++) {
+          const user1 = users[i];
+          const user2 = users[j];
+          dmChannels.push({
+            id: `dm-${user1.id}-${user2.id}`,
+            name: `${user1.name} & ${user2.name}`,
+            members: [user1, user2],
+            createdAt: new Date().toISOString(),
+            createdBy: ADMIN_USER,
+            type: ChatChannelType.Direct,
+          });
+        }
+      }
+
+      setChatChannels([...initialChannels, ...dmChannels]);
+    }
+  }, [users, chatChannels.length]);
 
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
@@ -96,6 +153,12 @@ const App: React.FC = () => {
         cachedData = loadFromLocalStorage();
       } catch (error) {
         console.error('❌ Fehler beim Laden aus localStorage:', error);
+        // Cache ist korrupt, lösche ihn
+        console.log('🗑️ Lösche korrupten localStorage Cache...');
+        localStorage.removeItem('ctt_users');
+        localStorage.removeItem('ctt_projects');
+        localStorage.removeItem('ctt_timeEntries');
+        localStorage.removeItem('ctt_absenceRequests');
       }
       
       if (cachedData) {
@@ -157,6 +220,18 @@ const App: React.FC = () => {
         
         // Speichere auch in localStorage Cache
         saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests);
+        
+        // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
+        if (backupData.users.length > 0) {
+          console.log('💬 Lade Chat-Daten aus Supabase...');
+          const chatData = await loadAllChatData();
+          if (chatData) {
+            console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
+            setChatChannels(chatData.channels);
+            setChatMessages(chatData.messages);
+          }
+        }
+        
         return;
       }
       
@@ -186,6 +261,17 @@ const App: React.FC = () => {
         }
         
         console.log('🎉 Daten aus Supabase geladen!');
+        
+        // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
+        if (data.users.length > 0) {
+          console.log('💬 Lade Chat-Daten aus Supabase...');
+          const chatData = await loadAllChatData();
+          if (chatData) {
+            console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
+            setChatChannels(chatData.channels);
+            setChatMessages(chatData.messages);
+          }
+        }
         
         // Speichere in localStorage Cache für nächsten Load (nur wenn Daten vorhanden)
         if (data.users.length > 0 || data.projects.length > 0 || data.timeEntries.length > 0) {
@@ -253,6 +339,40 @@ const App: React.FC = () => {
       stopPollingSync();
     };
   }, []); // Leeres Dependency Array = nur beim Mount/Unmount
+
+  // Chat Realtime Sync - Empfängt Änderungen in Echtzeit
+  useEffect(() => {
+    const cleanup = startChatRealtime({
+      onChannelUpsert: (channel) => {
+        console.log('📥 Realtime: Channel Update empfangen', channel.name);
+        setChatChannels(prev => {
+          const exists = prev.find(c => c.id === channel.id);
+          if (exists) {
+            return prev.map(c => c.id === channel.id ? channel : c);
+          } else {
+            return [...prev, channel];
+          }
+        });
+      },
+      onChannelDelete: (channelId) => {
+        console.log('📥 Realtime: Channel Löschung empfangen', channelId);
+        setChatChannels(prev => prev.filter(c => c.id !== channelId));
+        if (currentChatChannel?.id === channelId) {
+          setCurrentChatChannel(null);
+        }
+      },
+      onMessageInsert: (message) => {
+        console.log('📥 Realtime: Neue Nachricht empfangen', message.content.substring(0, 30));
+        setChatMessages(prev => {
+          // Verhindere Duplikate (optimistic update könnte bereits existieren)
+          if (prev.find(m => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+      },
+    });
+
+    return cleanup;
+  }, [currentChatChannel]); // Re-subscribe wenn currentChatChannel sich ändert
 
   // Undo/Redo system
   const saveToHistory = useCallback((newProjects: Project[]) => {
@@ -840,16 +960,107 @@ const App: React.FC = () => {
     setAbsenceRequests(prev => prev.filter(req => req.id !== requestId));
   }, []);
 
-  const handleMarkSickLeaveReported = useCallback((requestId: string) => {
-    setAbsenceRequests(prev => prev.map(req => {
-      if (req.id === requestId) {
-        const updatedRequest = { ...req, sickLeaveReported: true, updatedAt: new Date().toISOString() };
-        saveAbsenceRequest(updatedRequest); // Auto-Save
-        return updatedRequest;
+  const handleMarkSickLeaveReported = (requestId: string) => {
+    setAbsenceRequests(prev => prev.map(req => 
+      req.id === requestId ? { ...req, sickLeaveReported: true } : req
+    ));
+  };
+
+  // Chat Handlers
+  const handleSendMessage = (content: string, channelId: string, projectId: string) => {
+    if (!currentUser) return;
+    
+    const newMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      channelId,
+      projectId,
+      content,
+      sender: currentUser,
+      timestamp: new Date().toISOString(),
+      readBy: [currentUser.id],
+    };
+    
+    // Optimistic update
+    setChatMessages(prev => [...prev, newMessage]);
+    // Persist to Supabase (safe no-op if disabled)
+    supaSaveChatMessage(newMessage);
+  };
+
+  const handleCreateChannel = (name: string, description: string, memberIds: string[], isPrivate: boolean = false) => {
+    if (!currentUser) return;
+    
+    const members = users.filter(u => memberIds.includes(u.id));
+    const newChannel: ChatChannel = {
+      id: `channel-${Date.now()}`,
+      name,
+      description,
+      members,
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser,
+      type: ChatChannelType.Group,
+      isPrivate,
+    };
+    
+    // Optimistic add
+    setChatChannels(prev => [...prev, newChannel]);
+    // Persist
+    saveChatChannel(newChannel);
+  };
+
+  const handleUpdateChannel = (channelId: string, name: string, description: string, memberIds: string[], isPrivate: boolean) => {
+    const members = users.filter(u => memberIds.includes(u.id));
+    const updated = (prev: ChatChannel) => ({ ...prev, name, description, members, isPrivate });
+    setChatChannels(prev => prev.map(channel =>
+      channel.id === channelId
+        ? updated(channel)
+        : channel
+    ));
+    const channelObj = chatChannels.find(c => c.id === channelId);
+    if (channelObj) {
+      const merged: ChatChannel = { ...channelObj, name, description, members, isPrivate };
+      supaUpdateChatChannel(merged);
+    }
+  };
+
+  const handleDeleteChannel = (channelId: string) => {
+    setChatChannels(prev => prev.filter(c => c.id !== channelId));
+    // Wenn der gelöschte Channel aktuell ausgewählt ist, wechsle zu einem anderen
+    if (currentChatChannel?.id === channelId) {
+      const remainingChannels = chatChannels.filter(c => c.id !== channelId);
+      setCurrentChatChannel(remainingChannels.length > 0 ? remainingChannels[0] : null);
+    }
+    // Persist delete
+    supaDeleteChatChannel(channelId);
+  };
+
+  const handleSwitchChatChannel = (channelId: string) => {
+    const channel = chatChannels.find(c => c.id === channelId);
+    if (channel) {
+      setCurrentChatChannel(channel);
+    }
+  };
+
+  const handleSwitchChatProject = (projectId: string) => {
+    if (!projectId) {
+      // Ohne Projekt
+      setCurrentChatProject(null);
+    } else {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setCurrentChatProject(project);
       }
-      return req;
-    }));
-  }, []);
+    }
+  };
+
+  // Initialize chat channel and project when opening chat
+  useEffect(() => {
+    if (showChat && !currentChatChannel && chatChannels.length > 0) {
+      setCurrentChatChannel(chatChannels[0]);
+    }
+    if (showChat && !currentChatProject && selectedProject) {
+      setCurrentChatProject(selectedProject);
+    }
+  }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject]);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
@@ -1062,7 +1273,18 @@ const App: React.FC = () => {
   }, []);
 
   const handleChangeRole = useCallback((userId: string, roleId: string) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: roleId } : u));
+    setUsers(prev => {
+      const updated = prev.map(u => {
+        if (u.id === userId) {
+          const updatedUser = { ...u, role: roleId };
+          // Sync to Supabase
+          saveUser(updatedUser);
+          return updatedUser;
+        }
+        return u;
+      });
+      return updated;
+    });
   }, []);
 
   const handleChangeCurrentUserRole = useCallback((roleId: string) => {
@@ -1070,6 +1292,8 @@ const App: React.FC = () => {
       const updatedUser = { ...currentUser, role: roleId };
       setCurrentUser(updatedUser);
       setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+      // Sync to Supabase
+      saveUser(updatedUser);
     }
   }, [currentUser]);
 
@@ -1262,6 +1486,13 @@ const App: React.FC = () => {
             currentUser={currentUser}
             allUsers={MOCK_USERS}
             onUpdateTaskAssignees={handleUpdateTaskAssignees}
+            onOpenChat={() => {
+              setShowChat(true);
+              // Setze das aktuelle Projekt für den Chat
+              if (selectedProject) {
+                setCurrentChatProject(selectedProject);
+              }
+            }}
           />
         ) : (
           showSettings ? (
@@ -1274,6 +1505,11 @@ const App: React.FC = () => {
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
               onChangeRole={handleChangeRole}
+              chatChannels={chatChannels}
+              currentUser={currentUser || undefined}
+              onCreateChannel={handleCreateChannel}
+              onUpdateChannel={handleUpdateChannel}
+              onDeleteChannel={handleDeleteChannel}
               onImportComplete={(result) => {
                 // Merge neue Projekte
                 const updatedProjects = [...projects];
@@ -1472,6 +1708,24 @@ const App: React.FC = () => {
           onMarkSickLeaveReported={handleMarkSickLeaveReported}
           currentUser={currentUser!}
           initialSelectedRequestId={selectedNotificationRequestId}
+        />
+      )}
+
+      {showChat && currentUser && (
+        <ChatModal
+          isOpen={showChat}
+          onClose={() => setShowChat(false)}
+          channels={chatChannels}
+          messages={chatMessages}
+          projects={projects}
+          currentUser={currentUser}
+          currentProject={currentChatProject}
+          currentChannel={currentChatChannel}
+          onSendMessage={handleSendMessage}
+          onCreateChannel={handleCreateChannel}
+          onSwitchChannel={handleSwitchChatChannel}
+          onSwitchProject={handleSwitchChatProject}
+          allUsers={users}
         />
       )}
       </div>

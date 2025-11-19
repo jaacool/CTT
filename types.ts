@@ -203,3 +203,37 @@ export interface VacationBalance {
   overtimeHours: number; // Überstunden (aus getrackte Zeit vs. Sollzeit)
   overtimeDaysEquivalent: number; // Überstunden umgerechnet in Ausgleichstage
 }
+
+// Chat System Types
+export enum ChatChannelType {
+  Group = 'GROUP', // Normale Channels mit mehreren Usern
+  Direct = 'DIRECT', // Direktnachrichten zwischen zwei Usern
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  description?: string;
+  members: User[]; // Nur diese User können in diesem Channel schreiben
+  createdAt: string; // ISO timestamp
+  createdBy: User;
+  type: ChatChannelType; // Group oder Direct
+  isPrivate?: boolean; // Nur für Group Channels - ob Channel privat ist
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  projectId: string; // Jede Nachricht ist einem Projekt zugeordnet
+  content: string;
+  sender: User;
+  timestamp: string; // ISO timestamp
+  edited?: boolean;
+  editedAt?: string; // ISO timestamp
+  readBy: string[]; // User IDs die die Nachricht gelesen haben
+}
+
+export enum ChatViewMode {
+  ByProject = 'BY_PROJECT', // Gruppiert nach Projekten, zeigt Channels als Tabs
+  ByChannel = 'BY_CHANNEL', // Gruppiert nach Channels, zeigt Projekt-Tags bei Nachrichten
+}

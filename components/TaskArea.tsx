@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Project, TimeEntry, Task, Subtask, TaskStatus, User, AbsenceRequest } from '../types';
-import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, CalendarIcon, PrinterIcon, ThumbsUpIcon, CheckIcon, ChevronDownIcon, PlayIcon, PauseIcon } from './Icons';
+import { Project, TimeEntry, Task, Subtask, TaskStatus, User, AbsenceRequest, TaskList as ITaskList } from '../types';
+import { MoreHorizontalIcon, ClockIcon, PlusIcon, SearchIcon, ArrowRightIcon, CalendarIcon, PrinterIcon, ThumbsUpIcon, CheckIcon, ChevronDownIcon, PlayIcon, PauseIcon, MessageCircleIcon } from './Icons';
 import { formatTime, formatTimeCompact } from './utils';
 import { TimeView } from './TimeView';
 import { TaskContextMenu } from './TaskContextMenu';
@@ -36,6 +36,7 @@ interface TaskAreaProps {
     currentUser?: any;
     allUsers?: User[];
     onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
+    onOpenChat?: () => void;
 }
 
 const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
@@ -668,20 +669,22 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                 />
             )}
             
-             <div className={`fixed bottom-8 flex items-center space-x-2 transition-all duration-300 ease-in-out ${
-                 props.selectedItem 
-                     ? (props.activeTimerTaskId ? 'right-[580px]' : 'right-[370px]')
-                     : (props.activeTimerTaskId ? 'right-[220px]' : 'right-8')
-             }`}>
+             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 transition-all duration-300 ease-in-out">
+                <button
+                    onClick={props.onOpenChat}
+                    className="glow-button-highlight p-3 rounded-full shadow-lg"
+                >
+                    <MessageCircleIcon className="w-6 h-6 text-text-primary" />
+                </button>
                 <button
                     onClick={props.onOpenSearchProjects}
-                    className="bg-surface p-3 rounded-full shadow-lg hover-glow"
+                    className="bg-surface/80 backdrop-blur-md p-3 rounded-full shadow-lg hover-glow border border-overlay/50"
                 >
                     <SearchIcon className="w-6 h-6 text-text-primary" />
                 </button>
                 <button
                     onClick={props.onOpenCreateProject}
-                    className="glow-button p-3 rounded-full shadow-lg hover:opacity-80 transition-all"
+                    className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
                 >
                     <PlusIcon className="w-6 h-6 text-text-primary" />
                 </button>

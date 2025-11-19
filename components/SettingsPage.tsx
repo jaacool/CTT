@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, UserStatus, Role, TimeEntry, Project, AbsenceRequest } from '../types';
+import { User, UserStatus, Role, TimeEntry, Project, AbsenceRequest, ChatChannel } from '../types';
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
 import { RolesPage } from './RolesPage';
 import { TimeReportImportExport } from './TimeReportImportExport';
 import { SupabaseSettings } from './SupabaseSettings';
+import { ChannelManagement } from './ChannelManagement';
 import { ImportResult } from '../utils/timeReportImportExport';
 import { useGlow } from '../contexts/GlowContext';
 
@@ -19,6 +20,11 @@ interface SettingsPageProps {
   onDeleteUser: (userId: string) => void;
   onChangeRole: (userId: string, roleId: string) => void;
   onImportComplete: (result: ImportResult) => void;
+  chatChannels?: ChatChannel[];
+  currentUser?: User;
+  onCreateChannel?: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
+  onUpdateChannel?: (channelId: string, name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
+  onDeleteChannel?: (channelId: string) => void;
 }
 
 const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => void; onDelete: (userId: string) => void; onChangeRole: (userId: string, roleId: string) => void }> = ({ user, roles, onEdit, onDelete, onChangeRole }) => {
@@ -174,10 +180,10 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels'>('users');
   const { themeMode, setThemeMode } = useGlow();
 
   return (
@@ -222,6 +228,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
           }`}
         >
           Supabase
+        </button>
+        <button
+          onClick={() => setActiveTab('channels')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'channels' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
+          }`}
+        >
+          Channels
         </button>
       </div>
 
@@ -290,6 +304,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
             absenceRequests={absenceRequests}
           />
         </div>
+      ) : activeTab === 'channels' ? (
+        chatChannels && currentUser && onCreateChannel && onUpdateChannel && onDeleteChannel ? (
+          <ChannelManagement
+            channels={chatChannels}
+            users={users}
+            currentUser={currentUser}
+            onCreateChannel={onCreateChannel}
+            onUpdateChannel={onUpdateChannel}
+            onDeleteChannel={onDeleteChannel}
+          />
+        ) : (
+          <div className="text-center py-12 text-text-secondary">
+            Channel-Verwaltung nicht verfügbar
+          </div>
+        )
       ) : (
         <div>
           <h1 className="text-2xl font-bold glow-text mb-8">Erscheinungsbild</h1>

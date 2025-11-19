@@ -38,6 +38,222 @@ export async function saveProject(project: Project): Promise<boolean> {
   }
 }
 
+// ============================================
+// CHAT SYNC (Channels, Members, Messages)
+// ============================================
+
+import type { ChatChannel, ChatMessage } from '../types';
+
+/**
+ * Speichert oder aktualisiert einen Chat-Channel inkl. JSON data
+ */
+export async function saveChatChannel(channel: ChatChannel): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  try {
+    // Prüfe ob createdBy User existiert, sonst speichere ihn zuerst
+    const { data: existingUser } = await supabase!
+      .from('users')
+      .select('id')
+      .eq('id', channel.createdBy.id)
+      .single();
+    
+    if (!existingUser) {
+      console.log(`⚠️ User ${channel.createdBy.id} nicht in Supabase, speichere zuerst...`);
+      await saveUser(channel.createdBy);
+    }
+
+    // Prüfe auch alle Members
+    for (const member of channel.members) {
+      const { data: existingMember } = await supabase!
+        .from('users')
+        .select('id')
+        .eq('id', member.id)
+        .single();
+      
+      if (!existingMember) {
+        console.log(`⚠️ Member ${member.id} nicht in Supabase, speichere zuerst...`);
+        await saveUser(member);
+      }
+    }
+
+    const { error } = await supabase!
+      .from('chat_channels')
+      .upsert({
+        id: channel.id,
+        name: channel.name,
+        description: channel.description ?? null,
+        type: channel.type,
+        is_private: channel.isPrivate ?? false,
+        created_by: channel.createdBy.id,
+        data: channel,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) throw error;
+
+    // Mitglieder aktualisieren (nur für Group Channels relevant, DMs werden aus Members abgeleitet)
+    await upsertChannelMembers(channel.id, channel.members.map(m => m.id));
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Speichern des Chat-Channels:', error);
+    return false;
+  }
+}
+
+/**
+ * Aktualisiert Basisfelder und Mitglieder eines Channels
+ */
+export async function updateChatChannel(channel: ChatChannel): Promise<boolean> {
+  return saveChatChannel(channel);
+}
+
+/**
+ * Löscht einen Chat-Channel (inkl. Mitglieder und Messages via FK-CASCADE)
+ */
+export async function deleteChatChannel(channelId: string): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  try {
+    const { error } = await supabase!
+      .from('chat_channels')
+      .delete()
+      .eq('id', channelId);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Löschen des Chat-Channels:', error);
+    return false;
+  }
+}
+
+/**
+ * Setzt die Mitglieder eines Channels (macht einfachen Replace: delete missing, insert new)
+ */
+export async function upsertChannelMembers(channelId: string, memberIds: string[]): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  try {
+    // Lade bestehende
+    const { data: existing, error: loadError } = await supabase!
+      .from('chat_channel_members')
+      .select('user_id')
+      .eq('channel_id', channelId);
+    if (loadError) throw loadError;
+
+    const existingIds = new Set((existing || []).map(r => r.user_id as string));
+    const targetIds = new Set(memberIds);
+
+    // Zu löschende
+    const toDelete = [...existingIds].filter(id => !targetIds.has(id));
+    if (toDelete.length > 0) {
+      const { error } = await supabase!
+        .from('chat_channel_members')
+        .delete()
+        .eq('channel_id', channelId)
+        .in('user_id', toDelete);
+      if (error) throw error;
+    }
+
+    // Zu insertende
+    const toInsert = [...targetIds].filter(id => !existingIds.has(id));
+    if (toInsert.length > 0) {
+      const payload = toInsert.map(userId => ({ channel_id: channelId, user_id: userId }));
+      const { error } = await supabase!
+        .from('chat_channel_members')
+        .insert(payload);
+      if (error) throw error;
+    }
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Upsert der Channel-Mitglieder:', error);
+    return false;
+  }
+}
+
+/**
+ * Speichert eine Chat-Nachricht (mit vollem JSON data)
+ */
+export async function saveChatMessage(message: ChatMessage): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  try {
+    // Prüfe ob Sender existiert
+    const { data: existingSender } = await supabase!
+      .from('users')
+      .select('id')
+      .eq('id', message.sender.id)
+      .single();
+    
+    if (!existingSender) {
+      console.log(`⚠️ Sender ${message.sender.id} nicht in Supabase, speichere zuerst...`);
+      await saveUser(message.sender);
+    }
+
+    // Prüfe ob Channel existiert
+    const { data: existingChannel } = await supabase!
+      .from('chat_channels')
+      .select('id')
+      .eq('id', message.channelId)
+      .single();
+    
+    if (!existingChannel) {
+      console.warn(`⚠️ Channel ${message.channelId} existiert nicht in Supabase, überspringe Nachricht`);
+      return false;
+    }
+
+    const { error } = await supabase!
+      .from('chat_messages')
+      .insert({
+        id: message.id,
+        channel_id: message.channelId,
+        project_id: message.projectId || null,
+        sender_id: message.sender.id,
+        content: message.content,
+        timestamp: message.timestamp,
+        data: message,
+      });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Speichern der Chat-Nachricht:', error);
+    return false;
+  }
+}
+
+/**
+ * Lädt alle Chat-Daten (Channels inkl. Members, Messages)
+ */
+export async function loadAllChatData(): Promise<{
+  channels: ChatChannel[];
+  messages: ChatMessage[];
+} | null> {
+  if (!isSupabaseAvailable()) return null;
+  try {
+    const [channelsRes, membersRes, messagesRes] = await Promise.all([
+      supabase!.from('chat_channels').select('data'),
+      supabase!.from('chat_channel_members').select('channel_id, user_id'),
+      supabase!.from('chat_messages').select('data'),
+    ]);
+    if (channelsRes.error) throw channelsRes.error;
+    if (membersRes.error) throw membersRes.error;
+    if (messagesRes.error) throw messagesRes.error;
+
+    const channels = (channelsRes.data || []).map(r => r.data as ChatChannel);
+    const messages = (messagesRes.data || []).map(r => r.data as ChatMessage);
+
+    // Members in Channels mergen (zusätzliche Sicherheit, da wir vollständige Objekte im JSON speichern)
+    const membersByChannel = new Map<string, string[]>();
+    for (const row of membersRes.data || []) {
+      const arr = membersByChannel.get(row.channel_id) || [];
+      arr.push(row.user_id);
+      membersByChannel.set(row.channel_id, arr);
+    }
+    // Hinweis: Vollständige User-Objekte müssen ggf. durch Caller gemappt werden
+    // (hier belassen wir die Channel-JSONs als Quelle der Wahrheit)
+
+    return { channels, messages };
+  } catch (error) {
+    console.error('❌ Fehler beim Laden der Chat-Daten:', error);
+    return null;
+  }
+}
+
 export async function deleteProject(projectId: string): Promise<boolean> {
   if (!isSupabaseAvailable()) return false;
   
