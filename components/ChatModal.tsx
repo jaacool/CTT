@@ -173,7 +173,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             <h2 className="text-lg md:text-xl font-bold text-text-primary">Chat</h2>
             
             {/* View Mode Toggle */}
-            <div className="flex space-x-1 bg-overlay rounded-lg p-1">
+            <div className="flex space-x-1 bg-overlay rounded-lg p-1 ml-[15px] md:ml-0">
               <button
                 onClick={(e) => {
                   e.preventDefault();
