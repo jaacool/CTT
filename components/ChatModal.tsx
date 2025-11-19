@@ -161,27 +161,29 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             
             <h2 className="text-lg md:text-xl font-bold text-text-primary">Chat</h2>
             
-            {/* View Mode Toggle - Hidden on mobile */}
-            <div className="hidden md:flex space-x-1 bg-overlay rounded-lg p-1">
+            {/* View Mode Toggle */}
+            <div className="flex space-x-1 bg-overlay rounded-lg p-1">
               <button
                 onClick={() => setViewMode(ChatViewMode.ByProject)}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-2 md:px-3 py-1 md:py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByProject
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
-                Nach Projekt
+                <span className="hidden md:inline">Nach Projekt</span>
+                <span className="md:hidden">Projekt</span>
               </button>
               <button
                 onClick={() => setViewMode(ChatViewMode.ByChannel)}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-2 md:px-3 py-1 md:py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByChannel
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
-                Nach Channel
+                <span className="hidden md:inline">Nach Channel</span>
+                <span className="md:hidden">Channel</span>
               </button>
             </div>
           </div>
@@ -202,32 +204,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           `}>
             {viewMode === ChatViewMode.ByProject ? (
               <>
-                {/* Mobile View Mode Toggle */}
-                <div className="md:hidden mb-3">
-                  <div className="flex space-x-1 bg-overlay rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode(ChatViewMode.ByProject)}
-                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
-                        viewMode === ChatViewMode.ByProject
-                          ? 'glow-button text-text-primary'
-                          : 'text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      Projekt
-                    </button>
-                    <button
-                      onClick={() => setViewMode(ChatViewMode.ByChannel)}
-                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
-                        viewMode === ChatViewMode.ByChannel
-                          ? 'glow-button text-text-primary'
-                          : 'text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      Channel
-                    </button>
-                  </div>
-                </div>
-
                 {/* Search */}
                 <div className="mb-3 md:mb-4">
                   <input
@@ -360,32 +336,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               </>
             ) : (
               <>
-                {/* Mobile View Mode Toggle */}
-                <div className="md:hidden mb-3">
-                  <div className="flex space-x-1 bg-overlay rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode(ChatViewMode.ByProject)}
-                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
-                        viewMode === ChatViewMode.ByProject
-                          ? 'glow-button text-text-primary'
-                          : 'text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      Projekt
-                    </button>
-                    <button
-                      onClick={() => setViewMode(ChatViewMode.ByChannel)}
-                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
-                        viewMode === ChatViewMode.ByChannel
-                          ? 'glow-button text-text-primary'
-                          : 'text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      Channel
-                    </button>
-                  </div>
-                </div>
-
                 {/* Search */}
                 <div className="mb-3 md:mb-4">
                   <input
