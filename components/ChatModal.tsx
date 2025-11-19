@@ -40,6 +40,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const [showChannelDropdown, setShowChannelDropdown] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSidebar, setShowSidebar] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -143,15 +144,25 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col border border-border">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center md:p-4">
+      <div className="bg-background md:rounded-2xl shadow-2xl w-full max-w-5xl h-full md:h-[80vh] flex flex-col border-0 md:border border-border">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-bold text-text-primary">Chat</h2>
+        <div className="flex items-center justify-between p-3 md:p-4 border-b border-border">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="md:hidden text-text-secondary hover:text-text-primary p-1"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             
-            {/* View Mode Toggle */}
-            <div className="flex space-x-1 bg-overlay rounded-lg p-1">
+            <h2 className="text-lg md:text-xl font-bold text-text-primary">Chat</h2>
+            
+            {/* View Mode Toggle - Hidden on mobile */}
+            <div className="hidden md:flex space-x-1 bg-overlay rounded-lg p-1">
               <button
                 onClick={() => setViewMode(ChatViewMode.ByProject)}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
@@ -175,19 +186,50 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             </div>
           </div>
           
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
-            <XIcon className="w-6 h-6" />
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1">
+            <XIcon className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <div className="w-64 border-r border-border bg-surface p-4 overflow-y-auto">
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Sidebar - Mobile Overlay */}
+          <div className={`
+            fixed md:relative inset-y-0 left-0 z-40
+            w-64 md:w-64 border-r border-border bg-surface p-3 md:p-4 overflow-y-auto
+            transform transition-transform duration-300 ease-in-out
+            ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}>
             {viewMode === ChatViewMode.ByProject ? (
               <>
+                {/* Mobile View Mode Toggle */}
+                <div className="md:hidden mb-3">
+                  <div className="flex space-x-1 bg-overlay rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode(ChatViewMode.ByProject)}
+                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
+                        viewMode === ChatViewMode.ByProject
+                          ? 'glow-button text-text-primary'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Projekt
+                    </button>
+                    <button
+                      onClick={() => setViewMode(ChatViewMode.ByChannel)}
+                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
+                        viewMode === ChatViewMode.ByChannel
+                          ? 'glow-button text-text-primary'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Channel
+                    </button>
+                  </div>
+                </div>
+
                 {/* Search */}
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <input
                     type="text"
                     placeholder="Channels durchsuchen..."
@@ -198,7 +240,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 </div>
 
                 {/* Project Selector */}
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <div className="text-xs text-text-secondary mb-2">Projekt (optional)</div>
                   <div className="relative">
                     <button
@@ -244,7 +286,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 </div>
 
                 {/* Group Channels Section */}
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <div className="text-xs text-text-secondary mb-2 font-semibold">
                     Channels {searchQuery && `(${filteredGroupChannels.length})`}
                   </div>
@@ -257,7 +299,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       filteredGroupChannels.map(channel => (
                         <button
                           key={channel.id}
-                          onClick={() => onSwitchChannel(channel.id)}
+                          onClick={() => {
+                            onSwitchChannel(channel.id);
+                            setShowSidebar(false);
+                          }}
                           className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
                             currentChannel?.id === channel.id
                               ? 'glow-button text-text-primary'
@@ -288,7 +333,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         return (
                           <button
                             key={channel.id}
-                            onClick={() => onSwitchChannel(channel.id)}
+                            onClick={() => {
+                              onSwitchChannel(channel.id);
+                              setShowSidebar(false);
+                            }}
                             className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
                               currentChannel?.id === channel.id
                                 ? 'glow-button text-text-primary'
@@ -312,8 +360,34 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               </>
             ) : (
               <>
+                {/* Mobile View Mode Toggle */}
+                <div className="md:hidden mb-3">
+                  <div className="flex space-x-1 bg-overlay rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode(ChatViewMode.ByProject)}
+                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
+                        viewMode === ChatViewMode.ByProject
+                          ? 'glow-button text-text-primary'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Projekt
+                    </button>
+                    <button
+                      onClick={() => setViewMode(ChatViewMode.ByChannel)}
+                      className={`flex-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
+                        viewMode === ChatViewMode.ByChannel
+                          ? 'glow-button text-text-primary'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      Channel
+                    </button>
+                  </div>
+                </div>
+
                 {/* Search */}
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <input
                     type="text"
                     placeholder="Channels durchsuchen..."
@@ -324,7 +398,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 </div>
 
                 {/* Group Channels Section */}
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <div className="text-xs text-text-secondary mb-2 font-semibold">
                     Channels {searchQuery && `(${filteredGroupChannels.length})`}
                   </div>
@@ -337,7 +411,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       filteredGroupChannels.map(channel => (
                         <button
                           key={channel.id}
-                          onClick={() => onSwitchChannel(channel.id)}
+                          onClick={() => {
+                            onSwitchChannel(channel.id);
+                            setShowSidebar(false);
+                          }}
                           className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
                             currentChannel?.id === channel.id
                               ? 'glow-button text-text-primary'
@@ -368,7 +445,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         return (
                           <button
                             key={channel.id}
-                            onClick={() => onSwitchChannel(channel.id)}
+                            onClick={() => {
+                              onSwitchChannel(channel.id);
+                              setShowSidebar(false);
+                            }}
                             className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
                               currentChannel?.id === channel.id
                                 ? 'glow-button text-text-primary'
@@ -414,10 +494,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             )}
           </div>
 
+          {/* Mobile Sidebar Overlay */}
+          {showSidebar && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-30"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+
           {/* Messages Area */}
           <div className="flex-1 flex flex-col">
             {/* Messages Header */}
-            <div className="p-4 border-b border-border">
+            <div className="p-3 md:p-4 border-b border-border">
               <div className="flex items-center space-x-2">
                 {viewMode === ChatViewMode.ByProject ? (
                   <>
@@ -453,7 +541,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             </div>
 
             {/* Messages List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
               {filteredMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-secondary">
                   <div className="text-center">
@@ -463,15 +551,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 </div>
               ) : (
                 filteredMessages.map(message => (
-                  <div key={message.id} className="flex space-x-3">
+                  <div key={message.id} className="flex space-x-2 md:space-x-3">
                     <img
                       src={message.sender.avatarUrl}
                       alt={message.sender.name}
-                      className="w-10 h-10 rounded-full"
+                      className="w-8 h-8 md:w-10 md:h-10 rounded-full flex-shrink-0"
                     />
-                    <div className="flex-1">
-                      <div className="flex items-baseline space-x-2">
-                        <span className="font-semibold text-text-primary">{message.sender.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline space-x-2 flex-wrap">
+                        <span className="font-semibold text-text-primary text-sm md:text-base">{message.sender.name}</span>
                         <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                         {viewMode === ChatViewMode.ByChannel && (
                           <span className="text-xs px-2 py-0.5 rounded bg-overlay text-text-secondary">
@@ -479,7 +567,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-text-primary mt-1">{message.content}</p>
+                      <p className="text-text-primary mt-1 text-sm md:text-base break-words">{message.content}</p>
                     </div>
                   </div>
                 ))
@@ -488,7 +576,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-border">
+            <div className="p-3 md:p-4 border-t border-border">
               {suggestedChannel && currentChannel?.id !== suggestedChannel.id && viewMode === ChatViewMode.ByProject && (
                 <div className="mb-2 text-xs text-text-secondary">
                   Vorgeschlagener Channel: 
@@ -512,13 +600,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     }
                   }}
                   placeholder={`Nachricht in #${currentChannel?.name || '...'}`}
-                  className="flex-1 bg-overlay text-text-primary border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                  className="flex-1 bg-overlay text-text-primary border border-border rounded-lg px-3 md:px-4 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-glow-purple"
                   disabled={!currentChannel || !currentProject}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim() || !currentChannel || !currentProject}
-                  className="glow-button p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="glow-button p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <SendIcon className="w-5 h-5" />
                 </button>
