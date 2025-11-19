@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatChannel, ChatMessage, ChatViewMode, Project, User, ChatChannelType } from '../types';
-import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, MessageCircleIcon } from './Icons';
+import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, MessageCircleIcon, EditIcon, TrashIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
 
 interface ChatModalProps {
@@ -13,6 +13,8 @@ interface ChatModalProps {
   currentProject: Project | null;
   currentChannel: ChatChannel | null;
   onSendMessage: (content: string, channelId: string, projectId: string) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
+  onDeleteMessage: (messageId: string) => void;
   onCreateChannel: (name: string, description: string, memberIds: string[]) => void;
   onSwitchChannel: (channelId: string) => void;
   onSwitchProject: (projectId: string) => void;
@@ -29,6 +31,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   currentProject,
   currentChannel,
   onSendMessage,
+  onEditMessage,
+  onDeleteMessage,
   onCreateChannel,
   onSwitchChannel,
   onSwitchProject,
@@ -43,6 +47,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [userRemovedProject, setUserRemovedProject] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -141,6 +147,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({
       }
     }
   };
+
+  const handleStartEdit = (message: ChatMessage) => {
+    setEditingMessageId(message.id);
+    setEditingContent(message.content);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingMessageId && editingContent.trim()) {
+      onEditMessage(editingMessageId, editingContent.trim());
+      setEditingMessageId(null);
+      setEditingContent('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (window.confirm('Möchtest du diese Nachricht wirklich löschen?')) {
+      onDeleteMessage(messageId);
+    }
+  };
+
+  const isAdmin = currentUser?.role === 'role-1' || currentUser?.role === 'admin';
 
   const extractUrls = (text: string): string[] => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -627,37 +659,93 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 </div>
               ) : (
                 filteredMessages.map(message => (
-                  <div key={message.id} className="flex space-x-2 md:space-x-3">
+                  <div key={message.id} className="flex space-x-2 md:space-x-3 group">
                     <img
                       src={message.sender.avatarUrl}
                       alt={message.sender.name}
                       className="w-8 h-8 md:w-10 md:h-10 rounded-full flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline space-x-2 flex-wrap">
-                        <span className="font-semibold text-text-primary text-sm md:text-base">{message.sender.name}</span>
-                        <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
-                        {viewMode === ChatViewMode.ByChannel && message.projectId && (
-                          <button
-                            onClick={() => {
-                              const project = projects.find(p => p.id === message.projectId);
-                              if (project) {
-                                setViewMode(ChatViewMode.ByProject);
-                                setUserRemovedProject(false);
-                                onSwitchProject(message.projectId);
-                              }
-                            }}
-                            className="text-xs px-2 py-0.5 rounded bg-overlay text-text-secondary hover:bg-surface hover:text-text-primary transition-colors cursor-pointer"
-                          >
-                            {projects.find(p => p.id === message.projectId)?.name}
-                          </button>
+                      <div className="flex items-baseline justify-between space-x-2 flex-wrap">
+                        <div className="flex items-baseline space-x-2 flex-wrap">
+                          <span className="font-semibold text-text-primary text-sm md:text-base">{message.sender.name}</span>
+                          <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
+                          {viewMode === ChatViewMode.ByChannel && message.projectId && (
+                            <button
+                              onClick={() => {
+                                const project = projects.find(p => p.id === message.projectId);
+                                if (project) {
+                                  setViewMode(ChatViewMode.ByProject);
+                                  setUserRemovedProject(false);
+                                  onSwitchProject(message.projectId);
+                                }
+                              }}
+                              className="text-xs px-2 py-0.5 rounded bg-overlay text-text-secondary hover:bg-surface hover:text-text-primary transition-colors cursor-pointer"
+                            >
+                              {projects.find(p => p.id === message.projectId)?.name}
+                            </button>
+                          )}
+                        </div>
+                        {/* Admin Actions */}
+                        {isAdmin && (
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleStartEdit(message)}
+                              className="p-1 text-text-secondary hover:text-text-primary transition-colors"
+                              title="Bearbeiten"
+                            >
+                              <EditIcon className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="p-1 text-text-secondary hover:text-red-500 transition-colors"
+                              title="Löschen"
+                            >
+                              <TrashIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
-                      <p className="text-text-primary mt-1 text-sm md:text-base break-words">{message.content}</p>
-                      {/* Link Previews */}
-                      {extractUrls(message.content).map((url, index) => (
-                        <LinkPreview key={`${message.id}-link-${index}`} url={url} />
-                      ))}
+                      {editingMessageId === message.id ? (
+                        <div className="mt-2">
+                          <input
+                            type="text"
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveEdit();
+                              } else if (e.key === 'Escape') {
+                                handleCancelEdit();
+                              }
+                            }}
+                            className="w-full bg-overlay text-text-primary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                            autoFocus
+                          />
+                          <div className="flex space-x-2 mt-2">
+                            <button
+                              onClick={handleSaveEdit}
+                              className="text-xs px-3 py-1 bg-glow-purple text-white rounded hover:bg-opacity-80 transition-colors"
+                            >
+                              Speichern
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-xs px-3 py-1 bg-overlay text-text-secondary rounded hover:bg-surface transition-colors"
+                            >
+                              Abbrechen
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-text-primary mt-1 text-sm md:text-base break-words">{message.content}</p>
+                          {/* Link Previews */}
+                          {extractUrls(message.content).map((url, index) => (
+                            <LinkPreview key={`${message.id}-link-${index}`} url={url} />
+                          ))}
+                        </>
+                      )}
                     </div>
                   </div>
                 ))

@@ -95,6 +95,7 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [currentChatChannel, setCurrentChatChannel] = useState<ChatChannel | null>(null);
   const [currentChatProject, setCurrentChatProject] = useState<Project | null>(selectedProject);
+  const [chatProjectLocked, setChatProjectLocked] = useState<boolean>(false);
 
   // Initialize chat channels (Group channels + Direct message channels for each user pair)
   useEffect(() => {
@@ -1042,14 +1043,32 @@ const App: React.FC = () => {
 
   const handleSwitchChatProject = (projectId: string) => {
     if (!projectId) {
-      // Ohne Projekt
+      // Ohne Projekt: Nutzer hat explizit entfernt -> locken
       setCurrentChatProject(null);
+      setChatProjectLocked(true);
     } else {
       const project = projects.find(p => p.id === projectId);
       if (project) {
         setCurrentChatProject(project);
+        setChatProjectLocked(false);
       }
     }
+  };
+
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    setChatMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, content: newContent, edited: true, editedAt: new Date().toISOString() }
+        : msg
+    ));
+    // TODO: Persist to Supabase
+    console.log('Edit message:', messageId, newContent);
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setChatMessages(prev => prev.filter(msg => msg.id !== messageId));
+    // TODO: Persist to Supabase
+    console.log('Delete message:', messageId);
   };
 
   // Initialize chat channel and project when opening chat
@@ -1057,10 +1076,11 @@ const App: React.FC = () => {
     if (showChat && !currentChatChannel && chatChannels.length > 0) {
       setCurrentChatChannel(chatChannels[0]);
     }
-    if (showChat && !currentChatProject && selectedProject) {
+    // Setze nur beim Öffnen bzw. wenn kein Lock aktiv ist
+    if (showChat && !currentChatProject && selectedProject && !chatProjectLocked) {
       setCurrentChatProject(selectedProject);
     }
-  }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject]);
+  }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject, chatProjectLocked]);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
@@ -1722,6 +1742,8 @@ const App: React.FC = () => {
           currentProject={currentChatProject}
           currentChannel={currentChatChannel}
           onSendMessage={handleSendMessage}
+          onEditMessage={handleEditMessage}
+          onDeleteMessage={handleDeleteMessage}
           onCreateChannel={handleCreateChannel}
           onSwitchChannel={handleSwitchChatChannel}
           onSwitchProject={handleSwitchChatProject}
