@@ -68,8 +68,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     return partner?.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  // Auto-select channel based on current project
+  // Auto-select channel based on current project (only on initial open)
   useEffect(() => {
+    if (!isOpen) return;
+    
     if (currentProject && viewMode === ChatViewMode.ByProject && accessibleChannels.length > 0) {
       // Versuche den letzten verwendeten Channel für dieses Projekt zu laden
       const lastUsedChannelId = localStorage.getItem(`lastChannel_${currentProject.id}`);
@@ -96,7 +98,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         }
       }
     }
-  }, [currentProject, viewMode, channels, accessibleChannels.length]);
+  }, [isOpen, viewMode, channels, accessibleChannels.length]);
 
   if (!isOpen) return null;
 
@@ -164,8 +166,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             {/* View Mode Toggle */}
             <div className="flex space-x-1 bg-overlay rounded-lg p-1">
               <button
-                onClick={() => setViewMode(ChatViewMode.ByProject)}
-                className={`px-2 md:px-3 py-1 md:py-1 rounded text-xs font-semibold transition-colors ${
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setViewMode(ChatViewMode.ByProject);
+                }}
+                className={`px-2 md:px-3 py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByProject
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
@@ -175,8 +181,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 <span className="md:hidden">Projekt</span>
               </button>
               <button
-                onClick={() => setViewMode(ChatViewMode.ByChannel)}
-                className={`px-2 md:px-3 py-1 md:py-1 rounded text-xs font-semibold transition-colors ${
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setViewMode(ChatViewMode.ByChannel);
+                }}
+                className={`px-2 md:px-3 py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByChannel
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
@@ -501,7 +511,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       {currentProject ? (
                         <div className="flex items-center space-x-2 bg-overlay rounded-lg px-2 py-1 hover-glow">
                           <button
-                            onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowProjectDropdown(!showProjectDropdown);
+                            }}
                             className="flex items-center space-x-2"
                             title="Projekt wechseln"
                           >
@@ -510,6 +524,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           </button>
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               onSwitchProject('');
                             }}
@@ -521,7 +536,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         </div>
                       ) : (
                         <button
-                          onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowProjectDropdown(!showProjectDropdown);
+                          }}
                           className="flex items-center space-x-2 bg-overlay rounded-lg px-2 py-1 hover-glow"
                           title="Projekt auswählen"
                         >
