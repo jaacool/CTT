@@ -150,7 +150,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {/* Mobile Layout */}
                       <div className="flex items-start justify-between gap-2 sm:hidden">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <span className="w-7 h-7 rounded-full bg-yellow-400 flex items-center justify-center text-lg flex-shrink-0">
+                          <span 
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                            style={{ backgroundColor: project?.color || '#fbbf24' }}
+                          >
                             {project?.icon || '📋'}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -232,7 +235,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       
                       {/* Desktop Layout */}
                       <div className="hidden sm:flex items-center space-x-3">
-                        <span className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xl flex-shrink-0">
+                        <span 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ backgroundColor: project?.color || '#fbbf24' }}
+                        >
                           {project?.icon || '📋'}
                         </span>
                         
@@ -414,7 +420,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     title={listTitle}
                     data-testid={`shortcut-task-${task.id}`}
                   >
-                    <span className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-xl">
+                    <span 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xl"
+                      style={{ backgroundColor: project?.color || '#fbbf24' }}
+                    >
                       {project?.icon || '📋'}
                     </span>
                     <div className="flex-1 min-w-0">
