@@ -41,6 +41,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
+  const [userRemovedProject, setUserRemovedProject] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -68,9 +69,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     return partner?.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  // Reset userRemovedProject when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setUserRemovedProject(false);
+    }
+  }, [isOpen]);
+
   // Auto-select channel based on current project (only on initial open)
   useEffect(() => {
     if (!isOpen) return;
+    if (userRemovedProject) return; // Don't auto-select if user explicitly removed project
     
     if (currentProject && viewMode === ChatViewMode.ByProject && accessibleChannels.length > 0) {
       // Versuche den letzten verwendeten Channel für dieses Projekt zu laden
@@ -246,6 +255,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       <div className="absolute top-full left-0 right-0 mt-1 bg-overlay rounded-lg shadow-lg border border-border max-h-48 overflow-y-auto z-10">
                         <button
                           onClick={() => {
+                            setUserRemovedProject(true);
                             onSwitchProject('');
                             setShowProjectDropdown(false);
                           }}
@@ -257,6 +267,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <button
                             key={project.id}
                             onClick={() => {
+                              setUserRemovedProject(false);
                               onSwitchProject(project.id);
                               setShowProjectDropdown(false);
                             }}
@@ -476,7 +487,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <span className="font-semibold text-text-primary">{getDMPartnerName(currentChannel)}</span>
                           {currentProject && (
                             <button
-                              onClick={() => onSwitchProject('')}
+                              onClick={() => {
+                                setUserRemovedProject(true);
+                                onSwitchProject('');
+                              }}
                               className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
                               title="Ohne Projekt schreiben"
                             >
@@ -493,7 +507,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <span className="font-semibold text-text-primary">{currentChannel?.name}</span>
                           {currentProject && (
                             <button
-                              onClick={() => onSwitchProject('')}
+                              onClick={() => {
+                                setUserRemovedProject(true);
+                                onSwitchProject('');
+                              }}
                               className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
                               title="Ohne Projekt schreiben"
                             >
@@ -526,6 +543,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              setUserRemovedProject(true);
                               onSwitchProject('');
                             }}
                             className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
@@ -562,6 +580,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   <div className="absolute top-full left-0 mt-1 bg-overlay rounded-lg shadow-lg border border-border max-h-48 overflow-y-auto z-10 min-w-[200px]">
                     <button
                       onClick={() => {
+                        setUserRemovedProject(true);
                         onSwitchProject('');
                         setShowProjectDropdown(false);
                       }}
@@ -573,6 +592,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       <button
                         key={project.id}
                         onClick={() => {
+                          setUserRemovedProject(false);
                           onSwitchProject(project.id);
                           setShowProjectDropdown(false);
                         }}
