@@ -506,34 +506,58 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           <div className="flex-1 flex flex-col">
             {/* Messages Header */}
             <div className="p-3 md:p-4 border-b border-border">
-              <div className="flex items-center space-x-2">
-                {viewMode === ChatViewMode.ByProject ? (
-                  <>
-                    {currentChannel?.type === ChatChannelType.Direct ? (
-                      <>
-                        <MessageCircleIcon className="w-5 h-5 text-text-secondary" />
-                        <span className="font-semibold text-text-primary">{getDMPartnerName(currentChannel)}</span>
-                        <span className="text-text-secondary text-sm">in {currentProject?.name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <HashIcon className="w-5 h-5 text-text-secondary" />
-                        <span className="font-semibold text-text-primary">{currentChannel?.name}</span>
-                        <span className="text-text-secondary text-sm">in {currentProject?.name}</span>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <FolderIcon className="w-5 h-5 text-text-secondary" />
-                    <span className="font-semibold text-text-primary">{currentProject?.name}</span>
-                    {currentChannel?.type === ChatChannelType.Direct ? (
-                      <span className="text-text-secondary text-sm">mit {getDMPartnerName(currentChannel)}</span>
-                    ) : (
-                      <span className="text-text-secondary text-sm">in #{currentChannel?.name}</span>
-                    )}
-                  </>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {viewMode === ChatViewMode.ByProject ? (
+                    <>
+                      {currentChannel?.type === ChatChannelType.Direct ? (
+                        <>
+                          <MessageCircleIcon className="w-5 h-5 text-text-secondary" />
+                          <span className="font-semibold text-text-primary">{getDMPartnerName(currentChannel)}</span>
+                          {currentProject && (
+                            <>
+                              <span className="text-text-secondary text-sm">in {currentProject.name}</span>
+                              <button
+                                onClick={() => onSwitchProject('')}
+                                className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
+                                title="Projekt entfernen"
+                              >
+                                <XIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <HashIcon className="w-5 h-5 text-text-secondary" />
+                          <span className="font-semibold text-text-primary">{currentChannel?.name}</span>
+                          {currentProject && (
+                            <>
+                              <span className="text-text-secondary text-sm">in {currentProject.name}</span>
+                              <button
+                                onClick={() => onSwitchProject('')}
+                                className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
+                                title="Projekt entfernen"
+                              >
+                                <XIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <FolderIcon className="w-5 h-5 text-text-secondary" />
+                      <span className="font-semibold text-text-primary">{currentProject?.name}</span>
+                      {currentChannel?.type === ChatChannelType.Direct ? (
+                        <span className="text-text-secondary text-sm">mit {getDMPartnerName(currentChannel)}</span>
+                      ) : (
+                        <span className="text-text-secondary text-sm">in #{currentChannel?.name}</span>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
               {currentChannel?.description && currentChannel.type !== ChatChannelType.Direct && (
                 <p className="text-text-secondary text-xs mt-1">{currentChannel.description}</p>
