@@ -130,12 +130,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
       // Projekt-ID ist optional (null = ohne Projekt)
-      const projectId = currentProject?.id || '';
+      const projectId = userRemovedProject ? '' : (currentProject?.id || '');
       onSendMessage(messageInput.trim(), currentChannel.id, projectId);
       setMessageInput('');
       
       // Save last used channel for this project (wenn Projekt gesetzt)
-      if (currentProject) {
+      if (!userRemovedProject && currentProject) {
         localStorage.setItem(`lastChannel_${currentProject.id}`, currentChannel.id);
       }
     }
@@ -180,7 +180,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   e.stopPropagation();
                   setViewMode(ChatViewMode.ByProject);
                 }}
-                className={`px-2 md:px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-4 md:px-3 py-1.5 md:py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByProject
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
@@ -195,7 +195,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   e.stopPropagation();
                   setViewMode(ChatViewMode.ByChannel);
                 }}
-                className={`px-2 md:px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-4 md:px-3 py-1.5 md:py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === ChatViewMode.ByChannel
                     ? 'glow-button text-text-primary'
                     : 'text-text-secondary hover:text-text-primary'
@@ -525,7 +525,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     </>
                   ) : (
                     <>
-                      {currentProject ? (
+                      {(currentProject && !userRemovedProject) ? (
                         <div className="flex items-center space-x-2 bg-overlay rounded-lg px-2 py-1 hover-glow">
                           <button
                             onClick={(e) => {
@@ -671,11 +671,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   }}
                   placeholder={`Nachricht in #${currentChannel?.name || '...'}`}
                   className="flex-1 bg-overlay text-text-primary border border-border rounded-lg px-3 md:px-4 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-glow-purple"
-                  disabled={!currentChannel || !currentProject}
+                  disabled={!currentChannel}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!messageInput.trim() || !currentChannel || !currentProject}
+                  disabled={!messageInput.trim() || !currentChannel}
                   className="glow-button p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <SendIcon className="w-5 h-5" />
