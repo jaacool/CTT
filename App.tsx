@@ -1580,8 +1580,8 @@ const App: React.FC = () => {
           />
         </div>
 
-      {/* Global Chat Button - Available in all views */}
-      {!showChat && currentUser && (
+      {/* Global Chat Button - Always visible in all views */}
+      {currentUser && (
         <button
           onClick={() => {
             setShowChat(true);
@@ -1589,7 +1589,7 @@ const App: React.FC = () => {
               setCurrentChatProject(selectedProject);
             }
           }}
-          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 glow-button-highlight p-4 rounded-full shadow-lg z-40 hover:scale-110 transition-transform"
+          className={`fixed ${activeTimerTaskId ? 'bottom-28' : 'bottom-8'} right-8 glow-button-highlight p-4 rounded-full shadow-lg z-50 hover:scale-110 transition-transform`}
           title="Chat öffnen"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
