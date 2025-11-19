@@ -686,23 +686,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                             </button>
                           )}
                         </div>
-                        {/* Admin Actions */}
-                        {isAdmin && (
+                        {/* Message Actions */}
+                        {(message.sender.id === currentUser.id || isAdmin) && (
                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleStartEdit(message)}
-                              className="p-1 text-text-secondary hover:text-text-primary transition-colors"
-                              title="Bearbeiten"
-                            >
-                              <EditIcon className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMessage(message.id)}
-                              className="p-1 text-text-secondary hover:text-red-500 transition-colors"
-                              title="Löschen"
-                            >
-                              <TrashIcon className="w-3.5 h-3.5" />
-                            </button>
+                            {message.sender.id === currentUser.id && (
+                              <button
+                                onClick={() => handleStartEdit(message)}
+                                className="p-1 text-text-secondary hover:text-text-primary transition-colors"
+                                title="Bearbeiten"
+                              >
+                                <EditIcon className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="p-1 text-text-secondary hover:text-red-500 transition-colors"
+                                title="Löschen"
+                              >
+                                <TrashIcon className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
