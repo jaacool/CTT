@@ -66,6 +66,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  const renderProjectAvatar = (project: Project | undefined, sizeClasses: string, textSize: string = '') => {
+    const icon = project?.icon;
+    const isHex = typeof icon === 'string' && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(icon);
+    return (
+      <span
+        className={`rounded-full flex items-center justify-center flex-shrink-0 ${sizeClasses} ${textSize}`}
+        style={isHex ? { backgroundColor: icon as string } : undefined}
+      >
+        {!isHex ? (icon || '📋') : null}
+      </span>
+    );
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,12 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {/* Mobile Layout */}
                       <div className="flex items-start justify-between gap-2 sm:hidden">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <span 
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-                            style={{ backgroundColor: project?.color || '#fbbf24' }}
-                          >
-                            {project?.icon || '📋'}
-                          </span>
+                          {renderProjectAvatar(project, 'w-7 h-7', 'text-lg')}
                           <div className="flex-1 min-w-0">
                             <div className="text-xs text-text-secondary truncate leading-tight">{entry.projectName}</div>
                             <div className="text-text-primary font-semibold truncate text-sm leading-tight">{entry.taskTitle}</div>
@@ -235,12 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       
                       {/* Desktop Layout */}
                       <div className="hidden sm:flex items-center space-x-3">
-                        <span 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                          style={{ backgroundColor: project?.color || '#fbbf24' }}
-                        >
-                          {project?.icon || '📋'}
-                        </span>
+                        {renderProjectAvatar(project, 'w-8 h-8', 'text-xl')}
                         
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-text-secondary truncate leading-tight mb-0.5">{entry.projectName}</div>
@@ -420,12 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     title={listTitle}
                     data-testid={`shortcut-task-${task.id}`}
                   >
-                    <span 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xl"
-                      style={{ backgroundColor: project?.color || '#fbbf24' }}
-                    >
-                      {project?.icon || '📋'}
-                    </span>
+                    {renderProjectAvatar(project, 'w-8 h-8', 'text-xl')}
                     <div className="flex-1 min-w-0">
                       <div className="text-text-primary font-semibold truncate">{task.title}</div>
                       <div className="text-text-secondary text-xs truncate">{projectName}</div>
