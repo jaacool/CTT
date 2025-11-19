@@ -498,15 +498,35 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     </>
                   ) : (
                     <>
-                      <FolderIcon className="w-5 h-5 text-text-secondary" />
-                      <span className="font-semibold text-text-primary">{currentProject?.name}</span>
-                      {currentProject && (
+                      {currentProject ? (
+                        <div className="flex items-center space-x-2 bg-overlay rounded-lg px-2 py-1 hover-glow">
+                          <button
+                            onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                            className="flex items-center space-x-2"
+                            title="Projekt wechseln"
+                          >
+                            <FolderIcon className="w-4 h-4 text-text-secondary" />
+                            <span className="font-semibold text-text-primary text-sm">{currentProject.name}</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSwitchProject('');
+                            }}
+                            className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
+                            title="Ohne Projekt schreiben"
+                          >
+                            <XIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
                         <button
-                          onClick={() => onSwitchProject('')}
-                          className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
-                          title="Ohne Projekt schreiben"
+                          onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                          className="flex items-center space-x-2 bg-overlay rounded-lg px-2 py-1 hover-glow"
+                          title="Projekt auswählen"
                         >
-                          <XIcon className="w-3.5 h-3.5" />
+                          <FolderIcon className="w-4 h-4 text-text-secondary" />
+                          <span className="font-semibold text-text-primary text-sm">Ohne Projekt</span>
                         </button>
                       )}
                       {currentChannel?.type === ChatChannelType.Direct ? (
@@ -517,6 +537,34 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     </>
                   )}
                 </div>
+                
+                {/* Project Dropdown for ByChannel Mode */}
+                {viewMode === ChatViewMode.ByChannel && showProjectDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-overlay rounded-lg shadow-lg border border-border max-h-48 overflow-y-auto z-10 min-w-[200px]">
+                    <button
+                      onClick={() => {
+                        onSwitchProject('');
+                        setShowProjectDropdown(false);
+                      }}
+                      className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left border-b border-border"
+                    >
+                      <span className="text-text-secondary text-sm italic">Ohne Projekt</span>
+                    </button>
+                    {projects.map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          onSwitchProject(project.id);
+                          setShowProjectDropdown(false);
+                        }}
+                        className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left"
+                      >
+                        <FolderIcon className="w-4 h-4 text-text-secondary" />
+                        <span className="text-text-primary text-sm truncate">{project.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {currentChannel?.description && currentChannel.type !== ChatChannelType.Direct && (
                 <p className="text-text-secondary text-xs mt-1">{currentChannel.description}</p>
