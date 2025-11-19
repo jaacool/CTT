@@ -631,10 +631,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       <div className="flex items-baseline space-x-2 flex-wrap">
                         <span className="font-semibold text-text-primary text-sm md:text-base">{message.sender.name}</span>
                         <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
-                        {viewMode === ChatViewMode.ByChannel && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-overlay text-text-secondary">
+                        {viewMode === ChatViewMode.ByChannel && message.projectId && (
+                          <button
+                            onClick={() => {
+                              const project = projects.find(p => p.id === message.projectId);
+                              if (project) {
+                                setViewMode(ChatViewMode.ByProject);
+                                setUserRemovedProject(false);
+                                onSwitchProject(message.projectId);
+                              }
+                            }}
+                            className="text-xs px-2 py-0.5 rounded bg-overlay text-text-secondary hover:bg-surface hover:text-text-primary transition-colors cursor-pointer"
+                          >
                             {projects.find(p => p.id === message.projectId)?.name}
-                          </span>
+                          </button>
                         )}
                       </div>
                       <p className="text-text-primary mt-1 text-sm md:text-base break-words">{message.content}</p>
