@@ -1447,6 +1447,7 @@ const App: React.FC = () => {
             taskTimers={taskTimers}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
+            onDeleteTimeEntry={handleDeleteTimeEntry}
           />
         ) : showProjectsOverview ? (
           <ProjectsOverview

@@ -15,6 +15,7 @@ interface DashboardProps {
   taskTimers: { [taskId: string]: number };
   onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange?: (taskId: string, billable: boolean) => void;
+  onDeleteTimeEntry?: (entryId: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -28,11 +29,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeTimerTaskId,
   taskTimers,
   onUpdateTimeEntry,
-  onBillableChange
+  onBillableChange,
+  onDeleteTimeEntry
 }) => {
   const [note, setNote] = useState(user.dashboardNote || '');
   const [selectedTimeEntry, setSelectedTimeEntry] = useState<TimeEntry | null>(null);
   const [selectedAnchorRect, setSelectedAnchorRect] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
+  const [contextMenuEntry, setContextMenuEntry] = useState<TimeEntry | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{x: number; y: number} | null>(null);
 
   // Finde alle gepinnten Tasks
   const pinnedTasks: (Task | Subtask)[] = [];
@@ -227,7 +231,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // TODO: Context menu
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setContextMenuEntry(entry);
+                                setContextMenuPosition({ x: rect.left, y: rect.bottom + 5 });
                               }}
                               className="text-text-secondary hover:text-text-primary"
                             >
@@ -306,7 +312,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              // TODO: Context menu
+                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                              setContextMenuEntry(entry);
+                              setContextMenuPosition({ x: rect.left, y: rect.bottom + 5 });
                             }}
                             className="text-text-secondary hover:text-text-primary"
                           >
@@ -493,6 +501,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
           anchorRect={selectedAnchorRect}
         />
+      )}
+
+      {/* Kontext-Menü für Zeiteinträge */}
+      {contextMenuEntry && contextMenuPosition && (
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setContextMenuEntry(null);
+              setContextMenuPosition(null);
+            }}
+          />
+          <div
+            className="fixed z-50 bg-surface border border-border rounded-lg shadow-xl py-1 min-w-[160px]"
+            style={{
+              left: `${contextMenuPosition.x}px`,
+              top: `${contextMenuPosition.y}px`,
+            }}
+          >
+            <button
+              onClick={() => {
+                if (onDeleteTimeEntry && window.confirm('Möchtest du diesen Zeiteintrag wirklich löschen?')) {
+                  onDeleteTimeEntry(contextMenuEntry.id);
+                }
+                setContextMenuEntry(null);
+                setContextMenuPosition(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-overlay transition-colors flex items-center space-x-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Löschen</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
