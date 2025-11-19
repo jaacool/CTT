@@ -465,16 +465,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <MessageCircleIcon className="w-5 h-5 text-text-secondary" />
                           <span className="font-semibold text-text-primary">{getDMPartnerName(currentChannel)}</span>
                           {currentProject && (
-                            <>
-                              <span className="text-text-secondary text-sm">in {currentProject.name}</span>
-                              <button
-                                onClick={() => onSwitchProject('')}
-                                className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
-                                title="Projekt entfernen"
-                              >
-                                <XIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => onSwitchProject('')}
+                              className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
+                              title="Ohne Projekt schreiben"
+                            >
+                              <XIcon className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {currentProject && (
+                            <span className="text-text-secondary text-sm">in {currentProject.name}</span>
                           )}
                         </>
                       ) : (
@@ -482,16 +482,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <HashIcon className="w-5 h-5 text-text-secondary" />
                           <span className="font-semibold text-text-primary">{currentChannel?.name}</span>
                           {currentProject && (
-                            <>
-                              <span className="text-text-secondary text-sm">in {currentProject.name}</span>
-                              <button
-                                onClick={() => onSwitchProject('')}
-                                className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
-                                title="Projekt entfernen"
-                              >
-                                <XIcon className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => onSwitchProject('')}
+                              className="text-text-secondary hover:text-text-primary transition-colors p-0.5"
+                              title="Ohne Projekt schreiben"
+                            >
+                              <XIcon className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {currentProject && (
+                            <span className="text-text-secondary text-sm">in {currentProject.name}</span>
                           )}
                         </>
                       )}
