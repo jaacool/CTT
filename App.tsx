@@ -1559,6 +1559,45 @@ const App: React.FC = () => {
             <p>Wählen Sie ein Projekt aus, um Aufgaben anzuzeigen.</p>
           </div>
         )}
+
+        {/* Floating actions (global) */}
+        {!selectedProject && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 transition-all duration-300 ease-in-out">
+            <button
+              onClick={() => {
+                setShowChat(true);
+                if (selectedProject) {
+                  setCurrentChatProject(selectedProject);
+                } else {
+                  setCurrentChatProject(null);
+                }
+              }}
+              className="glow-button-highlight p-3 rounded-full shadow-lg"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowSearchModal(true)}
+              className="bg-surface/80 backdrop-blur-md p-3 rounded-full shadow-lg hover-glow border border-overlay/50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowCreateProjectModal(true)}
+              className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        )}
         </main>
 
         <div className={`fixed top-16 right-0 h-full w-96 bg-surface shadow-2xl transform transition-transform duration-300 ease-in-out md:relative md:top-auto md:right-auto md:h-auto md:w-auto md:shadow-none md:transform-none md:transition-none ${selectedTask ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'} md:translate-x-0 md:block`}>
@@ -1696,24 +1735,6 @@ const App: React.FC = () => {
           </>
         );
       })()}
-
-      {/* Global Chat Button - Available in all views */}
-      {!showChat && currentUser && (
-        <button
-          onClick={() => {
-            setShowChat(true);
-            if (selectedProject) {
-              setCurrentChatProject(selectedProject);
-            }
-          }}
-          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 glow-button-highlight p-4 rounded-full shadow-lg z-40 hover:scale-110 transition-transform"
-          title="Chat öffnen"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-          </svg>
-        </button>
-      )}
       
       {/* Modals */}
       {showCreateProjectModal && (
