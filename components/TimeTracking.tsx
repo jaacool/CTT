@@ -342,16 +342,6 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
         {/* Tabs */}
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setViewMode('overview')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              viewMode === 'overview'
-                ? 'bg-primary text-white'
-                : 'text-text-secondary hover:bg-surface'
-            }`}
-          >
-            Übersicht
-          </button>
-          <button
             onClick={() => setViewMode('day')}
             className={`px-4 py-2 rounded-lg transition-colors ${
               viewMode === 'day'
@@ -370,6 +360,16 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
             }`}
           >
             Meine Woche
+          </button>
+          <button
+            onClick={() => setViewMode('overview')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              viewMode === 'overview'
+                ? 'bg-primary text-white'
+                : 'text-text-secondary hover:bg-surface'
+            }`}
+          >
+            Übersicht
           </button>
         </div>
 
