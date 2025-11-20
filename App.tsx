@@ -81,9 +81,19 @@ const App: React.FC = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [pinnedTasks, setPinnedTasks] = useState<string[]>([]);
   const [dashboardNote, setDashboardNote] = useState('');
-  const [currentUser, setCurrentUser] = useState<User | null>(ADMIN_USER);
-  const [showSettings, setShowSettings] = useState(false);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  
+  // Load last user from localStorage or default to ADMIN_USER
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const lastUserId = localStorage.getItem('ctt_last_user_id');
+    if (lastUserId) {
+      const user = MOCK_USERS.find(u => u.id === lastUserId);
+      if (user) return user;
+    }
+    return ADMIN_USER;
+  });
+  
+  const [showSettings, setShowSettings] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [showTimeTracking, setShowTimeTracking] = useState(false);
@@ -1408,8 +1418,17 @@ const App: React.FC = () => {
     const newUser = users.find(u => u.id === userId);
     if (newUser) {
       setCurrentUser(newUser);
+      // Save to localStorage
+      localStorage.setItem('ctt_last_user_id', newUser.id);
     }
   }, [users]);
+  
+  // Save current user to localStorage whenever it changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('ctt_last_user_id', currentUser.id);
+    }
+  }, [currentUser]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
