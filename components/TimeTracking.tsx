@@ -85,6 +85,29 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return days;
   }, [weekBounds]);
 
+  // Gruppiere alle Zeiteinträge nach Tag (für Overview)
+  const entriesByDate = useMemo(() => {
+    const map = new Map<string, TimeEntry[]>();
+    
+    userTimeEntries.forEach(te => {
+      const entryDate = new Date(te.startTime);
+      const dateKey = entryDate.toISOString().split('T')[0];
+      const entries = map.get(dateKey) || [];
+      entries.push(te);
+      map.set(dateKey, entries);
+    });
+    
+    // Sortiere nach Datum (neueste zuerst)
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([dateKey, entries]) => ({
+        dateKey,
+        date: new Date(dateKey),
+        entries: entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+        total: entries.reduce((sum, te) => sum + te.duration, 0)
+      }));
+  }, [userTimeEntries]);
+
   // Gruppiere TimeEntries nach Tag
   const entriesByDay = useMemo(() => {
     const map = new Map<string, TimeEntry[]>();
@@ -466,32 +489,8 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
         </div>
       )}
 
-      {viewMode === 'overview' && (() => {
-        // Gruppiere alle Zeiteinträge nach Tag
-        const entriesByDate = useMemo(() => {
-          const map = new Map<string, TimeEntry[]>();
-          
-          userTimeEntries.forEach(te => {
-            const entryDate = new Date(te.startTime);
-            const dateKey = entryDate.toISOString().split('T')[0];
-            const entries = map.get(dateKey) || [];
-            entries.push(te);
-            map.set(dateKey, entries);
-          });
-          
-          // Sortiere nach Datum (neueste zuerst)
-          return Array.from(map.entries())
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([dateKey, entries]) => ({
-              dateKey,
-              date: new Date(dateKey),
-              entries: entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-              total: entries.reduce((sum, te) => sum + te.duration, 0)
-            }));
-        }, [userTimeEntries]);
-        
-        return (
-          <div className="flex-1 overflow-auto p-6">
+      {viewMode === 'overview' && (
+        <div className="flex-1 overflow-auto p-6">
             <div className="max-w-4xl mx-auto space-y-6">
               <h2 className="text-2xl font-bold text-text-primary">Übersicht</h2>
               
@@ -619,8 +618,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               </div>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {viewMode === 'day' && (() => {
         const selectedDay = currentDate;
