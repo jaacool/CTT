@@ -140,6 +140,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     return partner?.name || 'Unbekannt';
   };
 
+  // Zähle ungelesene Nachrichten pro Channel
+  const getUnreadCountForChannel = (channelId: string) => {
+    return messages.filter(msg => 
+      msg.channelId === channelId &&
+      msg.sender.id !== currentUser.id &&
+      !msg.readBy.includes(currentUser.id)
+    ).length;
+  };
+
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
       // Projekt-ID ist optional (null = ohne Projekt)
@@ -342,23 +351,33 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         {searchQuery ? 'Keine Channels gefunden' : 'Keine Channels vorhanden'}
                       </div>
                     ) : (
-                      filteredGroupChannels.map(channel => (
+                      filteredGroupChannels.map(channel => {
+                        const unreadCount = getUnreadCountForChannel(channel.id);
+                        return (
                         <button
                           key={channel.id}
                           onClick={() => {
                             onSwitchChannel(channel.id);
                             setShowSidebar(false);
                           }}
-                          className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                             currentChannel?.id === channel.id
                               ? 'glow-button text-text-primary'
                               : 'hover-glow text-text-secondary'
                           }`}
                         >
-                          <HashIcon className="w-4 h-4" />
-                          <span className="text-sm truncate">{channel.name}</span>
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                            <HashIcon className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-sm truncate">{channel.name}</span>
+                          </div>
+                          {unreadCount > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
                         </button>
-                      ))
+                              );
+                      })
                     )}
                   </div>
                 </div>
@@ -483,23 +502,33 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         {searchQuery ? 'Keine Channels gefunden' : 'Keine Channels vorhanden'}
                       </div>
                     ) : (
-                      filteredGroupChannels.map(channel => (
+                      filteredGroupChannels.map(channel => {
+                        const unreadCount = getUnreadCountForChannel(channel.id);
+                        return (
                         <button
                           key={channel.id}
                           onClick={() => {
                             onSwitchChannel(channel.id);
                             setShowSidebar(false);
                           }}
-                          className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                             currentChannel?.id === channel.id
                               ? 'glow-button text-text-primary'
                               : 'hover-glow text-text-secondary'
                           }`}
                         >
-                          <HashIcon className="w-4 h-4" />
-                          <span className="text-sm truncate">{channel.name}</span>
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                            <HashIcon className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-sm truncate">{channel.name}</span>
+                          </div>
+                          {unreadCount > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
                         </button>
-                      ))
+                              );
+                      })
                     )}
                   </div>
                 </div>
