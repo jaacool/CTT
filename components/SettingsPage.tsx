@@ -20,6 +20,7 @@ interface SettingsPageProps {
   onUpdateUser: (userId: string, userData: Partial<User>) => void;
   onDeleteUser: (userId: string) => void;
   onChangeRole: (userId: string, roleId: string) => void;
+  onChangeUserStatus: (userId: string, status: UserStatus) => void;
   onImportComplete: (result: ImportResult) => void;
   chatChannels?: ChatChannel[];
   currentUser?: User;
@@ -32,12 +33,21 @@ interface SettingsPageProps {
   onSeparateHomeOfficeChange: (value: boolean) => void;
 }
 
-const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => void; onDelete: (userId: string) => void; onChangeRole: (userId: string, roleId: string) => void }> = ({ user, roles, onEdit, onDelete, onChangeRole }) => {
+const UserRow: React.FC<{ 
+  user: User; 
+  roles: Role[]; 
+  onEdit: (user: User) => void; 
+  onDelete: (userId: string) => void; 
+  onChangeRole: (userId: string, roleId: string) => void;
+  onChangeStatus: (userId: string, status: UserStatus) => void;
+}> = ({ user, roles, onEdit, onDelete, onChangeRole, onChangeStatus }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const roleMenuRef = useRef<HTMLDivElement>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,16 +57,19 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
       if (roleMenuRef.current && !roleMenuRef.current.contains(event.target as Node)) {
         setShowRoleMenu(false);
       }
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setShowStatusMenu(false);
+      }
     };
 
-    if (showMenu || showRoleMenu) {
+    if (showMenu || showRoleMenu || showStatusMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showMenu, showRoleMenu]);
+  }, [showMenu, showRoleMenu, showStatusMenu]);
   const getTagColor = (tag: string) => {
     switch (tag.toLowerCase()) {
       case 'editor':
@@ -119,10 +132,45 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
       <div className="col-span-3 text-text-secondary">{user.email}</div>
 
       {/* Status */}
-      <div className="col-span-1">
-        <span className={`px-3 py-1 rounded-full text-xs font-bold ${user.status === UserStatus.Active ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-          {user.status}
-        </span>
+      <div className="col-span-1 relative" ref={statusMenuRef}>
+        <button
+          onClick={() => setShowStatusMenu(!showStatusMenu)}
+          className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity ${
+            user.status === UserStatus.Active ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+          }`}
+        >
+          {user.status === UserStatus.Active ? 'Aktiv' : 'Deaktiviert'}
+        </button>
+        
+        {/* Status Selection Menu */}
+        {showStatusMenu && (
+          <div className="absolute left-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[140px] p-2">
+            <button
+              onClick={() => {
+                onChangeStatus(user.id, UserStatus.Active);
+                setShowStatusMenu(false);
+              }}
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-overlay rounded-md transition-colors flex items-center space-x-2 ${
+                user.status === UserStatus.Active ? 'bg-overlay text-glow-purple font-semibold' : 'text-text-primary'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              <span>Aktiv</span>
+            </button>
+            <button
+              onClick={() => {
+                onChangeStatus(user.id, UserStatus.Inactive);
+                setShowStatusMenu(false);
+              }}
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-overlay rounded-md transition-colors flex items-center space-x-2 ${
+                user.status === UserStatus.Inactive ? 'bg-overlay text-glow-purple font-semibold' : 'text-text-primary'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              <span>Deaktiviert</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -185,7 +233,7 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onChangeUserStatus, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels' | 'calendar'>('users');
@@ -278,7 +326,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
 
         {/* User List */}
         <div>
-          {users.map(user => <UserRow key={user.id} user={user} roles={roles} onEdit={setEditingUser} onDelete={onDeleteUser} onChangeRole={onChangeRole} />)}
+          {users.map(user => <UserRow key={user.id} user={user} roles={roles} onEdit={setEditingUser} onDelete={onDeleteUser} onChangeRole={onChangeRole} onChangeStatus={onChangeUserStatus} />)}
         </div>
       </div>
 
