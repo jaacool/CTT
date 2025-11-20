@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TimeEntry, User } from '../types';
 import { formatTime } from './utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface TimeTrackingProps {
   timeEntries: TimeEntry[];
@@ -188,6 +189,33 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     
     return map;
   }, [weekTimeEntries, weekDays]);
+
+  // Prepare chart data for week view
+  const weekChartData = useMemo(() => {
+    return weekDays.map(day => {
+      const dateKey = day.toISOString().split('T')[0];
+      const dayEntries = entriesByDay.get(dateKey) || [];
+      const dayTotal = dayEntries.reduce((sum, te) => sum + te.duration, 0);
+      const dayHours = dayTotal / 3600;
+      const targetHours = 8; // 8h Soll pro Arbeitstag
+      
+      return {
+        day: day.toLocaleDateString('de-DE', { weekday: 'short' }),
+        hours: Math.round(dayHours * 10) / 10,
+        targetHours: targetHours,
+        entryCount: dayEntries.length
+      };
+    });
+  }, [weekDays, entriesByDay]);
+
+  // Colors matching TimeStatistics
+  const COLORS = {
+    worked: 'rgb(168, 85, 247)', // purple
+    average: 'rgb(245, 158, 11)', // amber
+    target: 'rgb(16, 185, 129)', // green
+    border: 'rgba(255, 255, 255, 0.1)',
+    textSecondary: 'rgba(255, 255, 255, 0.6)'
+  };
 
   // Navigation
   const goToPreviousWeek = () => {
@@ -678,42 +706,43 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     </span>
                   </div>
                 </div>
-                
-                {/* Tages-Balken */}
-                <div className="space-y-2">
-                  {weekDays.map((day, index) => {
-                    const dateKey = day.toISOString().split('T')[0];
-                    const dayEntries = entriesByDay.get(dateKey) || [];
-                    const dayTotal = dayEntries.reduce((sum, te) => sum + te.duration, 0);
-                    const dayHours = dayTotal / 3600;
-                    const maxHours = 12;
-                    const percentage = Math.min((dayHours / maxHours) * 100, 100);
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    
-                    return (
-                      <div key={index} className={`flex items-center space-x-3 ${isToday ? 'bg-glow-cyan/10 rounded-lg p-2' : ''}`}>
-                        <div className="w-12 text-xs text-text-secondary font-medium">
-                          {day.toLocaleDateString('de-DE', { weekday: 'short' })}
-                        </div>
-                        <div className="w-16 text-xs text-text-secondary">
-                          {day.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
-                        </div>
-                        <div className="flex-1 bg-overlay rounded-full h-6 relative overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-glow-purple to-glow-cyan transition-all duration-300"
-                            style={{ width: `${percentage}%` }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text-primary">
-                            {formatTime(dayTotal)}
-                          </div>
-                        </div>
-                        <div className="w-16 text-xs text-text-secondary text-right">
-                          {dayEntries.length} {dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+
+                {/* Chart */}
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={weekChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+                    <XAxis 
+                      dataKey="day" 
+                      stroke={COLORS.textSecondary}
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis 
+                      stroke={COLORS.textSecondary}
+                      style={{ fontSize: '12px' }}
+                      label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)', 
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <ReferenceLine 
+                      y={weekAverageSeconds / 3600} 
+                      stroke={COLORS.average} 
+                      strokeDasharray="5 5" 
+                      label={{ value: 'Durchschnitt', fill: COLORS.average, fontSize: 12 }}
+                    />
+                    <ReferenceLine 
+                      y={8} 
+                      stroke={COLORS.target} 
+                      strokeDasharray="5 5" 
+                      label={{ value: 'Soll', fill: COLORS.target, fontSize: 12 }}
+                    />
+                    <Bar dataKey="hours" fill={COLORS.worked} name="Gearbeitete Stunden" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
               
               {/* Zeiteinträge nach Tag */}
