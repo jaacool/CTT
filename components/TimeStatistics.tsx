@@ -528,51 +528,50 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
 
       {/* Wochenansicht */}
       <div className="bg-surface rounded-lg p-6 border border-border">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePreviousWeek}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-              <span className="text-text-primary font-medium min-w-[250px] text-center">
-                KW {weekNumber} | {formatDateRange(selectedWeek, weekEnd)}
-              </span>
-              <button
-                onClick={handleNextWeek}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Header mit Titel und Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePreviousWeek}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+            <span className="text-text-primary font-medium min-w-[250px] text-center">
+              KW {weekNumber} | {formatDateRange(selectedWeek, weekEnd)}
+            </span>
+            <button
+              onClick={handleNextWeek}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
           </div>
-          
-          {/* Statistik Summary */}
-          <div className="flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
-              <span className="text-text-secondary">Gesamt:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateTotalHours(aggregateByWeek(timeEntries, selectedUser, selectedWeek))}h
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
-              <span className="text-text-secondary">Durchschnitt:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateAverageForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
-              <span className="text-text-secondary">Soll:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateAverageTargetForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
-              </span>
-            </div>
+        </div>
+        
+        {/* Statistik Summary */}
+        <div className="flex items-center justify-center space-x-6 text-sm mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
+            <span className="text-text-secondary">Gesamt:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateTotalHours(aggregateByWeek(timeEntries, selectedUser, selectedWeek))}h
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
+            <span className="text-text-secondary">Durchschnitt:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateAverageForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
+            <span className="text-text-secondary">Soll:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateAverageTargetForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
+            </span>
           </div>
         </div>
 
