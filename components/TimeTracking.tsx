@@ -342,25 +342,6 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
           </div>
         </div>
 
-        {/* User Selection für Admins */}
-        {isAdmin && (
-          <div className="flex items-center space-x-2 overflow-x-auto">
-            {users.filter(user => user.isActive !== false).map(user => (
-              <button
-                key={user.id}
-                onClick={() => setSelectedUser(user)}
-                className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                  selectedUser.id === user.id
-                    ? 'bg-glow-purple text-white'
-                    : 'bg-surface text-text-secondary hover:bg-overlay border border-border'
-                }`}
-              >
-                {user.name}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="flex items-center space-x-2">
           <button
@@ -418,6 +399,27 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
           </button>
         </div>
       </div>
+
+      {/* User Selection für Admins - Eigene Zeile */}
+      {isAdmin && (
+        <div className="px-6 py-3 border-b border-border bg-surface/50">
+          <div className="flex items-center space-x-2 overflow-x-auto">
+            {users.filter(user => user.isActive !== false).map(user => (
+              <button
+                key={user.id}
+                onClick={() => setSelectedUser(user)}
+                className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+                  selectedUser.id === user.id
+                    ? 'bg-glow-purple text-white'
+                    : 'bg-surface text-text-secondary hover:bg-overlay border border-border'
+                }`}
+              >
+                {user.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       {viewMode === 'week' && (
