@@ -129,10 +129,10 @@ const UserRow: React.FC<{
       </div>
 
       {/* E-Mail */}
-      <div className="col-span-3 text-text-secondary">{user.email}</div>
+      <div className="col-span-2 text-text-secondary truncate">{user.email}</div>
 
       {/* Status */}
-      <div className="col-span-1 relative" ref={statusMenuRef}>
+      <div className="col-span-2 relative" ref={statusMenuRef}>
         <button
           onClick={() => setShowStatusMenu(!showStatusMenu)}
           className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity ${
@@ -319,8 +319,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         <div className="grid grid-cols-12 gap-4 py-2 px-4 text-xs font-semibold text-text-secondary border-b border-overlay/50">
           <div className="col-span-4">Teams</div>
           <div className="col-span-3">Rollen</div>
-          <div className="col-span-3">E-Mail</div>
-          <div className="col-span-1">Status</div>
+          <div className="col-span-2">E-Mail</div>
+          <div className="col-span-2">Status</div>
           <div className="col-span-1"></div>
         </div>
 
