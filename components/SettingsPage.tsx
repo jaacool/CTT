@@ -8,6 +8,7 @@ import { SupabaseSettings } from './SupabaseSettings';
 import { ChannelManagement } from './ChannelManagement';
 import { ImportResult } from '../utils/timeReportImportExport';
 import { useGlow } from '../contexts/GlowContext';
+import { GermanState, GERMAN_STATE_NAMES } from '../utils/holidays';
 
 interface SettingsPageProps {
   users: User[];
@@ -25,6 +26,10 @@ interface SettingsPageProps {
   onCreateChannel?: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
   onUpdateChannel?: (channelId: string, name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
   onDeleteChannel?: (channelId: string) => void;
+  selectedState?: GermanState;
+  onSelectedStateChange: (state: GermanState | undefined) => void;
+  separateHomeOffice: boolean;
+  onSeparateHomeOfficeChange: (value: boolean) => void;
 }
 
 const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => void; onDelete: (userId: string) => void; onChangeRole: (userId: string, roleId: string) => void }> = ({ user, roles, onEdit, onDelete, onChangeRole }) => {
@@ -180,11 +185,13 @@ const UserRow: React.FC<{ user: User; roles: Role[]; onEdit: (user: User) => voi
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels' | 'calendar'>('users');
   const { themeMode, setThemeMode } = useGlow();
+  
+  const isAdmin = currentUser?.role === 'role-1';
 
   return (
     <div className="p-8 w-full">
@@ -236,6 +243,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
           }`}
         >
           Channels
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'calendar' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
+          }`}
+        >
+          Kalender
         </button>
       </div>
 
@@ -319,6 +334,61 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
             Channel-Verwaltung nicht verfügbar
           </div>
         )
+      ) : activeTab === 'calendar' ? (
+        <div>
+          <h1 className="text-2xl font-bold glow-text mb-8">Kalender-Einstellungen</h1>
+          <div className="space-y-6">
+            {/* Feiertage */}
+            <div className="glow-card rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-text-primary mb-1">Feiertage anzeigen</h3>
+                  <p className="text-sm text-text-secondary">
+                    Wähle ein Bundesland für regionale Feiertage im Kalender
+                  </p>
+                </div>
+                <select
+                  value={selectedState || ''}
+                  onChange={(e) => onSelectedStateChange(e.target.value as GermanState || undefined)}
+                  className="bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-purple outline-none"
+                >
+                  <option value="">Keine Feiertage</option>
+                  {(Object.keys(GERMAN_STATE_NAMES) as GermanState[]).map((state) => (
+                    <option key={state} value={state}>
+                      {GERMAN_STATE_NAMES[state]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Home Office Ansicht - Nur für Admins */}
+            {isAdmin && (
+              <div className="glow-card rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-text-primary mb-1">Home Office Ansicht</h3>
+                    <p className="text-sm text-text-secondary">
+                      Separate Anzeige für Home Office in der Admin-Kalenderansicht
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onSeparateHomeOfficeChange(!separateHomeOffice)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      separateHomeOffice ? 'bg-glow-purple' : 'bg-overlay'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        separateHomeOffice ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div>
           <h1 className="text-2xl font-bold glow-text mb-8">Erscheinungsbild</h1>

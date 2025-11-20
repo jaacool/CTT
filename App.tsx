@@ -91,6 +91,10 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
   
+  // Kalender-Einstellungen
+  const [selectedState, setSelectedState] = useState<import('./utils/holidays').GermanState | undefined>('BE'); // Default: Berlin
+  const [separateHomeOffice, setSeparateHomeOffice] = useState(false);
+  
   // Chat State
   const [showChat, setShowChat] = useState(false);
   const [chatChannels, setChatChannels] = useState<ChatChannel[]>([]);
@@ -1493,6 +1497,8 @@ const App: React.FC = () => {
               setShowNotifications(true);
             }}
             isAdmin={currentUser?.role === 'role-1'}
+            selectedState={selectedState}
+            separateHomeOffice={separateHomeOffice}
           />
         ) : showTimeTracking ? (
           <TimeTracking
@@ -1550,6 +1556,7 @@ const App: React.FC = () => {
               roles={MOCK_ROLES}
               timeEntries={timeEntries}
               projects={projects}
+              absenceRequests={absenceRequests}
               onAddUser={handleAddUser}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
@@ -1559,6 +1566,10 @@ const App: React.FC = () => {
               onCreateChannel={handleCreateChannel}
               onUpdateChannel={handleUpdateChannel}
               onDeleteChannel={handleDeleteChannel}
+              selectedState={selectedState}
+              onSelectedStateChange={setSelectedState}
+              separateHomeOffice={separateHomeOffice}
+              onSeparateHomeOfficeChange={setSeparateHomeOffice}
               onImportComplete={(result) => {
                 // Merge neue Projekte
                 const updatedProjects = [...projects];

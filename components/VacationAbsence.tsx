@@ -18,6 +18,8 @@ interface VacationAbsenceProps {
   onOpenRequestChat: (request: AbsenceRequest) => void;
   onMarkSickLeaveReported: (requestId: string) => void;
   isAdmin: boolean;
+  selectedState?: GermanState;
+  separateHomeOffice: boolean;
 }
 
 const getAbsenceTypeIcon = (type: AbsenceType) => {
@@ -795,6 +797,8 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   onOpenRequestChat,
   onMarkSickLeaveReported,
   isAdmin,
+  selectedState,
+  separateHomeOffice,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [prefilledDates, setPrefilledDates] = useState<{ start: Date; end: Date } | null>(null);
@@ -802,15 +806,10 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<AbsenceStatus | 'all'>('all');
   const [filterUser, setFilterUser] = useState<string | 'all'>('all');
-  const [selectedState, setSelectedState] = useState<GermanState | undefined>('BE'); // Default: Berlin
   const [showCompletedRequests, setShowCompletedRequests] = useState(false);
   
   // Admin Tab-System: 'admin' für Admin-Ansicht, oder User-ID für User-spezifische Ansicht
   const [selectedUserTab, setSelectedUserTab] = useState<'admin' | string>(isAdmin ? 'admin' : currentUser.id);
-  
-  // Normale User haben separierte Home Office Ansicht, Admins haben integrierte Ansicht
-  // Bei User-Tab-Auswahl: separierte Ansicht wie normale User
-  const [separateHomeOffice, setSeparateHomeOffice] = useState(!isAdmin || selectedUserTab !== 'admin');
   
   // Filtere Abwesenheiten basierend auf Tab-Auswahl
   const visibleAbsenceRequests = useMemo(() => {
@@ -976,49 +975,6 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
         </div>
       </div>
 
-      {/* Bundesland Filter & View Toggle */}
-      <div className="bg-surface rounded-xl p-4 border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-text-primary mb-1">Feiertage anzeigen</h3>
-            <p className="text-xs text-text-secondary">Wähle ein Bundesland für regionale Feiertage</p>
-          </div>
-          <select
-            value={selectedState || ''}
-            onChange={(e) => setSelectedState(e.target.value as GermanState || undefined)}
-            className="bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-purple outline-none"
-          >
-            <option value="">Keine Feiertage</option>
-            {(Object.keys(GERMAN_STATE_NAMES) as GermanState[]).map((state) => (
-              <option key={state} value={state}>
-                {GERMAN_STATE_NAMES[state]}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Home Office View Toggle - Nur für Admins in Admin-Ansicht */}
-        {isAdmin && selectedUserTab === 'admin' && (
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-text-primary mb-1">Home Office Ansicht</h3>
-              <p className="text-xs text-text-secondary">Separate Anzeige für Home Office</p>
-            </div>
-            <button
-              onClick={() => setSeparateHomeOffice(!separateHomeOffice)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                separateHomeOffice ? 'bg-glow-purple' : 'bg-overlay'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  separateHomeOffice ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Admin User Tabs */}
       {isAdmin && (
