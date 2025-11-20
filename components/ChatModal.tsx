@@ -261,62 +261,69 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           `}>
             {viewMode === ChatViewMode.ByProject ? (
               <>
-                {/* Search */}
+                {/* Project Search & Selector */}
                 <div className="mb-3 md:mb-4">
+                  <div className="text-xs text-text-secondary mb-2">Nach Projekt suchen</div>
                   <input
                     type="text"
-                    placeholder="Channels durchsuchen..."
+                    placeholder="Projekt suchen..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                    className="w-full px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple mb-2"
                   />
-                </div>
-
-                {/* Project Selector */}
-                <div className="mb-3 md:mb-4">
-                  <div className="text-xs text-text-secondary mb-2">Projekt (optional)</div>
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                      className="w-full flex items-center justify-between bg-overlay p-2 rounded-lg hover-glow"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <FolderIcon className="w-4 h-4 text-text-secondary" />
-                        <span className="text-text-primary text-sm truncate">
-                          {currentProject?.name || 'Ohne Projekt'}
-                        </span>
-                      </div>
-                      <ChevronDownIcon className="w-4 h-4 text-text-secondary" />
-                    </button>
-                    
-                    {showProjectDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-overlay rounded-lg shadow-lg border border-border max-h-48 overflow-y-auto z-10">
-                        <button
-                          onClick={() => {
-                            setUserRemovedProject(true);
-                            onSwitchProject('');
-                            setShowProjectDropdown(false);
-                          }}
-                          className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left border-b border-border"
-                        >
-                          <span className="text-text-secondary text-sm italic">Ohne Projekt</span>
-                        </button>
-                        {projects.map(project => (
+                  
+                  {/* Filtered Projects List */}
+                  <div className="space-y-1 max-h-64 overflow-y-auto">
+                    {(() => {
+                      const filteredProjects = projects.filter(p => 
+                        !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                      
+                      return (
+                        <>
                           <button
-                            key={project.id}
                             onClick={() => {
-                              setUserRemovedProject(false);
-                              onSwitchProject(project.id);
-                              setShowProjectDropdown(false);
+                              setUserRemovedProject(true);
+                              onSwitchProject('');
+                              setSearchQuery('');
                             }}
-                            className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left"
+                            className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                              !currentProject
+                                ? 'glow-button text-text-primary'
+                                : 'hover-glow text-text-secondary'
+                            }`}
                           >
-                            <FolderIcon className="w-4 h-4 text-text-secondary" />
-                            <span className="text-text-primary text-sm truncate">{project.name}</span>
+                            <FolderIcon className="w-4 h-4" />
+                            <span className="text-sm italic">Ohne Projekt</span>
                           </button>
-                        ))}
-                      </div>
-                    )}
+                          
+                          {filteredProjects.length === 0 ? (
+                            <div className="text-text-secondary text-xs italic p-2">
+                              Keine Projekte gefunden
+                            </div>
+                          ) : (
+                            filteredProjects.map(project => (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  setUserRemovedProject(false);
+                                  onSwitchProject(project.id);
+                                  setSearchQuery('');
+                                }}
+                                className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                                  currentProject?.id === project.id
+                                    ? 'glow-button text-text-primary'
+                                    : 'hover-glow text-text-secondary'
+                                }`}
+                              >
+                                <FolderIcon className="w-4 h-4" />
+                                <span className="text-sm truncate">{project.name}</span>
+                              </button>
+                            ))
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
