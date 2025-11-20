@@ -1314,6 +1314,21 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const handleChangeUserStatus = useCallback((userId: string, status: UserStatus) => {
+    setUsers(prev => {
+      const updated = prev.map(u => {
+        if (u.id === userId) {
+          const updatedUser = { ...u, status };
+          // Sync to Supabase
+          saveUser(updatedUser);
+          return updatedUser;
+        }
+        return u;
+      });
+      return updated;
+    });
+  }, []);
+
   const handleChangeCurrentUserRole = useCallback((roleId: string) => {
     if (currentUser) {
       const updatedUser = { ...currentUser, role: roleId };
@@ -1563,6 +1578,7 @@ const App: React.FC = () => {
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
               onChangeRole={handleChangeRole}
+              onChangeUserStatus={handleChangeUserStatus}
               chatChannels={chatChannels}
               currentUser={currentUser || undefined}
               onCreateChannel={handleCreateChannel}
