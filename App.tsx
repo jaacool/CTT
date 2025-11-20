@@ -12,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { ProjectsOverview } from './components/ProjectsOverview';
 import { VacationAbsence } from './components/VacationAbsence';
 import { TimeTracking } from './components/TimeTracking';
+import { TimeStatistics } from './components/TimeStatistics';
 import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
@@ -85,6 +86,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [showTimeTracking, setShowTimeTracking] = useState(false);
+  const [showTimeStatistics, setShowTimeStatistics] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -527,6 +529,7 @@ const App: React.FC = () => {
     setShowProjectsOverview(false);
     setShowVacationAbsence(false);
     setShowTimeTracking(false);
+    setShowTimeStatistics(false);
     setShowSettings(false);
   }, [projects]);
 
@@ -1383,6 +1386,8 @@ const App: React.FC = () => {
           setShowDashboard(true);
           setShowProjectsOverview(false);
           setShowVacationAbsence(false);
+          setShowTimeTracking(false);
+          setShowTimeStatistics(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -1392,6 +1397,8 @@ const App: React.FC = () => {
           setShowProjectsOverview(true);
           setShowDashboard(false);
           setShowVacationAbsence(false);
+          setShowTimeTracking(false);
+          setShowTimeStatistics(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -1402,6 +1409,7 @@ const App: React.FC = () => {
           setShowDashboard(false);
           setShowProjectsOverview(false);
           setShowTimeTracking(false);
+          setShowTimeStatistics(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -1412,6 +1420,18 @@ const App: React.FC = () => {
           setShowDashboard(false);
           setShowProjectsOverview(false);
           setShowVacationAbsence(false);
+          setShowTimeStatistics(false);
+          setSelectedProject(null);
+          setSelectedTask(null);
+          setShowSettings(false);
+          setIsSidebarOpen(false); // Close sidebar
+        }}
+        onSelectTimeStatistics={() => {
+          setShowTimeStatistics(true);
+          setShowDashboard(false);
+          setShowProjectsOverview(false);
+          setShowVacationAbsence(false);
+          setShowTimeTracking(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setShowSettings(false);
@@ -1423,6 +1443,7 @@ const App: React.FC = () => {
           setShowProjectsOverview(false);
           setShowVacationAbsence(false);
           setShowTimeTracking(false);
+          setShowTimeStatistics(false);
           setSelectedProject(null);
           setSelectedTask(null);
           setIsSidebarOpen(false); // Close sidebar
@@ -1476,6 +1497,13 @@ const App: React.FC = () => {
         ) : showTimeTracking ? (
           <TimeTracking
             timeEntries={timeEntries}
+            currentUser={currentUser}
+          />
+        ) : showTimeStatistics ? (
+          <TimeStatistics
+            users={users}
+            timeEntries={timeEntries}
+            absenceRequests={absenceRequests}
             currentUser={currentUser}
           />
         ) : selectedProject ? (
