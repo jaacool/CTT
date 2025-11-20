@@ -996,8 +996,8 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
               </div>
             </button>
             
-            {/* User Tabs */}
-            {allUsers.map(user => (
+            {/* User Tabs - Nur aktive User */}
+            {allUsers.filter(user => user.isActive !== false).map(user => (
               <button
                 key={user.id}
                 onClick={() => setSelectedUserTab(user.id)}
