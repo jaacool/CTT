@@ -143,13 +143,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
                 </svg>
                 <span>Meine Zeiten</span>
             </button>
-            <button 
-                onClick={onSelectTimeStatistics}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
-            >
-                <ChartIcon className="w-5 h-5" />
-                <span>Zeitauswertungen</span>
-            </button>
+            {/* Zeitauswertungen nur für Admins */}
+            {currentUser?.role === 'role-1' && (
+              <button 
+                  onClick={onSelectTimeStatistics}
+                  className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
+              >
+                  <ChartIcon className="w-5 h-5" />
+                  <span>Zeitauswertungen</span>
+              </button>
+            )}
             <button 
                 onClick={onSelectProjectsOverview}
                 className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
