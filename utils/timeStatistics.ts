@@ -84,23 +84,28 @@ export function aggregateByYear(
     'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
   ];
   
+  const now = new Date();
+  
   const result = months.map((month, index) => {
     const monthStart = new Date(year, index, 1);
     const monthEnd = new Date(year, index + 1, 0, 23, 59, 59);
+    
+    // Begrenze auf aktuelles Datum, wenn Monat in der Zukunft liegt
+    const effectiveEnd = monthEnd > now ? now : monthEnd;
     
     // Filtere TimeEntries für diesen Monat und User
     const monthEntries = timeEntries.filter(entry => {
       if (entry.user.id !== user.id) return false;
       const entryDate = new Date(entry.startTime);
-      return entryDate >= monthStart && entryDate <= monthEnd;
+      return entryDate >= monthStart && entryDate <= effectiveEnd;
     });
     
     // Summiere Stunden
     const totalSeconds = monthEntries.reduce((sum, entry) => sum + entry.duration, 0);
     const hours = totalSeconds / 3600;
     
-    // Berechne Soll-Stunden (ohne Abwesenheiten hier, da wir keine haben)
-    const targetHours = calculateTargetHours(user, monthStart, monthEnd, []);
+    // Berechne Soll-Stunden nur bis zum aktuellen Datum
+    const targetHours = calculateTargetHours(user, monthStart, effectiveEnd, []);
     
     return {
       month,
@@ -123,6 +128,7 @@ export function aggregateByMonth(
 ): { week: string; hours: number; targetHours: number }[] {
   const monthStart = new Date(year, month, 1);
   const monthEnd = new Date(year, month + 1, 0);
+  const now = new Date();
   
   const weeks: { week: string; hours: number; targetHours: number }[] = [];
   
@@ -134,7 +140,10 @@ export function aggregateByMonth(
     weekEnd.setDate(weekEnd.getDate() + 6);
     
     // Begrenze auf Monatsende
-    const effectiveEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+    let effectiveEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+    
+    // Begrenze auf aktuelles Datum
+    effectiveEnd = effectiveEnd > now ? now : effectiveEnd;
     
     // Filtere TimeEntries für diese Woche und User
     const weekEntries = timeEntries.filter(entry => {
@@ -147,7 +156,7 @@ export function aggregateByMonth(
     const totalSeconds = weekEntries.reduce((sum, entry) => sum + entry.duration, 0);
     const hours = totalSeconds / 3600;
     
-    // Berechne Soll-Stunden
+    // Berechne Soll-Stunden nur bis zum aktuellen Datum
     const targetHours = calculateTargetHours(user, weekStart, effectiveEnd, []);
     
     weeks.push({
@@ -172,6 +181,7 @@ export function aggregateByWeek(
   weekStart: Date
 ): { day: string; hours: number; targetHours: number }[] {
   const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const now = new Date();
   
   const result = [];
   
@@ -179,8 +189,11 @@ export function aggregateByWeek(
     const dayDate = new Date(weekStart);
     dayDate.setDate(dayDate.getDate() + i);
     
-    const dayEnd = new Date(dayDate);
+    let dayEnd = new Date(dayDate);
     dayEnd.setHours(23, 59, 59, 999);
+    
+    // Begrenze auf aktuelles Datum
+    dayEnd = dayEnd > now ? now : dayEnd;
     
     // Filtere TimeEntries für diesen Tag und User
     const dayEntries = timeEntries.filter(entry => {
@@ -193,7 +206,7 @@ export function aggregateByWeek(
     const totalSeconds = dayEntries.reduce((sum, entry) => sum + entry.duration, 0);
     const hours = totalSeconds / 3600;
     
-    // Berechne Soll-Stunden
+    // Berechne Soll-Stunden nur bis zum aktuellen Datum
     const targetHours = calculateTargetHours(user, dayDate, dayEnd, []);
     
     result.push({
