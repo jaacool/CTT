@@ -73,7 +73,34 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   const weekData = useMemo(() => {
     // Wenn Projektfilter aktiv, verwende gefilterte Einträge, sonst alle
     const entriesToAggregate = projectFilter ? userTimeEntries : timeEntries;
-    return aggregateByWeek(entriesToAggregate, currentUser, selectedWeek);
+    
+    console.log('🔍 TimeTracking weekData Debug:');
+    console.log('  Total timeEntries:', timeEntries.length);
+    console.log('  User timeEntries:', userTimeEntries.length);
+    console.log('  Entries to aggregate:', entriesToAggregate.length);
+    console.log('  Current user:', currentUser?.name, currentUser?.id);
+    console.log('  Selected week:', selectedWeek.toISOString());
+    console.log('  Project filter:', projectFilter);
+    
+    // Sample einige Einträge
+    if (entriesToAggregate.length > 0) {
+      console.log('  Sample entries (first 3):');
+      entriesToAggregate.slice(0, 3).forEach(entry => {
+        console.log('    -', {
+          user: entry.user.name,
+          userId: entry.user.id,
+          startTime: entry.startTime,
+          duration: entry.duration,
+          project: entry.projectName
+        });
+      });
+    }
+    
+    const result = aggregateByWeek(entriesToAggregate, currentUser, selectedWeek);
+    console.log('  Result from aggregateByWeek:', result);
+    console.log('  Days with hours > 0:', result.filter(d => d.hours > 0).length);
+    
+    return result;
   }, [timeEntries, userTimeEntries, currentUser, selectedWeek, projectFilter]);
 
   // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
