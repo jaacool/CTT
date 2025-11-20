@@ -846,6 +846,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   placeholder={`Nachricht in #${currentChannel?.name || '...'}`}
                   className="flex-1 bg-overlay text-text-primary border border-border rounded-lg px-3 md:px-4 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-glow-purple"
                   disabled={!currentChannel}
+                  enterKeyHint="send"
+                  style={{ fontSize: '16px' }}
                 />
                 <button
                   onClick={handleSendMessage}
