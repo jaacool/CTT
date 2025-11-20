@@ -74,8 +74,13 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   }, [timeEntries, currentUser, projectFilter]);
 
   // Verwende aggregateByWeek aus timeStatistics.ts
+  // Wenn Projektfilter aktiv ist, müssen wir die gefilterten Einträge verwenden
   const weekData = useMemo(() => {
-    return aggregateByWeek(projectFilter ? userTimeEntries : timeEntries, currentUser, weekStart);
+    const entriesToUse = projectFilter ? userTimeEntries : timeEntries;
+    console.log('📊 WeekData - Entries to use:', entriesToUse.length, 'ProjectFilter:', projectFilter);
+    const result = aggregateByWeek(entriesToUse, currentUser, weekStart);
+    console.log('📊 WeekData result:', result);
+    return result;
   }, [timeEntries, userTimeEntries, currentUser, weekStart, projectFilter]);
 
   // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
