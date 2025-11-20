@@ -14,12 +14,15 @@ interface TimeTrackingProps {
   timeEntries: TimeEntry[];
   currentUser: User;
   absenceRequests: AbsenceRequest[];
+  users: User[];
 }
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests }) => {
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [selectedUser, setSelectedUser] = useState<User>(currentUser);
+  const isAdmin = currentUser?.role === 'role-1';
   // Setze auf heute, damit wir die aktuelle Woche sehen
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
@@ -54,9 +57,9 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   const weekNumber = getWeekNumber(currentDate);
   const selectedWeek = getWeekStart(currentDate);
 
-  // Filtere TimeEntries für aktuellen User
+  // Filtere TimeEntries für ausgewählten User (Admin kann User wechseln)
   const userTimeEntries = useMemo(() => {
-    let filtered = timeEntries.filter(te => te.user.id === currentUser.id);
+    let filtered = timeEntries.filter(te => te.user.id === selectedUser.id);
     
     // Projekt-Filter anwenden
     if (projectFilter) {
@@ -66,11 +69,10 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     }
     
     return filtered;
-  }, [timeEntries, currentUser, projectFilter]);
+  }, [timeEntries, selectedUser, projectFilter]);
 
   // Verwende aggregateByWeek für Wochenansicht
-  // WICHTIG: TimeTracking zeigt IMMER nur den aktuell angemeldeten User (currentUser)
-  // TimeStatistics erlaubt User-Auswahl (nur für Admins)
+  // Admins können User wechseln, normale User sehen nur ihre eigenen Daten
   const weekData = useMemo(() => {
     // Wenn Projektfilter aktiv, verwende gefilterte Einträge, sonst alle
     const entriesToAggregate = projectFilter ? userTimeEntries : timeEntries;
@@ -97,12 +99,12 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
       });
     }
     
-    const result = aggregateByWeek(entriesToAggregate, currentUser, selectedWeek);
+    const result = aggregateByWeek(entriesToAggregate, selectedUser, selectedWeek);
     console.log('  Result from aggregateByWeek:', result);
     console.log('  Days with hours > 0:', result.filter(d => d.hours > 0).length);
     
     return result;
-  }, [timeEntries, userTimeEntries, currentUser, selectedWeek, projectFilter]);
+  }, [timeEntries, userTimeEntries, selectedUser, selectedWeek, projectFilter]);
 
   // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
   const weekTotalHoursStr = useMemo(() => {
@@ -110,12 +112,12 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   }, [weekData]);
 
   const weekAverageHoursStr = useMemo(() => {
-    return calculateAverageForWorkDays(weekData, currentUser, selectedWeek);
-  }, [weekData, currentUser, selectedWeek]);
+    return calculateAverageForWorkDays(weekData, selectedUser, selectedWeek);
+  }, [weekData, selectedUser, selectedWeek]);
 
   const weekTargetHoursStr = useMemo(() => {
-    return calculateAverageTargetForWorkDays(weekData, currentUser, selectedWeek);
-  }, [weekData, currentUser, selectedWeek]);
+    return calculateAverageTargetForWorkDays(weekData, selectedUser, selectedWeek);
+  }, [weekData, selectedUser, selectedWeek]);
 
   // Als Zahlen für Berechnungen
   const weekTotalHours = parseFloat(weekTotalHoursStr);
@@ -339,6 +341,25 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
             {weekTotalHoursStr}h
           </div>
         </div>
+
+        {/* User Selection für Admins */}
+        {isAdmin && (
+          <div className="flex items-center space-x-2 overflow-x-auto">
+            {users.map(user => (
+              <button
+                key={user.id}
+                onClick={() => setSelectedUser(user)}
+                className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+                  selectedUser.id === user.id
+                    ? 'bg-glow-purple text-white'
+                    : 'bg-surface text-text-secondary hover:bg-overlay border border-border'
+                }`}
+              >
+                {user.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center space-x-2">

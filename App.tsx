@@ -1505,6 +1505,7 @@ const App: React.FC = () => {
             timeEntries={timeEntries}
             currentUser={currentUser}
             absenceRequests={absenceRequests}
+            users={users}
           />
         ) : showTimeStatistics ? (
           <TimeStatistics

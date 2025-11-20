@@ -148,13 +148,13 @@ export function loadFromLocalStorage(): BackupData | null {
   try {
     const base64 = localStorage.getItem('ctt_backup');
     if (!base64) {
-      console.log('ℹ️ Kein localStorage Backup gefunden');
+      console.log('ℹ️ Keine Daten in localStorage gefunden');
       return null;
     }
 
-    // Validiere Base64 String
-    if (!base64 || typeof base64 !== 'string' || base64.length === 0) {
-      console.warn('⚠️ Ungültiger Base64 String in localStorage');
+    // Validiere Base64 Format
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
+      console.warn('⚠️ Ungültiges Base64 Format in localStorage, lösche korrupte Daten');
       localStorage.removeItem('ctt_backup');
       return null;
     }
@@ -171,8 +171,9 @@ export function loadFromLocalStorage(): BackupData | null {
           chunks.push(decoded.charCodeAt(j));
         }
       } catch (e) {
-        console.error('❌ Fehler beim Dekodieren von Base64 Chunk:', e);
-        throw new Error('Base64 decode failed');
+        console.warn('⚠️ Fehler beim Dekodieren von Base64 Chunk, lösche korrupte Daten');
+        localStorage.removeItem('ctt_backup');
+        return null;
       }
     }
     
