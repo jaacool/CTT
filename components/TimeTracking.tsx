@@ -12,6 +12,7 @@ type ViewMode = 'overview' | 'day' | 'week';
 export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [projectFilter, setProjectFilter] = useState<string>('');
 
   // Berechne Wochennummer
   const getWeekNumber = (date: Date): number => {
@@ -42,7 +43,15 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   const userTimeEntries = useMemo(() => {
     console.log('🔍 Filtere TimeEntries für User:', currentUser.name, currentUser.id);
     console.log('Total TimeEntries:', timeEntries.length);
-    const filtered = timeEntries.filter(te => te.user.id === currentUser.id);
+    let filtered = timeEntries.filter(te => te.user.id === currentUser.id);
+    
+    // Projekt-Filter anwenden
+    if (projectFilter) {
+      filtered = filtered.filter(te => 
+        te.projectName.toLowerCase().includes(projectFilter.toLowerCase())
+      );
+    }
+    
     console.log('Gefilterte TimeEntries für User:', filtered.length);
     console.log('Erste 3 Einträge:', filtered.slice(0, 3).map(te => ({
       id: te.id,
@@ -52,7 +61,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
       task: te.taskTitle
     })));
     return filtered;
-  }, [timeEntries, currentUser]);
+  }, [timeEntries, currentUser, projectFilter]);
 
   // Filtere TimeEntries für aktuelle Woche
   const weekTimeEntries = useMemo(() => {
@@ -73,6 +82,19 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     console.log('📊 Gesamtzeit berechnet:', total, 'Sekunden =', Math.floor(total / 3600), 'Stunden');
     return total;
   }, [userTimeEntries]);
+
+  // Berechne abrechenbare und nicht abrechenbare Zeit
+  const billableStats = useMemo(() => {
+    const billable = userTimeEntries.filter(te => te.billable).reduce((sum, te) => sum + te.duration, 0);
+    const nonBillable = userTimeEntries.filter(te => !te.billable).reduce((sum, te) => sum + te.duration, 0);
+    return { billable, nonBillable };
+  }, [userTimeEntries]);
+
+  // Hole alle einzigartigen Projektnamen
+  const allProjects = useMemo(() => {
+    const projectSet = new Set(timeEntries.filter(te => te.user.id === currentUser.id).map(te => te.projectName));
+    return Array.from(projectSet).sort();
+  }, [timeEntries, currentUser]);
 
   // Generiere 7 Tage der Woche
   const weekDays = useMemo(() => {
@@ -494,12 +516,148 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
             <div className="max-w-4xl mx-auto space-y-6">
               <h2 className="text-2xl font-bold text-text-primary">Übersicht</h2>
               
-              {/* Gesamtstatistik */}
+              {/* Projekt-Filter */}
+              <div className="bg-surface rounded-lg p-4 border border-border">
+                <label className="block text-sm font-semibold text-text-primary mb-2">Nach Projekt filtern</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Projektname eingeben..."
+                    value={projectFilter}
+                    onChange={(e) => setProjectFilter(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple border border-border"
+                  />
+                  {projectFilter && (
+                    <button
+                      onClick={() => setProjectFilter('')}
+                      className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-secondary hover:text-text-primary transition-colors border border-border"
+                    >
+                      Zurücksetzen
+                    </button>
+                  )}
+                </div>
+                {projectFilter && (
+                  <div className="mt-2 text-xs text-text-secondary">
+                    Zeige {userTimeEntries.length} Einträge für "{projectFilter}"
+                  </div>
+                )}
+              </div>
+              
+              {/* Statistik-Karten */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Gesamtzeit */}
+                <div className="bg-surface rounded-lg p-6 border border-border">
+                  <div className="text-text-secondary mb-2 text-sm">Gesamtzeit</div>
+                  <div className="text-3xl font-bold text-primary">{formatTime(totalSeconds)}</div>
+                  <div className="mt-2 text-text-secondary text-xs">
+                    {userTimeEntries.length} Zeiteinträge
+                  </div>
+                </div>
+                
+                {/* Abrechenbar */}
+                <div className="bg-surface rounded-lg p-6 border border-border">
+                  <div className="text-text-secondary mb-2 text-sm">Abrechenbar</div>
+                  <div className="text-3xl font-bold text-green-500">{formatTime(billableStats.billable)}</div>
+                  <div className="mt-2 text-text-secondary text-xs">
+                    {Math.round((billableStats.billable / (totalSeconds || 1)) * 100)}% der Gesamtzeit
+                  </div>
+                </div>
+                
+                {/* Nicht abrechenbar */}
+                <div className="bg-surface rounded-lg p-6 border border-border">
+                  <div className="text-text-secondary mb-2 text-sm">Nicht abrechenbar</div>
+                  <div className="text-3xl font-bold text-orange-500">{formatTime(billableStats.nonBillable)}</div>
+                  <div className="mt-2 text-text-secondary text-xs">
+                    {Math.round((billableStats.nonBillable / (totalSeconds || 1)) * 100)}% der Gesamtzeit
+                  </div>
+                </div>
+              </div>
+              
+              {/* Wochenansicht */}
               <div className="bg-surface rounded-lg p-6 border border-border">
-                <div className="text-text-secondary mb-2">Gesamtzeit seit Anfang</div>
-                <div className="text-4xl font-bold text-primary">{formatTime(totalSeconds)}</div>
-                <div className="mt-4 text-text-secondary">
-                  {userTimeEntries.length} Zeiteinträge
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-text-primary">Aktuelle Woche</h3>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(currentDate);
+                        newDate.setDate(currentDate.getDate() - 7);
+                        setCurrentDate(newDate);
+                      }}
+                      className="p-2 rounded-md hover-glow text-text-secondary"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <span className="text-text-primary font-medium min-w-[200px] text-center text-sm">
+                      KW {weekNumber} | {weekBounds.start.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} - {weekBounds.end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(currentDate);
+                        newDate.setDate(currentDate.getDate() + 7);
+                        setCurrentDate(newDate);
+                      }}
+                      className="p-2 rounded-md hover-glow text-text-secondary"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Wochenstatistik */}
+                <div className="flex items-center justify-center space-x-6 text-sm mb-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-glow-purple"></div>
+                    <span className="text-text-secondary">Woche:</span>
+                    <span className="text-text-primary font-semibold">{formatTime(weekTotalSeconds)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-text-secondary">Abrechenbar:</span>
+                    <span className="text-text-primary font-semibold">
+                      {formatTime(weekTimeEntries.filter(te => te.billable).reduce((sum, te) => sum + te.duration, 0))}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Tages-Balken */}
+                <div className="space-y-2">
+                  {weekDays.map((day, index) => {
+                    const dateKey = day.toISOString().split('T')[0];
+                    const dayEntries = entriesByDay.get(dateKey) || [];
+                    const dayTotal = dayEntries.reduce((sum, te) => sum + te.duration, 0);
+                    const dayHours = dayTotal / 3600;
+                    const maxHours = 12;
+                    const percentage = Math.min((dayHours / maxHours) * 100, 100);
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    
+                    return (
+                      <div key={index} className={`flex items-center space-x-3 ${isToday ? 'bg-glow-cyan/10 rounded-lg p-2' : ''}`}>
+                        <div className="w-12 text-xs text-text-secondary font-medium">
+                          {day.toLocaleDateString('de-DE', { weekday: 'short' })}
+                        </div>
+                        <div className="w-16 text-xs text-text-secondary">
+                          {day.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                        </div>
+                        <div className="flex-1 bg-overlay rounded-full h-6 relative overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-glow-purple to-glow-cyan transition-all duration-300"
+                            style={{ width: `${percentage}%` }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text-primary">
+                            {formatTime(dayTotal)}
+                          </div>
+                        </div>
+                        <div className="w-16 text-xs text-text-secondary text-right">
+                          {dayEntries.length} {dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               
