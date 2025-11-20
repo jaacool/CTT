@@ -402,15 +402,70 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               </>
             ) : (
               <>
-                {/* Search */}
+                {/* Project Search & Selector */}
                 <div className="mb-3 md:mb-4">
+                  <div className="text-xs text-text-secondary mb-2">Nach Projekt suchen</div>
                   <input
                     type="text"
-                    placeholder="Channels durchsuchen..."
+                    placeholder="Projekt suchen..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                    className="w-full px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple mb-2"
                   />
+                  
+                  {/* Filtered Projects List */}
+                  <div className="space-y-1 max-h-48 overflow-y-auto mb-3">
+                    {(() => {
+                      const filteredProjects = projects.filter(p => 
+                        !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                      
+                      return (
+                        <>
+                          <button
+                            onClick={() => {
+                              setUserRemovedProject(true);
+                              onSwitchProject('');
+                              setSearchQuery('');
+                            }}
+                            className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                              !currentProject
+                                ? 'glow-button text-text-primary'
+                                : 'hover-glow text-text-secondary'
+                            }`}
+                          >
+                            <FolderIcon className="w-4 h-4" />
+                            <span className="text-sm italic">Ohne Projekt</span>
+                          </button>
+                          
+                          {filteredProjects.length === 0 ? (
+                            <div className="text-text-secondary text-xs italic p-2">
+                              Keine Projekte gefunden
+                            </div>
+                          ) : (
+                            filteredProjects.map(project => (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  setUserRemovedProject(false);
+                                  onSwitchProject(project.id);
+                                  setSearchQuery('');
+                                }}
+                                className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                                  currentProject?.id === project.id
+                                    ? 'glow-button text-text-primary'
+                                    : 'hover-glow text-text-secondary'
+                                }`}
+                              >
+                                <FolderIcon className="w-4 h-4" />
+                                <span className="text-sm truncate">{project.name}</span>
+                              </button>
+                            ))
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Group Channels Section */}
