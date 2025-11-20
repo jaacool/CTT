@@ -299,6 +299,17 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     return end;
   }, [selectedWeek]);
 
+  // Berechne Kalenderwoche (ISO 8601)
+  const getWeekNumber = (date: Date): number => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const weekNumber = useMemo(() => getWeekNumber(selectedWeek), [selectedWeek]);
+
   if (!selectedUser) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -527,8 +538,8 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
-              <span className="text-text-primary font-medium min-w-[200px] text-center">
-                {formatDateRange(selectedWeek, weekEnd)}
+              <span className="text-text-primary font-medium min-w-[250px] text-center">
+                KW {weekNumber} | {formatDateRange(selectedWeek, weekEnd)}
               </span>
               <button
                 onClick={handleNextWeek}
