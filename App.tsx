@@ -74,7 +74,7 @@ const App: React.FC = () => {
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [timerMenuAnchor, setTimerMenuAnchor] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
   const [timerHovered, setTimerHovered] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(true);
   const [showProjectsOverview, setShowProjectsOverview] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
