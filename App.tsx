@@ -1110,6 +1110,21 @@ const App: React.FC = () => {
     }
   }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject, chatProjectLocked]);
 
+  // Markiere Nachrichten als gelesen wenn Channel gewechselt wird
+  useEffect(() => {
+    if (showChat && currentChatChannel && currentUser) {
+      // Markiere nur Nachrichten des aktuellen Channels als gelesen
+      setChatMessages(prev => prev.map(msg => {
+        if (msg.channelId === currentChatChannel.id && 
+            msg.sender.id !== currentUser.id && 
+            !msg.readBy.includes(currentUser.id)) {
+          return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+        }
+        return msg;
+      }));
+    }
+  }, [showChat, currentChatChannel, currentUser]);
+
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
       req.id === requestId 
@@ -1722,15 +1737,8 @@ const App: React.FC = () => {
                 } else {
                   setCurrentChatProject(null);
                 }
-                // Markiere alle Nachrichten als gelesen wenn Chat geöffnet wird
-                if (currentUser) {
-                  setChatMessages(prev => prev.map(msg => {
-                    if (!msg.readBy.includes(currentUser.id)) {
-                      return { ...msg, readBy: [...msg.readBy, currentUser.id] };
-                    }
-                    return msg;
-                  }));
-                }
+                // NICHT alle Nachrichten als gelesen markieren!
+                // Nur die Nachrichten des aktuell geöffneten Channels werden als gelesen markiert
               }}
               className="glow-button-highlight p-3 rounded-full shadow-lg relative"
             >
