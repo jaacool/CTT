@@ -640,7 +640,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               </div>
               
               {/* Wochenansicht */}
-              <div className="bg-surface rounded-lg p-6 border border-border">
+              <div className="bg-purple-900/30 rounded-lg p-6 border border-purple-500/50">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
                   <div className="flex items-center space-x-2">
