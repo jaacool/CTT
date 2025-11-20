@@ -388,7 +388,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={viewMode === 'year' ? chartData : []}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis 
@@ -481,7 +481,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth)}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis 
@@ -574,7 +574,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={aggregateByWeek(timeEntries, selectedUser, selectedWeek)}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
             <XAxis 
