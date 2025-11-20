@@ -68,8 +68,9 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return filtered;
   }, [timeEntries, currentUser, projectFilter]);
 
-  // Verwende aggregateByWeek GENAU wie TimeStatistics
-  // WICHTIG: Immer alle timeEntries übergeben, aggregateByWeek filtert selbst nach User
+  // Verwende aggregateByWeek für Wochenansicht
+  // WICHTIG: TimeTracking zeigt IMMER nur den aktuell angemeldeten User (currentUser)
+  // TimeStatistics erlaubt User-Auswahl (nur für Admins)
   const weekData = useMemo(() => {
     // Wenn Projektfilter aktiv, verwende gefilterte Einträge, sonst alle
     const entriesToAggregate = projectFilter ? userTimeEntries : timeEntries;
@@ -640,7 +641,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               </div>
               
               {/* Wochenansicht */}
-              <div className="bg-blue-900/30 rounded-lg p-6 border border-blue-500/50">
+              <div className="bg-surface rounded-lg p-6 border border-border">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
                   <div className="flex items-center space-x-2">
