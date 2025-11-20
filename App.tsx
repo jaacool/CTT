@@ -1620,15 +1620,6 @@ const App: React.FC = () => {
               </svg>
             </button>
             <button
-              onClick={() => setShowSearchModal(true)}
-              className="bg-surface/80 backdrop-blur-md p-3 rounded-full shadow-lg hover-glow border border-overlay/50"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </button>
-            <button
               onClick={() => setShowCreateProjectModal(true)}
               className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
             >
