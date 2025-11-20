@@ -583,33 +583,6 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
             <div className="max-w-4xl mx-auto space-y-6">
               <h2 className="text-2xl font-bold text-text-primary">Übersicht</h2>
               
-              {/* Projekt-Filter */}
-              <div className="bg-surface rounded-lg p-4 border border-border">
-                <label className="block text-sm font-semibold text-text-primary mb-2">Nach Projekt filtern</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Projektname eingeben..."
-                    value={projectFilter}
-                    onChange={(e) => setProjectFilter(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple border border-border"
-                  />
-                  {projectFilter && (
-                    <button
-                      onClick={() => setProjectFilter('')}
-                      className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-secondary hover:text-text-primary transition-colors border border-border"
-                    >
-                      Zurücksetzen
-                    </button>
-                  )}
-                </div>
-                {projectFilter && (
-                  <div className="mt-2 text-xs text-text-secondary">
-                    Zeige {userTimeEntries.length} Einträge für "{projectFilter}"
-                  </div>
-                )}
-              </div>
-              
               {/* Statistik-Karten */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Gesamtzeit */}
@@ -743,6 +716,33 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     <Bar dataKey="hours" fill={COLORS.worked} name="Gearbeitete Stunden" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+              
+              {/* Projekt-Filter */}
+              <div className="bg-surface rounded-lg p-4 border border-border">
+                <label className="block text-sm font-semibold text-text-primary mb-2">Nach Projekt filtern</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Projektname eingeben..."
+                    value={projectFilter}
+                    onChange={(e) => setProjectFilter(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple border border-border"
+                  />
+                  {projectFilter && (
+                    <button
+                      onClick={() => setProjectFilter('')}
+                      className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-secondary hover:text-text-primary transition-colors border border-border"
+                    >
+                      Zurücksetzen
+                    </button>
+                  )}
+                </div>
+                {projectFilter && (
+                  <div className="mt-2 text-xs text-text-secondary">
+                    Zeige {userTimeEntries.length} Einträge für "{projectFilter}"
+                  </div>
+                )}
               </div>
               
               {/* Zeiteinträge nach Tag */}
