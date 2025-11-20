@@ -1504,6 +1504,7 @@ const App: React.FC = () => {
           <TimeTracking
             timeEntries={timeEntries}
             currentUser={currentUser}
+            absenceRequests={absenceRequests}
           />
         ) : showTimeStatistics ? (
           <TimeStatistics

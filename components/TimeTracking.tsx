@@ -1,16 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { TimeEntry, User } from '../types';
+import { TimeEntry, User, AbsenceRequest } from '../types';
 import { formatTime } from './utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { 
+  aggregateByWeek,
+  calculateAverageForWorkDays,
+  calculateAverageTargetForWorkDays,
+  calculateTotalHours,
+  getWeekStart
+} from '../utils/timeStatistics';
 
 interface TimeTrackingProps {
   timeEntries: TimeEntry[];
   currentUser: User;
+  absenceRequests: AbsenceRequest[];
 }
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser }) => {
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [projectFilter, setProjectFilter] = useState<string>('');
@@ -39,6 +47,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
 
   const weekBounds = getWeekBounds(currentDate);
   const weekNumber = getWeekNumber(currentDate);
+  const weekStart = getWeekStart(currentDate);
 
   // Filtere TimeEntries für aktuellen User
   const userTimeEntries = useMemo(() => {
@@ -64,58 +73,36 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return filtered;
   }, [timeEntries, currentUser, projectFilter]);
 
-  // Filtere TimeEntries für aktuelle Woche
+  // Verwende aggregateByWeek aus timeStatistics.ts
+  const weekData = useMemo(() => {
+    return aggregateByWeek(projectFilter ? userTimeEntries : timeEntries, currentUser, weekStart);
+  }, [timeEntries, userTimeEntries, currentUser, weekStart, projectFilter]);
+
+  // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
+  const weekTotalHoursStr = useMemo(() => {
+    return calculateTotalHours(weekData);
+  }, [weekData]);
+
+  const weekAverageHoursStr = useMemo(() => {
+    return calculateAverageForWorkDays(weekData, currentUser, weekStart);
+  }, [weekData, currentUser, weekStart]);
+
+  const weekTargetHoursStr = useMemo(() => {
+    return calculateAverageTargetForWorkDays(weekData, currentUser, weekStart);
+  }, [weekData, currentUser, weekStart]);
+
+  // Als Zahlen für Berechnungen
+  const weekTotalHours = parseFloat(weekTotalHoursStr);
+  const weekAverageHours = parseFloat(weekAverageHoursStr);
+  const weekTargetHours = parseFloat(weekTargetHoursStr);
+
+  // Filtere TimeEntries für aktuelle Woche (für andere Berechnungen)
   const weekTimeEntries = useMemo(() => {
     return userTimeEntries.filter(te => {
       const entryDate = new Date(te.startTime);
       return entryDate >= weekBounds.start && entryDate <= weekBounds.end;
     });
   }, [userTimeEntries, weekBounds]);
-
-  // Berechne Gesamtzeit für Woche
-  const weekTotalSeconds = useMemo(() => {
-    return weekTimeEntries.reduce((sum, te) => sum + te.duration, 0);
-  }, [weekTimeEntries]);
-
-  // Berechne Soll-Stunden für die Woche (5 Arbeitstage * 8h = 40h)
-  const weekTargetSeconds = useMemo(() => {
-    // Zähle Arbeitstage in der aktuellen Woche (Mo-Fr)
-    let workDays = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekBounds.start);
-      day.setDate(weekBounds.start.getDate() + i);
-      const dayOfWeek = day.getDay();
-      
-      // Nur Mo-Fr zählen und nur bis heute
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 && day <= today) {
-        workDays++;
-      }
-    }
-    
-    return workDays * 8 * 3600; // 8 Stunden pro Arbeitstag
-  }, [weekBounds]);
-
-  // Berechne Durchschnitt pro Arbeitstag
-  const weekAverageSeconds = useMemo(() => {
-    let workDays = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekBounds.start);
-      day.setDate(weekBounds.start.getDate() + i);
-      const dayOfWeek = day.getDay();
-      
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 && day <= today) {
-        workDays++;
-      }
-    }
-    
-    return workDays > 0 ? weekTotalSeconds / workDays : 0;
-  }, [weekTotalSeconds, weekBounds]);
 
   // Berechne Gesamtzeit seit Anfang
   const totalSeconds = useMemo(() => {
@@ -190,23 +177,9 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return map;
   }, [weekTimeEntries, weekDays]);
 
-  // Prepare chart data for week view
-  const weekChartData = useMemo(() => {
-    return weekDays.map(day => {
-      const dateKey = day.toISOString().split('T')[0];
-      const dayEntries = entriesByDay.get(dateKey) || [];
-      const dayTotal = dayEntries.reduce((sum, te) => sum + te.duration, 0);
-      const dayHours = dayTotal / 3600;
-      const targetHours = 8; // 8h Soll pro Arbeitstag
-      
-      return {
-        day: day.toLocaleDateString('de-DE', { weekday: 'short' }),
-        hours: Math.round(dayHours * 10) / 10,
-        targetHours: targetHours,
-        entryCount: dayEntries.length
-      };
-    });
-  }, [weekDays, entriesByDay]);
+  // weekData enthält bereits die aggregierten Daten von aggregateByWeek
+  // Verwende diese direkt als Chart-Daten
+  const weekChartData = weekData;
 
   // Colors matching TimeStatistics
   const COLORS = {
@@ -337,7 +310,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
           </div>
           
           <div className="text-text-primary font-semibold">
-            {formatTime(weekTotalSeconds)}
+            {weekTotalHoursStr}h
           </div>
         </div>
 
@@ -682,27 +655,27 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(168, 85, 247)' }}></div>
                     <span className="text-text-secondary">Gesamt:</span>
                     <span className="text-text-primary font-semibold">
-                      {(weekTotalSeconds / 3600).toFixed(1)}h
+                      {weekTotalHoursStr}h
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(245, 158, 11)' }}></div>
                     <span className="text-text-secondary">Durchschnitt:</span>
                     <span className="text-text-primary font-semibold">
-                      {(weekAverageSeconds / 3600).toFixed(1)}h
+                      {weekAverageHoursStr}h
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(16, 185, 129)' }}></div>
                     <span className="text-text-secondary">Soll:</span>
                     <span className="text-text-primary font-semibold">
-                      {(weekTargetSeconds / 3600).toFixed(1)}h
+                      {weekTargetHoursStr}h
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-text-secondary">Einträge:</span>
                     <span className="text-text-primary font-semibold">
-                      {weekTimeEntries.length}
+                      {weekData.reduce((sum, item) => sum + (item.entryCount || 0), 0)}
                     </span>
                   </div>
                 </div>
@@ -720,6 +693,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       stroke={COLORS.textSecondary}
                       style={{ fontSize: '12px' }}
                       label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary }}
+                      domain={[0, (dataMax: number) => Math.max(7, Math.ceil(dataMax))]}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -729,13 +703,13 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       }}
                     />
                     <ReferenceLine 
-                      y={weekAverageSeconds / 3600} 
+                      y={weekAverageHours} 
                       stroke={COLORS.average} 
                       strokeDasharray="5 5" 
                       label={{ value: 'Durchschnitt', fill: COLORS.average, fontSize: 12 }}
                     />
                     <ReferenceLine 
-                      y={8} 
+                      y={weekTargetHours} 
                       stroke={COLORS.target} 
                       strokeDasharray="5 5" 
                       label={{ value: 'Soll', fill: COLORS.target, fontSize: 12 }}
