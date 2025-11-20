@@ -152,7 +152,31 @@ export function loadFromLocalStorage(): BackupData | null {
       return null;
     }
 
-    const compressed = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    // Validiere Base64 String
+    if (!base64 || typeof base64 !== 'string' || base64.length === 0) {
+      console.warn('⚠️ Ungültiger Base64 String in localStorage');
+      localStorage.removeItem('ctt_backup');
+      return null;
+    }
+
+    // Dekodiere Base64 in kleineren Chunks (verhindert atob Fehler bei großen Strings)
+    const chunkSize = 8192;
+    const chunks: number[] = [];
+    
+    for (let i = 0; i < base64.length; i += chunkSize) {
+      const chunk = base64.slice(i, i + chunkSize);
+      try {
+        const decoded = atob(chunk);
+        for (let j = 0; j < decoded.length; j++) {
+          chunks.push(decoded.charCodeAt(j));
+        }
+      } catch (e) {
+        console.error('❌ Fehler beim Dekodieren von Base64 Chunk:', e);
+        throw new Error('Base64 decode failed');
+      }
+    }
+    
+    const compressed = new Uint8Array(chunks);
     const decompressed = pako.ungzip(compressed, { to: 'string' });
     const backup: BackupData = JSON.parse(decompressed);
     
