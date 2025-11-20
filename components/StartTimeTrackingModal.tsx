@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Project, Task } from '../types';
+import { Project, Task, ProjectStatus } from '../types';
 
 interface StartTimeTrackingModalProps {
   isOpen: boolean;
@@ -16,11 +16,28 @@ export const StartTimeTrackingModal: React.FC<StartTimeTrackingModalProps> = ({
 }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
+  const [projectSearchTerm, setProjectSearchTerm] = useState<string>('');
 
-  // Filter nur aktive Projekte
-  const activeProjects = useMemo(() => {
-    return projects.filter(p => p.status === 'active');
+  // Alle Projekte (sortiert: Aktive zuerst)
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      // Aktive Projekte zuerst
+      if (a.status === ProjectStatus.Active && b.status !== ProjectStatus.Active) return -1;
+      if (a.status !== ProjectStatus.Active && b.status === ProjectStatus.Active) return 1;
+      // Dann alphabetisch
+      return a.name.localeCompare(b.name);
+    });
   }, [projects]);
+
+  // Gefilterte Projekte basierend auf Suchbegriff
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchTerm) return sortedProjects;
+    const term = projectSearchTerm.toLowerCase();
+    return sortedProjects.filter(p => 
+      p.name.toLowerCase().includes(term) || 
+      p.icon.includes(term)
+    );
+  }, [sortedProjects, projectSearchTerm]);
 
   // Alle Tasks des ausgewählten Projekts (inkl. Subtasks)
   const availableTasks = useMemo(() => {
@@ -103,18 +120,47 @@ export const StartTimeTrackingModal: React.FC<StartTimeTrackingModalProps> = ({
             <label className="block text-sm font-medium text-text-primary mb-2">
               Projekt auswählen
             </label>
+            
+            {/* Suchfeld */}
+            <div className="relative mb-2">
+              <input
+                type="text"
+                placeholder="Projekt suchen..."
+                value={projectSearchTerm}
+                onChange={(e) => setProjectSearchTerm(e.target.value)}
+                className="w-full bg-overlay border border-gray-700 rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-glow-purple/50 transition-all pr-10"
+              />
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+            </div>
+            
+            {/* Dropdown */}
             <select
               value={selectedProjectId}
               onChange={(e) => handleProjectChange(e.target.value)}
               className="w-full bg-overlay border border-gray-700 rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-glow-purple/50 transition-all"
             >
               <option value="">-- Projekt wählen --</option>
-              {activeProjects.map(project => (
+              {filteredProjects.map(project => (
                 <option key={project.id} value={project.id}>
-                  {project.icon} {project.name}
+                  {project.icon} {project.name} {project.status !== ProjectStatus.Active ? `(${project.status})` : ''}
                 </option>
               ))}
             </select>
+            
+            {filteredProjects.length === 0 && projectSearchTerm && (
+              <p className="text-sm text-text-secondary mt-2">
+                Keine Projekte gefunden für "{projectSearchTerm}"
+              </p>
+            )}
+            
+            {projects.length === 0 && (
+              <p className="text-sm text-text-secondary mt-2">
+                Keine Projekte vorhanden.
+              </p>
+            )}
           </div>
 
           {/* Aufgabe auswählen */}
