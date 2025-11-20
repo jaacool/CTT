@@ -466,20 +466,161 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
         </div>
       )}
 
-      {viewMode === 'overview' && (
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Übersicht</h2>
-            <div className="bg-surface rounded-lg p-6">
-              <div className="text-text-secondary mb-2">Gesamtzeit seit Anfang</div>
-              <div className="text-4xl font-bold text-primary">{formatTime(totalSeconds)}</div>
-              <div className="mt-4 text-text-secondary">
-                {userTimeEntries.length} Zeiteinträge
+      {viewMode === 'overview' && (() => {
+        // Gruppiere alle Zeiteinträge nach Tag
+        const entriesByDate = useMemo(() => {
+          const map = new Map<string, TimeEntry[]>();
+          
+          userTimeEntries.forEach(te => {
+            const entryDate = new Date(te.startTime);
+            const dateKey = entryDate.toISOString().split('T')[0];
+            const entries = map.get(dateKey) || [];
+            entries.push(te);
+            map.set(dateKey, entries);
+          });
+          
+          // Sortiere nach Datum (neueste zuerst)
+          return Array.from(map.entries())
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([dateKey, entries]) => ({
+              dateKey,
+              date: new Date(dateKey),
+              entries: entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+              total: entries.reduce((sum, te) => sum + te.duration, 0)
+            }));
+        }, [userTimeEntries]);
+        
+        return (
+          <div className="flex-1 overflow-auto p-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+              <h2 className="text-2xl font-bold text-text-primary">Übersicht</h2>
+              
+              {/* Gesamtstatistik */}
+              <div className="bg-surface rounded-lg p-6 border border-border">
+                <div className="text-text-secondary mb-2">Gesamtzeit seit Anfang</div>
+                <div className="text-4xl font-bold text-primary">{formatTime(totalSeconds)}</div>
+                <div className="mt-4 text-text-secondary">
+                  {userTimeEntries.length} Zeiteinträge
+                </div>
+              </div>
+              
+              {/* Zeiteinträge nach Tag */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-text-primary">Alle Zeiteinträge</h3>
+                
+                {entriesByDate.map(({ dateKey, date, entries, total }) => {
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  const isYesterday = new Date(date.getTime() + 86400000).toDateString() === new Date().toDateString();
+                  
+                  return (
+                    <div key={dateKey} className="bg-surface rounded-lg border border-border overflow-hidden">
+                      {/* Tag Header */}
+                      <div className={`px-4 py-3 border-b border-border flex items-center justify-between ${
+                        isToday ? 'bg-glow-cyan/10' : ''
+                      }`}>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className={`font-semibold ${isToday ? 'text-glow-cyan' : 'text-text-primary'}`}>
+                              {date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </h4>
+                            {isToday && (
+                              <span className="px-2 py-0.5 text-xs font-bold bg-glow-cyan text-background rounded">
+                                HEUTE
+                              </span>
+                            )}
+                            {isYesterday && (
+                              <span className="px-2 py-0.5 text-xs font-bold bg-overlay text-text-secondary rounded">
+                                GESTERN
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-text-secondary mt-0.5">
+                            {entries.length} {entries.length === 1 ? 'Eintrag' : 'Einträge'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-primary">{formatTime(total)}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Einträge Liste */}
+                      <div className="divide-y divide-border">
+                        {entries.map((entry) => {
+                          const startTime = new Date(entry.startTime);
+                          const endTime = entry.endTime ? new Date(entry.endTime) : null;
+                          
+                          const getProjectColor = (projectName: string) => {
+                            const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+                            const colors = [
+                              { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
+                              { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
+                              { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
+                              { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
+                              { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
+                            ];
+                            return colors[hash % colors.length];
+                          };
+                          
+                          const colors = getProjectColor(entry.projectName);
+                          
+                          return (
+                            <div key={entry.id} className="px-4 py-3 hover:bg-overlay/50 transition-colors cursor-pointer">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0 mr-4">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <span className={`px-2 py-0.5 text-xs font-bold rounded ${colors.bg} ${colors.text} ${colors.border} border`}>
+                                      {entry.projectName}
+                                    </span>
+                                    {entry.billable && (
+                                      <span className="px-2 py-0.5 text-xs font-bold bg-green-500/20 text-green-500 border border-green-500 rounded">
+                                        BILLABLE
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-text-primary font-medium truncate">
+                                    {entry.taskTitle}
+                                  </div>
+                                  {entry.description && (
+                                    <div className="text-xs text-text-secondary mt-1 truncate">
+                                      {entry.description}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-4 flex-shrink-0">
+                                  <div className="text-right">
+                                    <div className="text-xs text-text-secondary">
+                                      {startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                      {endTime && ` - ${endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`}
+                                    </div>
+                                    <div className="text-sm font-bold text-primary mt-0.5">
+                                      {formatTime(entry.duration)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {entriesByDate.length === 0 && (
+                  <div className="text-center py-12 text-text-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 opacity-50">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <p className="text-lg font-semibold">Keine Zeiteinträge vorhanden</p>
+                    <p className="text-sm mt-2">Starte einen Timer, um deine erste Zeiterfassung zu erstellen.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {viewMode === 'day' && (() => {
         const selectedDay = currentDate;
