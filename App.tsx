@@ -17,6 +17,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
 import { ChatModal } from './components/ChatModal';
+import { StartTimeTrackingModal } from './components/StartTimeTrackingModal';
 import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
@@ -90,6 +91,7 @@ const App: React.FC = () => {
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
+  const [showStartTimeTrackingModal, setShowStartTimeTrackingModal] = useState(false);
   
   // Kalender-Einstellungen
   const [selectedState, setSelectedState] = useState<import('./utils/holidays').GermanState | undefined>('BE'); // Default: Berlin
@@ -1238,6 +1240,69 @@ const App: React.FC = () => {
     })));
   }, [updateProjects]);
 
+  const handleStartTimeTracking = useCallback((projectId: string, taskId: string) => {
+    // Stoppe aktiven Timer falls vorhanden
+    if (activeTimerTaskId && activeTimeEntryId) {
+      setTimeEntries(prev => prev.map(entry => {
+        if (entry.id === activeTimeEntryId) {
+          const updatedEntry = { ...entry, endTime: new Date().toISOString() };
+          saveTimeEntry(updatedEntry);
+          return updatedEntry;
+        }
+        return entry;
+      }));
+    }
+
+    // Starte neuen Timer
+    const newEntryId = `entry-${Date.now()}`;
+    const now = new Date().toISOString();
+    
+    // Finde Task-Informationen
+    let taskTitle = '';
+    let listTitle = '';
+    let projectName = '';
+    
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      projectName = project.name;
+      project.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          if (task.id === taskId) {
+            taskTitle = task.title;
+            listTitle = list.title;
+          }
+          task.subtasks.forEach(subtask => {
+            if (subtask.id === taskId) {
+              taskTitle = subtask.title;
+              listTitle = list.title;
+            }
+          });
+        });
+      });
+    }
+    
+    const newEntry: TimeEntry = {
+      id: newEntryId,
+      taskId,
+      taskTitle,
+      listTitle,
+      projectId,
+      projectName,
+      startTime: now,
+      endTime: null,
+      duration: 0,
+      user: currentUser!,
+      billable: false,
+    };
+    
+    saveTimeEntry(newEntry);
+    setTimeEntries(prev => [...prev, newEntry]);
+    
+    setActiveTimerTaskId(taskId);
+    setActiveTimeEntryId(newEntryId);
+    setTaskTimers(prev => ({ ...prev, [taskId]: 0 }));
+  }, [activeTimerTaskId, activeTimeEntryId, projects, currentUser]);
+
   const handleAddTodo = (itemId: string, text: string) => {
     const newTodo = {
       id: `todo-${Date.now()}`,
@@ -1620,12 +1685,13 @@ const App: React.FC = () => {
               </svg>
             </button>
             <button
-              onClick={() => setShowCreateProjectModal(true)}
+              onClick={() => setShowStartTimeTrackingModal(true)}
               className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
+              title="Time Tracking starten"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
             </button>
           </div>
@@ -1819,6 +1885,15 @@ const App: React.FC = () => {
           onSwitchChannel={handleSwitchChatChannel}
           onSwitchProject={handleSwitchChatProject}
           allUsers={users}
+        />
+      )}
+
+      {showStartTimeTrackingModal && (
+        <StartTimeTrackingModal
+          isOpen={showStartTimeTrackingModal}
+          onClose={() => setShowStartTimeTrackingModal(false)}
+          projects={projects}
+          onStartTracking={handleStartTimeTracking}
         />
       )}
       </div>
