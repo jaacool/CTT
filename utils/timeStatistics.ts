@@ -216,6 +216,95 @@ export function calculateAverage(data: { hours: number }[]): number {
 }
 
 /**
+ * Berechnet Durchschnittswerte nur für Arbeitstage (Wochenansicht)
+ * Berücksichtigt WorkSchedule und Anstellungsdatum
+ */
+export function calculateAverageForWorkDays(
+  data: { day: string; hours: number; targetHours: number }[],
+  user: User,
+  weekStart: Date
+): number {
+  if (!user.workSchedule) return calculateAverage(data);
+  
+  const schedule = user.workSchedule;
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  
+  // Filtere nur Arbeitstage
+  const workDaysData = data.filter((item, index) => {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(dayDate.getDate() + index);
+    
+    // Prüfe ob vor Anstellungsdatum
+    if (employmentStart && dayDate < employmentStart) {
+      return false;
+    }
+    
+    const dayOfWeek = dayDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+    
+    // Prüfe ob Arbeitstag laut Schedule
+    if (dayOfWeek === 0 && !schedule.sunday) return false;
+    if (dayOfWeek === 1 && !schedule.monday) return false;
+    if (dayOfWeek === 2 && !schedule.tuesday) return false;
+    if (dayOfWeek === 3 && !schedule.wednesday) return false;
+    if (dayOfWeek === 4 && !schedule.thursday) return false;
+    if (dayOfWeek === 5 && !schedule.friday) return false;
+    if (dayOfWeek === 6 && !schedule.saturday) return false;
+    
+    return true;
+  });
+  
+  if (workDaysData.length === 0) return 0;
+  
+  const sum = workDaysData.reduce((acc, item) => acc + item.hours, 0);
+  return Math.round((sum / workDaysData.length) * 10) / 10;
+}
+
+/**
+ * Berechnet den Durchschnitt der Soll-Stunden nur für Arbeitstage
+ */
+export function calculateAverageTargetForWorkDays(
+  data: { day: string; hours: number; targetHours: number }[],
+  user: User,
+  weekStart: Date
+): number {
+  if (!user.workSchedule) {
+    const totalTarget = calculateTotalTarget(data);
+    return data.length > 0 ? totalTarget / data.length : 0;
+  }
+  
+  const schedule = user.workSchedule;
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  
+  // Filtere nur Arbeitstage
+  const workDaysData = data.filter((item, index) => {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(dayDate.getDate() + index);
+    
+    // Prüfe ob vor Anstellungsdatum
+    if (employmentStart && dayDate < employmentStart) {
+      return false;
+    }
+    
+    const dayOfWeek = dayDate.getDay();
+    
+    if (dayOfWeek === 0 && !schedule.sunday) return false;
+    if (dayOfWeek === 1 && !schedule.monday) return false;
+    if (dayOfWeek === 2 && !schedule.tuesday) return false;
+    if (dayOfWeek === 3 && !schedule.wednesday) return false;
+    if (dayOfWeek === 4 && !schedule.thursday) return false;
+    if (dayOfWeek === 5 && !schedule.friday) return false;
+    if (dayOfWeek === 6 && !schedule.saturday) return false;
+    
+    return true;
+  });
+  
+  if (workDaysData.length === 0) return 0;
+  
+  const sum = workDaysData.reduce((acc, item) => acc + item.targetHours, 0);
+  return Math.round((sum / workDaysData.length) * 10) / 10;
+}
+
+/**
  * Berechnet die Gesamtsumme der Soll-Stunden
  */
 export function calculateTotalTarget(data: { targetHours: number }[]): number {

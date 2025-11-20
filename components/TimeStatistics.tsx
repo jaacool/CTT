@@ -5,6 +5,8 @@ import {
   aggregateByMonth, 
   aggregateByWeek,
   calculateAverage,
+  calculateAverageForWorkDays,
+  calculateAverageTargetForWorkDays,
   calculateTotalTarget,
   calculateTotalHours,
   getWeekStart,
@@ -365,14 +367,14 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
               <span className="text-text-secondary">Durchschnitt:</span>
               <span className="text-text-primary font-semibold">
-                {calculateAverage(aggregateByWeek(timeEntries, selectedUser, selectedWeek))}h
+                {calculateAverageForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
               <span className="text-text-secondary">Soll:</span>
               <span className="text-text-primary font-semibold">
-                {Math.round((calculateTotalTarget(aggregateByWeek(timeEntries, selectedUser, selectedWeek)) / 7) * 10) / 10}h
+                {calculateAverageTargetForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
               </span>
             </div>
           </div>
@@ -402,13 +404,13 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             />
             <Legend />
             <ReferenceLine 
-              y={calculateAverage(aggregateByWeek(timeEntries, selectedUser, selectedWeek))} 
+              y={calculateAverageForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)} 
               stroke={COLORS.average} 
               strokeDasharray="5 5" 
               label={{ value: 'Durchschnitt', fill: COLORS.average, fontSize: 12 }}
             />
             <ReferenceLine 
-              y={calculateTotalTarget(aggregateByWeek(timeEntries, selectedUser, selectedWeek)) / 7} 
+              y={calculateAverageTargetForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)} 
               stroke={COLORS.target} 
               strokeDasharray="5 5" 
               label={{ value: 'Soll', fill: COLORS.target, fontSize: 12 }}
