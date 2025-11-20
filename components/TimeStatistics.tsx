@@ -346,45 +346,44 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
 
       {/* Jahresansicht */}
       <div className="bg-surface rounded-lg p-6 border border-border">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-text-primary">Jahresansicht</h2>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePreviousYear}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-              <span className="text-text-primary font-medium min-w-[80px] text-center">
-                {selectedYear}
-              </span>
-              <button
-                onClick={handleNextYear}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Header mit Titel und Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-text-primary">Jahresansicht</h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePreviousYear}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+            <span className="text-text-primary font-medium min-w-[80px] text-center">
+              {selectedYear}
+            </span>
+            <button
+              onClick={handleNextYear}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
           </div>
-          
-          {/* Statistik Summary */}
-          <div className="flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
-              <span className="text-text-secondary">Gesamt:</span>
-              <span className="text-text-primary font-semibold">{totalHours}h</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
-              <span className="text-text-secondary">Durchschnitt:</span>
-              <span className="text-text-primary font-semibold">{averageHours}h</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
-              <span className="text-text-secondary">Soll:</span>
-              <span className="text-text-primary font-semibold">{Math.round(averageTarget * 10) / 10}h</span>
-            </div>
+        </div>
+
+        {/* Statistik Summary */}
+        <div className="flex items-center justify-center space-x-6 text-sm mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
+            <span className="text-text-secondary">Gesamt:</span>
+            <span className="text-text-primary font-semibold">{totalHours}h</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
+            <span className="text-text-secondary">Durchschnitt:</span>
+            <span className="text-text-primary font-semibold">{averageHours}h</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
+            <span className="text-text-secondary">Soll:</span>
+            <span className="text-text-primary font-semibold">{Math.round(averageTarget * 10) / 10}h</span>
           </div>
         </div>
 
@@ -434,51 +433,50 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
 
       {/* Monatsansicht */}
       <div className="bg-surface rounded-lg p-6 border border-border">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-text-primary">Monatsansicht</h2>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePreviousMonth}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </button>
-              <span className="text-text-primary font-medium min-w-[150px] text-center">
-                {monthNames[selectedMonth]} {selectedYear}
-              </span>
-              <button
-                onClick={handleNextMonth}
-                className="p-2 rounded-md hover-glow text-text-secondary"
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Header mit Titel und Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-text-primary">Monatsansicht</h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePreviousMonth}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+            <span className="text-text-primary font-medium min-w-[150px] text-center">
+              {monthNames[selectedMonth]} {selectedYear}
+            </span>
+            <button
+              onClick={handleNextMonth}
+              className="p-2 rounded-md hover-glow text-text-secondary"
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
           </div>
-          
-          {/* Statistik Summary */}
-          <div className="flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
-              <span className="text-text-secondary">Gesamt:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateTotalHours(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth))}h
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
-              <span className="text-text-secondary">Durchschnitt:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateAverageForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
-              <span className="text-text-secondary">Soll:</span>
-              <span className="text-text-primary font-semibold">
-                {calculateAverageTargetForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
-              </span>
-            </div>
+        </div>
+
+        {/* Statistik Summary */}
+        <div className="flex items-center justify-center space-x-6 text-sm mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
+            <span className="text-text-secondary">Gesamt:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateTotalHours(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth))}h
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
+            <span className="text-text-secondary">Durchschnitt:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateAverageForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
+            <span className="text-text-secondary">Soll:</span>
+            <span className="text-text-primary font-semibold">
+              {calculateAverageTargetForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
+            </span>
           </div>
         </div>
 
