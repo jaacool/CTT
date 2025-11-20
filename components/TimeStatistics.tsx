@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { User, TimeEntry, AbsenceRequest } from '../types';
+import { User, TimeEntry, AbsenceRequest, AbsenceStatus } from '../types';
 import { 
   aggregateByYear, 
   aggregateByMonth, 
@@ -16,7 +16,7 @@ import {
   getWeekStart,
   formatDateRange
 } from '../utils/timeStatistics';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps } from 'recharts';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 interface TimeStatisticsProps {
@@ -27,6 +27,138 @@ interface TimeStatisticsProps {
 }
 
 type ViewMode = 'year' | 'month' | 'week';
+
+// Custom Tooltip Component
+interface CustomTooltipProps extends TooltipProps<number, string> {
+  absenceRequests: AbsenceRequest[];
+  selectedUser: User;
+  viewMode: ViewMode;
+  selectedYear: number;
+  selectedMonth: number;
+  selectedWeek: Date;
+}
+
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ 
+  active, 
+  payload, 
+  label,
+  absenceRequests,
+  selectedUser,
+  viewMode,
+  selectedYear,
+  selectedMonth,
+  selectedWeek
+}) => {
+  if (!active || !payload || !payload.length) return null;
+
+  const hours = payload[0].value as number;
+  const targetHours = payload[0].payload.targetHours as number;
+
+  // Bestimme Datumsbereich basierend auf ViewMode und Label
+  let startDate: Date;
+  let endDate: Date;
+
+  if (viewMode === 'year') {
+    // Label ist Monatsname (z.B. "Jan", "Feb")
+    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const monthIndex = monthNames.indexOf(label as string);
+    startDate = new Date(selectedYear, monthIndex, 1);
+    endDate = new Date(selectedYear, monthIndex + 1, 0, 23, 59, 59);
+  } else if (viewMode === 'month') {
+    // Label ist Wochennummer (z.B. "KW 1")
+    const weekNumber = parseInt((label as string).replace('KW ', '')) - 1;
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    startDate = new Date(monthStart);
+    startDate.setDate(startDate.getDate() + (weekNumber * 7));
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59);
+  } else {
+    // Label ist Wochentag (z.B. "Mo", "Di")
+    const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const dayIndex = days.indexOf(label as string);
+    startDate = new Date(selectedWeek);
+    startDate.setDate(startDate.getDate() + dayIndex);
+    endDate = new Date(startDate);
+    endDate.setHours(23, 59, 59, 59);
+  }
+
+  // Finde Abwesenheiten in diesem Zeitraum
+  const relevantAbsences = absenceRequests.filter(request => {
+    if (request.userId !== selectedUser.id) return false;
+    if (request.status !== 'approved' as AbsenceStatus) return false;
+
+    const reqStart = new Date(request.startDate);
+    const reqEnd = new Date(request.endDate);
+
+    // Prüfe ob Überschneidung existiert
+    return reqStart <= endDate && reqEnd >= startDate;
+  });
+
+  const COLORS = {
+    surface: '#1a1625',
+    border: '#3f3351',
+    text: '#e5e1eb',
+    textSecondary: '#9d94ab',
+    worked: '#a855f7',
+    average: '#fb923c',
+    target: '#4ade80',
+  };
+
+  const absenceTypeLabels: Record<string, string> = {
+    vacation: 'Urlaub',
+    sick: 'Krankheit',
+    other: 'Sonstiges'
+  };
+
+  return (
+    <div 
+      className="bg-surface border border-border rounded-lg p-3 shadow-lg"
+      style={{ 
+        backgroundColor: COLORS.surface, 
+        border: `1px solid ${COLORS.border}`,
+        color: COLORS.text
+      }}
+    >
+      <p className="font-semibold mb-2">{label}</p>
+      <div className="space-y-1 text-sm">
+        <div className="flex justify-between gap-4">
+          <span className="text-text-secondary">Gearbeitet:</span>
+          <span className="font-semibold" style={{ color: COLORS.worked }}>{hours}h</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-text-secondary">Soll:</span>
+          <span className="font-semibold" style={{ color: COLORS.target }}>{targetHours}h</span>
+        </div>
+        
+        {relevantAbsences.length > 0 && (
+          <>
+            <div className="border-t border-border my-2"></div>
+            <p className="text-text-secondary text-xs mb-1">Abwesenheiten:</p>
+            {relevantAbsences.map((absence, index) => (
+              <div key={index} className="text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                <span>{absenceTypeLabels[absence.type] || absence.type}</span>
+                {viewMode !== 'week' && (
+                  <span className="text-text-secondary">
+                    ({new Date(absence.startDate).toLocaleDateString('de-DE')} - {new Date(absence.endDate).toLocaleDateString('de-DE')})
+                  </span>
+                )}
+              </div>
+            ))}
+          </>
+        )}
+        
+        {hours === 0 && relevantAbsences.length === 0 && (
+          <>
+            <div className="border-t border-border my-2"></div>
+            <p className="text-text-secondary text-xs">Keine Einträge vorhanden</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const COLORS = {
   worked: '#a855f7', // Purple
@@ -248,12 +380,16 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary }}
             />
             <Tooltip 
-              contentStyle={{ 
-                backgroundColor: COLORS.surface, 
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: '8px',
-                color: COLORS.text
-              }}
+              content={
+                <CustomTooltip 
+                  absenceRequests={absenceRequests}
+                  selectedUser={selectedUser}
+                  viewMode="year"
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedWeek={selectedWeek}
+                />
+              }
             />
             <Legend />
             <ReferenceLine 
@@ -338,12 +474,16 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary }}
             />
             <Tooltip 
-              contentStyle={{ 
-                backgroundColor: COLORS.surface, 
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: '8px',
-                color: COLORS.text
-              }}
+              content={
+                <CustomTooltip 
+                  absenceRequests={absenceRequests}
+                  selectedUser={selectedUser}
+                  viewMode="month"
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedWeek={selectedWeek}
+                />
+              }
             />
             <Legend />
             <ReferenceLine 
@@ -428,12 +568,16 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary }}
             />
             <Tooltip 
-              contentStyle={{ 
-                backgroundColor: COLORS.surface, 
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: '8px',
-                color: COLORS.text
-              }}
+              content={
+                <CustomTooltip 
+                  absenceRequests={absenceRequests}
+                  selectedUser={selectedUser}
+                  viewMode="week"
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedWeek={selectedWeek}
+                />
+              }
             />
             <Legend />
             <ReferenceLine 
