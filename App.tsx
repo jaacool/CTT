@@ -105,6 +105,15 @@ const App: React.FC = () => {
   const [currentChatProject, setCurrentChatProject] = useState<Project | null>(selectedProject);
   const [chatProjectLocked, setChatProjectLocked] = useState<boolean>(false);
 
+  // Berechne ungelesene Nachrichten
+  const unreadMessagesCount = useMemo(() => {
+    if (!currentUser) return 0;
+    return chatMessages.filter(msg => 
+      msg.sender.id !== currentUser.id && // Nicht eigene Nachrichten
+      !msg.readBy.includes(currentUser.id) // Noch nicht gelesen
+    ).length;
+  }, [chatMessages, currentUser]);
+
   // Initialize chat channels (Group channels + Direct message channels for each user pair)
   useEffect(() => {
     if (chatChannels.length === 0 && users.length > 0) {
@@ -1695,11 +1704,17 @@ const App: React.FC = () => {
                   setCurrentChatProject(null);
                 }
               }}
-              className="glow-button-highlight p-3 rounded-full shadow-lg"
+              className="glow-button-highlight p-3 rounded-full shadow-lg relative"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-text-primary">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
               </svg>
+              {/* Unread Badge */}
+              {unreadMessagesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg animate-pulse">
+                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setShowStartTimeTrackingModal(true)}
