@@ -1703,6 +1703,15 @@ const App: React.FC = () => {
                 } else {
                   setCurrentChatProject(null);
                 }
+                // Markiere alle Nachrichten als gelesen wenn Chat geöffnet wird
+                if (currentUser) {
+                  setChatMessages(prev => prev.map(msg => {
+                    if (!msg.readBy.includes(currentUser.id)) {
+                      return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+                    }
+                    return msg;
+                  }));
+                }
               }}
               className="glow-button-highlight p-3 rounded-full shadow-lg relative"
             >
