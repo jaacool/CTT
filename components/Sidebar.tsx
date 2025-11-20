@@ -96,7 +96,7 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectVacationAbsence, onSelectTimeTracking, onSelectTimeStatistics, onSelectSettings }) => {
-  const canAccessSettings = hasPermission(currentUser, roles, 'Einstellungen');
+  const isAdmin = currentUser?.role === 'role-1';
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredProjects = useMemo(() => 
@@ -219,8 +219,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
       
       {/* Settings Button - Fixed at Bottom */}
       <div className="flex-shrink-0 border-t border-border pt-4">
-        {canAccessSettings && (
-          <button onClick={onSelectSettings} className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md">
+        {/* Einstellungen nur für Admins */}
+        {isAdmin && (
+          <button 
+            onClick={onSelectSettings}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-text-primary hover-glow rounded-md"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>
             </svg>
