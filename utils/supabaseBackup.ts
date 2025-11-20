@@ -89,12 +89,19 @@ export async function loadCompressedBackupFromSupabase(): Promise<BackupData | n
       .download('latest-backup.json.gz');
 
     if (error) {
-      // Wenn Bucket oder Datei nicht existiert, ist das OK
-      if (error.message?.includes('not found') || error.message?.includes('Bucket not found')) {
-        console.log('ℹ️ Kein Backup gefunden (Bucket oder Datei existiert nicht)');
+      // Wenn Bucket oder Datei nicht existiert, ist das OK - Feature ist optional
+      if (error.message?.includes('not found') || 
+          error.message?.includes('Bucket not found') ||
+          (error as any).__isStorageError) {
+        console.log('ℹ️ Kein Backup gefunden (Storage Bucket oder Datei existiert nicht - optional)');
         return null;
       }
       throw error;
+    }
+    
+    if (!data) {
+      console.log('ℹ️ Keine Backup-Daten vorhanden');
+      return null;
     }
 
     // Konvertiere Blob zu ArrayBuffer
