@@ -76,6 +76,46 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     return weekTimeEntries.reduce((sum, te) => sum + te.duration, 0);
   }, [weekTimeEntries]);
 
+  // Berechne Soll-Stunden für die Woche (5 Arbeitstage * 8h = 40h)
+  const weekTargetSeconds = useMemo(() => {
+    // Zähle Arbeitstage in der aktuellen Woche (Mo-Fr)
+    let workDays = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekBounds.start);
+      day.setDate(weekBounds.start.getDate() + i);
+      const dayOfWeek = day.getDay();
+      
+      // Nur Mo-Fr zählen und nur bis heute
+      if (dayOfWeek >= 1 && dayOfWeek <= 5 && day <= today) {
+        workDays++;
+      }
+    }
+    
+    return workDays * 8 * 3600; // 8 Stunden pro Arbeitstag
+  }, [weekBounds]);
+
+  // Berechne Durchschnitt pro Arbeitstag
+  const weekAverageSeconds = useMemo(() => {
+    let workDays = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekBounds.start);
+      day.setDate(weekBounds.start.getDate() + i);
+      const dayOfWeek = day.getDay();
+      
+      if (dayOfWeek >= 1 && dayOfWeek <= 5 && day <= today) {
+        workDays++;
+      }
+    }
+    
+    return workDays > 0 ? weekTotalSeconds / workDays : 0;
+  }, [weekTotalSeconds, weekBounds]);
+
   // Berechne Gesamtzeit seit Anfang
   const totalSeconds = useMemo(() => {
     const total = userTimeEntries.reduce((sum, te) => sum + te.duration, 0);
@@ -576,7 +616,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               {/* Wochenansicht */}
               <div className="bg-surface rounded-lg p-6 border border-border">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-text-primary">Aktuelle Woche</h3>
+                  <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => {
@@ -586,12 +626,12 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       }}
                       className="p-2 rounded-md hover-glow text-text-secondary"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                         <polyline points="15 18 9 12 15 6"></polyline>
                       </svg>
                     </button>
-                    <span className="text-text-primary font-medium min-w-[200px] text-center text-sm">
-                      KW {weekNumber} | {weekBounds.start.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} - {weekBounds.end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    <span className="text-text-primary font-medium min-w-[250px] text-center">
+                      KW {weekNumber} | {weekBounds.start.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} - {weekBounds.end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </span>
                     <button
                       onClick={() => {
@@ -601,7 +641,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       }}
                       className="p-2 rounded-md hover-glow text-text-secondary"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                         <polyline points="9 18 15 12 9 6"></polyline>
                       </svg>
                     </button>
@@ -609,17 +649,32 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                 </div>
                 
                 {/* Wochenstatistik */}
-                <div className="flex items-center justify-center space-x-6 text-sm mb-4">
+                <div className="flex items-center justify-center space-x-6 text-sm mb-6">
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-glow-purple"></div>
-                    <span className="text-text-secondary">Woche:</span>
-                    <span className="text-text-primary font-semibold">{formatTime(weekTotalSeconds)}</span>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(168, 85, 247)' }}></div>
+                    <span className="text-text-secondary">Gesamt:</span>
+                    <span className="text-text-primary font-semibold">
+                      {(weekTotalSeconds / 3600).toFixed(1)}h
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-text-secondary">Abrechenbar:</span>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(245, 158, 11)' }}></div>
+                    <span className="text-text-secondary">Durchschnitt:</span>
                     <span className="text-text-primary font-semibold">
-                      {formatTime(weekTimeEntries.filter(te => te.billable).reduce((sum, te) => sum + te.duration, 0))}
+                      {(weekAverageSeconds / 3600).toFixed(1)}h
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgb(16, 185, 129)' }}></div>
+                    <span className="text-text-secondary">Soll:</span>
+                    <span className="text-text-primary font-semibold">
+                      {(weekTargetSeconds / 3600).toFixed(1)}h
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-text-secondary">Einträge:</span>
+                    <span className="text-text-primary font-semibold">
+                      {weekTimeEntries.length}
                     </span>
                   </div>
                 </div>
