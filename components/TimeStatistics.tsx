@@ -85,11 +85,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
   // Finde Abwesenheiten in diesem Zeitraum
   const relevantAbsences = absenceRequests.filter(request => {
-    // Prüfe User ID
-    if (request.userId !== selectedUser?.id) return false;
+    // Prüfe User ID - AbsenceRequest hat ein user Objekt, nicht userId
+    if (request.user?.id !== selectedUser?.id) return false;
     
     // Prüfe Status - nur genehmigte Abwesenheiten
-    if (request.status !== 'approved') return false;
+    if (request.status !== AbsenceStatus.Approved) return false;
 
     const reqStart = new Date(request.startDate);
     const reqEnd = new Date(request.endDate);
@@ -109,9 +109,12 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   };
 
   const absenceTypeLabels: Record<string, string> = {
-    vacation: 'Urlaub',
-    sick: 'Krankheit',
-    other: 'Sonstiges'
+    'VACATION': 'Urlaub',
+    'COMPENSATORY_DAY': 'Ausgleichstag',
+    'SICK': 'Krankheit',
+    'HOME_OFFICE': 'Home Office',
+    'BUSINESS_TRIP': 'Dienstreise',
+    'OTHER': 'Sonstiges'
   };
 
   // Formatiere Datumsbereich
