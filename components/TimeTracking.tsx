@@ -345,7 +345,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
         {/* User Selection für Admins */}
         {isAdmin && (
           <div className="flex items-center space-x-2 overflow-x-auto">
-            {users.map(user => (
+            {users.filter(user => user.isActive !== false).map(user => (
               <button
                 key={user.id}
                 onClick={() => setSelectedUser(user)}

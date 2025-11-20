@@ -470,7 +470,7 @@ const CalendarView: React.FC<{
             currentMonth.getFullYear() === new Date().getFullYear();
           const inDragRange = isInDragRange(day);
           const weekend = isWeekend(currentDate);
-          const holiday = isHoliday(currentDate, selectedState);
+          const holiday = isHoliday(currentDate, selectedState || 'BE');
 
           const getAbsenceColor = (type: AbsenceType) => {
             switch (type) {
@@ -924,12 +924,7 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
       return sum + days;
     }, 0);
   
-  // Update separateHomeOffice wenn Tab wechselt
-  React.useEffect(() => {
-    if (isAdmin) {
-      setSeparateHomeOffice(selectedUserTab !== 'admin');
-    }
-  }, [selectedUserTab, isAdmin]);
+  // separateHomeOffice wird jetzt als Prop von App.tsx verwaltet
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
