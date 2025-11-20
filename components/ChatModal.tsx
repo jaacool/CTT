@@ -123,6 +123,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   // Filter messages based on view mode
   const filteredMessages = messages.filter(msg => {
     if (viewMode === ChatViewMode.ByProject) {
+      // Wenn kein Projekt ausgewählt ist, zeige alle Nachrichten des Channels
+      if (!currentProject) {
+        return msg.channelId === currentChannel?.id;
+      }
       return msg.projectId === currentProject?.id && msg.channelId === currentChannel?.id;
     } else {
       return msg.channelId === currentChannel?.id;
