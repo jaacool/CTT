@@ -385,6 +385,10 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             <span className="text-text-secondary">Soll:</span>
             <span className="text-text-primary font-semibold">{Math.round(averageTarget * 10) / 10}h</span>
           </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-text-secondary">Einträge:</span>
+            <span className="text-text-primary font-semibold">{chartData.reduce((sum, item) => sum + (item.entryCount || 0), 0)}</span>
+          </div>
         </div>
 
         {/* Chart */}
@@ -478,6 +482,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               {calculateAverageTargetForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
             </span>
           </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-text-secondary">Einträge:</span>
+            <span className="text-text-primary font-semibold">
+              {aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth).reduce((sum, item) => sum + (item.entryCount || 0), 0)}
+            </span>
+          </div>
         </div>
 
         {/* Chart */}
@@ -569,6 +579,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             <span className="text-text-secondary">Soll:</span>
             <span className="text-text-primary font-semibold">
               {calculateAverageTargetForWorkDays(aggregateByWeek(timeEntries, selectedUser, selectedWeek), selectedUser, selectedWeek)}h
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-text-secondary">Einträge:</span>
+            <span className="text-text-primary font-semibold">
+              {aggregateByWeek(timeEntries, selectedUser, selectedWeek).reduce((sum, item) => sum + (item.entryCount || 0), 0)}
             </span>
           </div>
         </div>

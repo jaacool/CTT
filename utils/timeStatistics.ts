@@ -78,7 +78,7 @@ export function aggregateByYear(
   timeEntries: TimeEntry[],
   user: User,
   year: number
-): { month: string; hours: number; targetHours: number }[] {
+): { month: string; hours: number; targetHours: number; entryCount: number }[] {
   const months = [
     'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
     'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
@@ -110,7 +110,8 @@ export function aggregateByYear(
     return {
       month,
       hours: Math.round(hours * 10) / 10,
-      targetHours: Math.round(targetHours * 10) / 10
+      targetHours: Math.round(targetHours * 10) / 10,
+      entryCount: monthEntries.length
     };
   });
   
@@ -125,12 +126,12 @@ export function aggregateByMonth(
   user: User,
   year: number,
   month: number // 0-11
-): { week: string; hours: number; targetHours: number }[] {
+): { week: string; hours: number; targetHours: number; entryCount: number }[] {
   const monthStart = new Date(year, month, 1);
   const monthEnd = new Date(year, month + 1, 0);
   const now = new Date();
   
-  const weeks: { week: string; hours: number; targetHours: number }[] = [];
+  const weeks: { week: string; hours: number; targetHours: number; entryCount: number }[] = [];
   
   let weekStart = new Date(monthStart);
   let weekNumber = 1;
@@ -162,7 +163,8 @@ export function aggregateByMonth(
     weeks.push({
       week: `KW ${weekNumber}`,
       hours: Math.round(hours * 10) / 10,
-      targetHours: Math.round(targetHours * 10) / 10
+      targetHours: Math.round(targetHours * 10) / 10,
+      entryCount: weekEntries.length
     });
     
     weekStart.setDate(weekStart.getDate() + 7);
@@ -179,7 +181,7 @@ export function aggregateByWeek(
   timeEntries: TimeEntry[],
   user: User,
   weekStart: Date
-): { day: string; hours: number; targetHours: number }[] {
+): { day: string; hours: number; targetHours: number; entryCount: number }[] {
   const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   const now = new Date();
   
@@ -188,12 +190,16 @@ export function aggregateByWeek(
   for (let i = 0; i < 7; i++) {
     const dayDate = new Date(weekStart);
     dayDate.setDate(dayDate.getDate() + i);
+    dayDate.setHours(0, 0, 0, 0);
     
     let dayEnd = new Date(dayDate);
     dayEnd.setHours(23, 59, 59, 999);
     
-    // Begrenze auf aktuelles Datum
-    dayEnd = dayEnd > now ? now : dayEnd;
+    // Begrenze auf aktuelles Datum - aber nur für zukünftige Tage
+    const isInFuture = dayDate > now;
+    if (isInFuture) {
+      dayEnd = now;
+    }
     
     // Filtere TimeEntries für diesen Tag und User
     const dayEntries = timeEntries.filter(entry => {
@@ -212,7 +218,8 @@ export function aggregateByWeek(
     result.push({
       day: days[dayDate.getDay()],
       hours: Math.round(hours * 10) / 10,
-      targetHours: Math.round(targetHours * 10) / 10
+      targetHours: Math.round(targetHours * 10) / 10,
+      entryCount: dayEntries.length
     });
   }
   
