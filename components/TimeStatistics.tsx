@@ -85,8 +85,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
   // Finde Abwesenheiten in diesem Zeitraum
   const relevantAbsences = absenceRequests.filter(request => {
-    if (request.userId !== selectedUser.id) return false;
-    if (request.status !== 'approved' as AbsenceStatus) return false;
+    // Prüfe User ID
+    if (request.userId !== selectedUser?.id) return false;
+    
+    // Prüfe Status - nur genehmigte Abwesenheiten
+    if (request.status !== 'approved') return false;
 
     const reqStart = new Date(request.startDate);
     const reqEnd = new Date(request.endDate);
@@ -111,6 +114,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     other: 'Sonstiges'
   };
 
+  // Formatiere Datumsbereich
+  const dateRangeText = viewMode === 'week' 
+    ? startDate.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })
+    : `${startDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${endDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+
   return (
     <div 
       className="bg-surface border border-border rounded-lg p-3 shadow-lg"
@@ -120,7 +128,8 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         color: COLORS.text
       }}
     >
-      <p className="font-semibold mb-2">{label}</p>
+      <p className="font-semibold mb-1">{label}</p>
+      <p className="text-xs mb-2" style={{ color: COLORS.textSecondary }}>{dateRangeText}</p>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
           <span className="text-text-secondary">Gearbeitet:</span>
