@@ -139,12 +139,17 @@ export function aggregateByMonth(
   while (weekStart <= monthEnd) {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
     
     // Begrenze auf Monatsende
-    let effectiveEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+    let effectiveEnd = weekEnd > monthEnd ? new Date(monthEnd.getTime()) : new Date(weekEnd.getTime());
+    effectiveEnd.setHours(23, 59, 59, 999);
     
-    // Begrenze auf aktuelles Datum
-    effectiveEnd = effectiveEnd > now ? now : effectiveEnd;
+    // Begrenze auf aktuelles Datum - aber nur für zukünftige Zeiträume
+    const isInFuture = weekStart > now;
+    if (isInFuture) {
+      effectiveEnd = now;
+    }
     
     // Filtere TimeEntries für diese Woche und User
     const weekEntries = timeEntries.filter(entry => {
