@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TimeEntry, User, AbsenceRequest } from '../types';
+import { TimeEntry, User, AbsenceRequest, UserStatus } from '../types';
 import { formatTime } from './utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { 
@@ -404,7 +404,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
       {isAdmin && (
         <div className="px-6 py-3 border-b border-border bg-surface/50">
           <div className="flex items-center space-x-2 overflow-x-auto">
-            {users.filter(user => user.isActive !== false).map(user => (
+            {users.filter(user => user.status !== UserStatus.Inactive).map(user => (
               <button
                 key={user.id}
                 onClick={() => setSelectedUser(user)}
