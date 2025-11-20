@@ -229,6 +229,130 @@ export function calculateAverage(data: { hours: number }[]): number {
 }
 
 /**
+ * Berechnet Durchschnitt für Jahresansicht unter Berücksichtigung von Einstiegsdatum und aktuellem Datum
+ */
+export function calculateAverageForYear(
+  data: { month: string; hours: number; targetHours: number }[],
+  user: User,
+  year: number
+): number {
+  const now = new Date();
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  
+  // Filtere nur Monate, die relevant sind (nach Einstieg und bis heute)
+  const relevantMonths = data.filter((item, index) => {
+    const monthDate = new Date(year, index, 1);
+    const monthEnd = new Date(year, index + 1, 0);
+    
+    // Monat liegt in der Zukunft
+    if (monthDate > now) return false;
+    
+    // Monat liegt vor Einstiegsdatum
+    if (employmentStart && monthEnd < employmentStart) return false;
+    
+    return true;
+  });
+  
+  if (relevantMonths.length === 0) return 0;
+  
+  const sum = relevantMonths.reduce((acc, item) => acc + item.hours, 0);
+  return Math.round((sum / relevantMonths.length) * 10) / 10;
+}
+
+/**
+ * Berechnet Durchschnitt der Soll-Stunden für Jahresansicht
+ */
+export function calculateAverageTargetForYear(
+  data: { month: string; hours: number; targetHours: number }[],
+  user: User,
+  year: number
+): number {
+  const now = new Date();
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  
+  const relevantMonths = data.filter((item, index) => {
+    const monthDate = new Date(year, index, 1);
+    const monthEnd = new Date(year, index + 1, 0);
+    
+    if (monthDate > now) return false;
+    if (employmentStart && monthEnd < employmentStart) return false;
+    
+    return true;
+  });
+  
+  if (relevantMonths.length === 0) return 0;
+  
+  const sum = relevantMonths.reduce((acc, item) => acc + item.targetHours, 0);
+  return Math.round((sum / relevantMonths.length) * 10) / 10;
+}
+
+/**
+ * Berechnet Durchschnitt für Monatsansicht unter Berücksichtigung von Einstiegsdatum und aktuellem Datum
+ */
+export function calculateAverageForMonth(
+  data: { week: string; hours: number; targetHours: number }[],
+  user: User,
+  year: number,
+  month: number
+): number {
+  const now = new Date();
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  const monthStart = new Date(year, month, 1);
+  
+  // Filtere nur Wochen, die relevant sind
+  const relevantWeeks = data.filter((item, index) => {
+    const weekStart = new Date(monthStart);
+    weekStart.setDate(weekStart.getDate() + (index * 7));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    // Woche liegt in der Zukunft
+    if (weekStart > now) return false;
+    
+    // Woche liegt vor Einstiegsdatum
+    if (employmentStart && weekEnd < employmentStart) return false;
+    
+    return true;
+  });
+  
+  if (relevantWeeks.length === 0) return 0;
+  
+  const sum = relevantWeeks.reduce((acc, item) => acc + item.hours, 0);
+  return Math.round((sum / relevantWeeks.length) * 10) / 10;
+}
+
+/**
+ * Berechnet Durchschnitt der Soll-Stunden für Monatsansicht
+ */
+export function calculateAverageTargetForMonth(
+  data: { week: string; hours: number; targetHours: number }[],
+  user: User,
+  year: number,
+  month: number
+): number {
+  const now = new Date();
+  const employmentStart = user.employmentStartDate ? new Date(user.employmentStartDate) : null;
+  const monthStart = new Date(year, month, 1);
+  
+  const relevantWeeks = data.filter((item, index) => {
+    const weekStart = new Date(monthStart);
+    weekStart.setDate(weekStart.getDate() + (index * 7));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    if (weekStart > now) return false;
+    if (employmentStart && weekEnd < employmentStart) return false;
+    
+    return true;
+  });
+  
+  if (relevantWeeks.length === 0) return 0;
+  
+  const sum = relevantWeeks.reduce((acc, item) => acc + item.targetHours, 0);
+  return Math.round((sum / relevantWeeks.length) * 10) / 10;
+}
+
+/**
  * Berechnet Durchschnittswerte nur für Arbeitstage (Wochenansicht)
  * Berücksichtigt WorkSchedule und Anstellungsdatum
  */

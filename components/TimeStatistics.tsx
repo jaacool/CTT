@@ -5,6 +5,10 @@ import {
   aggregateByMonth, 
   aggregateByWeek,
   calculateAverage,
+  calculateAverageForYear,
+  calculateAverageTargetForYear,
+  calculateAverageForMonth,
+  calculateAverageTargetForMonth,
   calculateAverageForWorkDays,
   calculateAverageTargetForWorkDays,
   calculateTotalTarget,
@@ -69,11 +73,40 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     }
   }, [viewMode, selectedUser, timeEntries, selectedYear, selectedMonth, selectedWeek]);
 
-  // Berechne Durchschnitt und Soll
-  const averageHours = useMemo(() => calculateAverage(chartData), [chartData]);
+  // Berechne Durchschnitt und Soll basierend auf ViewMode
+  const averageHours = useMemo(() => {
+    if (!selectedUser) return 0;
+    
+    switch (viewMode) {
+      case 'year':
+        return calculateAverageForYear(chartData as any, selectedUser, selectedYear);
+      case 'month':
+        return calculateAverageForMonth(chartData as any, selectedUser, selectedYear, selectedMonth);
+      case 'week':
+        return calculateAverageForWorkDays(chartData as any, selectedUser, selectedWeek);
+      default:
+        return calculateAverage(chartData);
+    }
+  }, [viewMode, chartData, selectedUser, selectedYear, selectedMonth, selectedWeek]);
+  
+  const averageTarget = useMemo(() => {
+    if (!selectedUser) return 0;
+    
+    switch (viewMode) {
+      case 'year':
+        return calculateAverageTargetForYear(chartData as any, selectedUser, selectedYear);
+      case 'month':
+        return calculateAverageTargetForMonth(chartData as any, selectedUser, selectedYear, selectedMonth);
+      case 'week':
+        return calculateAverageTargetForWorkDays(chartData as any, selectedUser, selectedWeek);
+      default:
+        const totalTarget = calculateTotalTarget(chartData);
+        return chartData.length > 0 ? totalTarget / chartData.length : 0;
+    }
+  }, [viewMode, chartData, selectedUser, selectedYear, selectedMonth, selectedWeek]);
+  
   const totalTarget = useMemo(() => calculateTotalTarget(chartData), [chartData]);
   const totalHours = useMemo(() => calculateTotalHours(chartData), [chartData]);
-  const averageTarget = chartData.length > 0 ? totalTarget / chartData.length : 0;
 
   // Navigation Handlers
   const handlePreviousYear = () => setSelectedYear(prev => prev - 1);
@@ -277,14 +310,14 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
               <span className="text-text-secondary">Durchschnitt:</span>
               <span className="text-text-primary font-semibold">
-                {calculateAverage(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth))}h
+                {calculateAverageForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
               <span className="text-text-secondary">Soll:</span>
               <span className="text-text-primary font-semibold">
-                {Math.round((calculateTotalTarget(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth)) / aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth).length) * 10) / 10}h
+                {calculateAverageTargetForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)}h
               </span>
             </div>
           </div>
@@ -314,13 +347,13 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             />
             <Legend />
             <ReferenceLine 
-              y={calculateAverage(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth))} 
+              y={calculateAverageForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)} 
               stroke={COLORS.average} 
               strokeDasharray="5 5" 
               label={{ value: 'Durchschnitt', fill: COLORS.average, fontSize: 12 }}
             />
             <ReferenceLine 
-              y={calculateTotalTarget(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth)) / aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth).length} 
+              y={calculateAverageTargetForMonth(aggregateByMonth(timeEntries, selectedUser, selectedYear, selectedMonth), selectedUser, selectedYear, selectedMonth)} 
               stroke={COLORS.target} 
               strokeDasharray="5 5" 
               label={{ value: 'Soll', fill: COLORS.target, fontSize: 12 }}
