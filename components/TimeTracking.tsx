@@ -52,12 +52,10 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
 
   const weekBounds = getWeekBounds(currentDate);
   const weekNumber = getWeekNumber(currentDate);
-  const weekStart = getWeekStart(currentDate);
+  const selectedWeek = getWeekStart(currentDate);
 
   // Filtere TimeEntries für aktuellen User
   const userTimeEntries = useMemo(() => {
-    console.log('🔍 Filtere TimeEntries für User:', currentUser.name, currentUser.id);
-    console.log('Total TimeEntries:', timeEntries.length);
     let filtered = timeEntries.filter(te => te.user.id === currentUser.id);
     
     // Projekt-Filter anwenden
@@ -67,37 +65,16 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
       );
     }
     
-    console.log('Gefilterte TimeEntries für User:', filtered.length);
-    console.log('Erste 3 Einträge:', filtered.slice(0, 3).map(te => ({
-      id: te.id,
-      userId: te.user.id,
-      userName: te.user.name,
-      duration: te.duration,
-      task: te.taskTitle
-    })));
     return filtered;
   }, [timeEntries, currentUser, projectFilter]);
 
-  // Verwende aggregateByWeek aus timeStatistics.ts
-  // Wenn Projektfilter aktiv ist, müssen wir die gefilterten Einträge verwenden
+  // Verwende aggregateByWeek GENAU wie TimeStatistics
+  // WICHTIG: Immer alle timeEntries übergeben, aggregateByWeek filtert selbst nach User
   const weekData = useMemo(() => {
-    const entriesToUse = projectFilter ? userTimeEntries : timeEntries;
-    console.log('📊 WeekData calculation:');
-    console.log('  - Total entries:', timeEntries.length);
-    console.log('  - User entries:', userTimeEntries.length);
-    console.log('  - Entries to use:', entriesToUse.length);
-    console.log('  - ProjectFilter:', projectFilter);
-    console.log('  - CurrentUser:', currentUser.name, currentUser.id);
-    console.log('  - WeekStart:', weekStart.toISOString());
-    console.log('  - CurrentDate:', currentDate.toISOString());
-    
-    const result = aggregateByWeek(entriesToUse, currentUser, weekStart);
-    console.log('📊 WeekData result:', result);
-    console.log('  - Days with data:', result.filter(d => d.hours > 0).length);
-    console.log('  - Total hours:', result.reduce((sum, d) => sum + d.hours, 0));
-    
-    return result;
-  }, [timeEntries, userTimeEntries, currentUser, weekStart, projectFilter, currentDate]);
+    // Wenn Projektfilter aktiv, verwende gefilterte Einträge, sonst alle
+    const entriesToAggregate = projectFilter ? userTimeEntries : timeEntries;
+    return aggregateByWeek(entriesToAggregate, currentUser, selectedWeek);
+  }, [timeEntries, userTimeEntries, currentUser, selectedWeek, projectFilter]);
 
   // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
   const weekTotalHoursStr = useMemo(() => {
@@ -105,12 +82,12 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   }, [weekData]);
 
   const weekAverageHoursStr = useMemo(() => {
-    return calculateAverageForWorkDays(weekData, currentUser, weekStart);
-  }, [weekData, currentUser, weekStart]);
+    return calculateAverageForWorkDays(weekData, currentUser, selectedWeek);
+  }, [weekData, currentUser, selectedWeek]);
 
   const weekTargetHoursStr = useMemo(() => {
-    return calculateAverageTargetForWorkDays(weekData, currentUser, weekStart);
-  }, [weekData, currentUser, weekStart]);
+    return calculateAverageTargetForWorkDays(weekData, currentUser, selectedWeek);
+  }, [weekData, currentUser, selectedWeek]);
 
   // Als Zahlen für Berechnungen
   const weekTotalHours = parseFloat(weekTotalHoursStr);
