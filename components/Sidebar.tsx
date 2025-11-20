@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>Meine Zeiten</span>
+                <span>{currentUser?.role === 'role-1' ? 'Zeiten' : 'Meine Zeiten'}</span>
             </button>
             {/* Zeitauswertungen nur für Admins */}
             {currentUser?.role === 'role-1' && (
