@@ -20,7 +20,12 @@ type ViewMode = 'overview' | 'day' | 'week';
 
 export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Setze auf heute, damit wir die aktuelle Woche sehen
+  const [currentDate, setCurrentDate] = useState(() => {
+    const today = new Date();
+    console.log('🗓️ TimeTracking initialized with date:', today.toISOString());
+    return today;
+  });
   const [projectFilter, setProjectFilter] = useState<string>('');
 
   // Berechne Wochennummer
@@ -77,11 +82,22 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   // Wenn Projektfilter aktiv ist, müssen wir die gefilterten Einträge verwenden
   const weekData = useMemo(() => {
     const entriesToUse = projectFilter ? userTimeEntries : timeEntries;
-    console.log('📊 WeekData - Entries to use:', entriesToUse.length, 'ProjectFilter:', projectFilter);
+    console.log('📊 WeekData calculation:');
+    console.log('  - Total entries:', timeEntries.length);
+    console.log('  - User entries:', userTimeEntries.length);
+    console.log('  - Entries to use:', entriesToUse.length);
+    console.log('  - ProjectFilter:', projectFilter);
+    console.log('  - CurrentUser:', currentUser.name, currentUser.id);
+    console.log('  - WeekStart:', weekStart.toISOString());
+    console.log('  - CurrentDate:', currentDate.toISOString());
+    
     const result = aggregateByWeek(entriesToUse, currentUser, weekStart);
     console.log('📊 WeekData result:', result);
+    console.log('  - Days with data:', result.filter(d => d.hours > 0).length);
+    console.log('  - Total hours:', result.reduce((sum, d) => sum + d.hours, 0));
+    
     return result;
-  }, [timeEntries, userTimeEntries, currentUser, weekStart, projectFilter]);
+  }, [timeEntries, userTimeEntries, currentUser, weekStart, projectFilter, currentDate]);
 
   // Berechne Statistiken mit den Utility-Funktionen (als Strings, wie von den Funktionen zurückgegeben)
   const weekTotalHoursStr = useMemo(() => {
