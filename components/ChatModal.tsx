@@ -216,21 +216,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setViewMode(ChatViewMode.ByProject);
-                }}
-                className={`px-4 md:px-3 py-1.5 md:py-1 rounded text-xs font-semibold transition-colors ${
-                  viewMode === ChatViewMode.ByProject
-                    ? 'glow-button text-text-primary'
-                    : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <span className="hidden md:inline">Nach Projekt</span>
-                <span className="md:hidden">Projekt</span>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
                   setViewMode(ChatViewMode.ByChannel);
                 }}
                 className={`px-4 md:px-3 py-1.5 md:py-1 rounded text-xs font-semibold transition-colors ${
@@ -241,6 +226,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               >
                 <span className="hidden md:inline">Nach Channel</span>
                 <span className="md:hidden">Channel</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setViewMode(ChatViewMode.ByProject);
+                }}
+                className={`px-4 md:px-3 py-1.5 md:py-1 rounded text-xs font-semibold transition-colors ${
+                  viewMode === ChatViewMode.ByProject
+                    ? 'glow-button text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <span className="hidden md:inline">Nach Projekt</span>
+                <span className="md:hidden">Projekt</span>
               </button>
             </div>
           </div>
