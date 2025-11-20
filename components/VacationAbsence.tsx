@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AbsenceRequest, AbsenceType, AbsenceStatus, User, TimeEntry } from '../types';
+import { AbsenceRequest, AbsenceType, AbsenceStatus, User, TimeEntry, UserStatus } from '../types';
 import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, PlusIcon, CalendarIcon, CheckCircleIcon, XIcon, XCircleIcon, ClockIcon } from './Icons';
 import { GermanState, GERMAN_STATE_NAMES, isHoliday, isWeekend } from '../utils/holidays';
 import { calculateVacationBalance, calculateWorkDays } from '../utils/vacationCalculations';
@@ -973,42 +973,42 @@ export const VacationAbsence: React.FC<VacationAbsenceProps> = ({
 
       {/* Admin User Tabs */}
       {isAdmin && (
-        <div className="bg-surface rounded-xl p-4 border border-border">
-          <h3 className="text-sm font-bold text-text-primary mb-3">Ansicht wählen</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="bg-surface rounded-xl p-3 border border-border">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <span className="text-xs font-bold text-text-secondary whitespace-nowrap mr-2">Ansicht:</span>
             {/* Admin Ansicht Tab */}
             <button
               onClick={() => setSelectedUserTab('admin')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                 selectedUserTab === 'admin'
-                  ? 'bg-glow-purple text-white border-2 border-glow-purple'
-                  : 'bg-overlay text-text-secondary border-2 border-border hover:border-glow-purple/50'
+                  ? 'bg-glow-purple text-white border border-glow-purple'
+                  : 'bg-overlay text-text-secondary border border-border hover:border-glow-purple/50'
               }`}
             >
-              <div className="flex items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="flex items-center space-x-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                <span>Admin Ansicht</span>
+                <span>Admin</span>
               </div>
             </button>
             
             {/* User Tabs - Nur aktive User */}
-            {allUsers.filter(user => user.isActive !== false).map(user => (
+            {allUsers.filter(user => user.status !== UserStatus.Inactive).map(user => (
               <button
                 key={user.id}
                 onClick={() => setSelectedUserTab(user.id)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                   selectedUserTab === user.id
-                    ? 'bg-glow-cyan text-white border-2 border-glow-cyan'
-                    : 'bg-overlay text-text-secondary border-2 border-border hover:border-glow-cyan/50'
+                    ? 'bg-glow-cyan text-white border border-glow-cyan'
+                    : 'bg-overlay text-text-secondary border border-border hover:border-glow-cyan/50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <img src={user.avatarUrl} alt={user.name} className="w-5 h-5 rounded-full" />
+                <div className="flex items-center space-x-1.5">
+                  <img src={user.avatarUrl} alt={user.name} className="w-4 h-4 rounded-full" />
                   <span>{user.name}</span>
                 </div>
               </button>

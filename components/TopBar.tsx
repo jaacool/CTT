@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Role, AbsenceRequest } from '../types';
+import { User, Role, AbsenceRequest, UserStatus } from '../types';
 
 interface TopBarProps {
   user: User;
@@ -95,7 +95,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
               <div className="px-3 py-2 text-xs text-text-secondary border-b border-border mb-2">
                 Nutzer wechseln (Test-Modus)
               </div>
-              {users.map(u => (
+              {users.filter(u => u.status !== UserStatus.Inactive).map(u => (
                 <button
                   key={u.id}
                   onClick={() => {
