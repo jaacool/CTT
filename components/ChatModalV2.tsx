@@ -376,8 +376,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   .filter(user => user.id !== currentUser.id)
                   .filter(user => user.status === 'Aktiv') // Nur aktive User anzeigen (UserStatus.Active)
                   .filter(user => {
-                    // Wenn showAdminsInDMs false ist, blende Admins aus (außer der currentUser ist selbst Admin)
-                    if (!showAdminsInDMs && currentUser.role !== 'admin' && user.role === 'admin') {
+                    // Wenn showAdminsInDMs false ist, blende Admins aus
+                    if (!showAdminsInDMs && user.role === 'admin') {
                       return false;
                     }
                     return true;
