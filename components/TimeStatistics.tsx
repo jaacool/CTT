@@ -314,8 +314,10 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     }
   };
 
+  const shortMonthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
   // Berechne Daten basierend auf ViewMode
-  const chartData = useMemo(() => {
+  const rawChartData = useMemo(() => {
     if (!selectedUser) return [];
     
     switch (viewMode) {
@@ -329,6 +331,52 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         return [];
     }
   }, [viewMode, selectedUser, timeEntries, selectedYear, selectedMonth, selectedWeek]);
+
+  // Daten mit Abwesenheits-Info anreichern
+  const chartData = useMemo(() => {
+    return rawChartData.map((item: any) => {
+      let startDate: Date;
+      let endDate: Date;
+
+      if (viewMode === 'year') {
+        const monthIndex = shortMonthNames.indexOf(item.month);
+        startDate = new Date(selectedYear, monthIndex, 1);
+        endDate = new Date(selectedYear, monthIndex + 1, 0, 23, 59, 59);
+      } else if (viewMode === 'month') {
+        const weekNumber = parseInt(item.week.replace('KW ', '')) - 1;
+        const monthStart = new Date(selectedYear, selectedMonth, 1);
+        startDate = new Date(monthStart);
+        startDate.setDate(startDate.getDate() + (weekNumber * 7));
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59);
+      } else {
+        // item.day ist "Mo", "Di", ...
+        const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+        const dayIndex = days.indexOf(item.day);
+        startDate = new Date(selectedWeek);
+        startDate.setDate(startDate.getDate() + dayIndex);
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59);
+      }
+
+      const absence = absenceRequests.find(req => {
+        if (req.user.id !== selectedUser?.id) return false;
+        if (req.status !== AbsenceStatus.Approved) return false;
+        
+        const reqStart = new Date(req.startDate);
+        const reqEnd = new Date(req.endDate);
+        
+        // Prüfe auf Überlappung
+        return reqStart <= endDate && reqEnd >= startDate;
+      });
+
+      return {
+        ...item,
+        absence
+      };
+    });
+  }, [rawChartData, absenceRequests, selectedUser, viewMode, selectedYear, selectedMonth, selectedWeek]);
 
   // Berechne Durchschnitt und Soll basierend auf ViewMode
   const averageHours = useMemo(() => {
@@ -420,6 +468,46 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Custom Axis Tick Component
+  const CustomXAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    
+    // Finde Item basierend auf Label
+    const item = chartData.find((d: any) => {
+      if (viewMode === 'year') return d.month === payload.value;
+      if (viewMode === 'month') return d.week === payload.value;
+      return d.day === payload.value;
+    });
+    
+    const hasAbsence = !!item?.absence;
+    const color = hasAbsence ? ABSENCE_COLORS[item.absence.type] : 'transparent';
+    const isRotated = isMobile && viewMode !== 'week';
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text 
+          x={0} 
+          y={0} 
+          dy={16} 
+          textAnchor={isRotated ? 'end' : 'middle'}
+          fill={COLORS.textSecondary}
+          fontSize={isMobile ? 10 : 12}
+          transform={isRotated ? 'rotate(-45)' : ''}
+        >
+          {payload.value}
+        </text>
+        {hasAbsence && (
+          <circle 
+            cx={isRotated ? -5 : 0} 
+            cy={isRotated ? 20 : 24} 
+            r={3} 
+            fill={color} 
+          />
+        )}
+      </g>
+    );
+  };
 
   if (!selectedUser) {
     return (
@@ -565,13 +653,11 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               <XAxis 
                 dataKey={xAxisKey} 
                 stroke={COLORS.textSecondary}
-                style={{ fontSize: isMobile ? '10px' : '12px' }}
                 tickLine={false}
                 axisLine={false}
                 dy={10}
-                angle={isMobile && viewMode !== 'week' ? -45 : 0}
-                textAnchor={isMobile && viewMode !== 'week' ? 'end' : 'middle'}
-                height={isMobile && viewMode !== 'week' ? 60 : 30}
+                tick={<CustomXAxisTick />}
+                height={isMobile && viewMode !== 'week' ? 60 : 40}
                 interval={0}
               />
               <YAxis 
