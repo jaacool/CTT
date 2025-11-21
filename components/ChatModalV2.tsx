@@ -310,6 +310,30 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return null;
   };
   
+  // Convert URLs in text to clickable links
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+  
   // Scroll to message
   const scrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
@@ -825,7 +849,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                         </div>
                                         {/* Actual Message Content */}
-                                        <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                        <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
                                         {/* Link Preview - only for actual content, not reply */}
                                         {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
                                           <div className="mt-2">
@@ -837,7 +861,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   }
                                   return (
                                     <>
-                                      <div className="whitespace-pre-wrap">{message.content}</div>
+                                      <div className="whitespace-pre-wrap">{renderTextWithLinks(message.content)}</div>
                                       {/* Link Preview - for non-reply messages */}
                                       {message.content.match(/https?:\/\/[^\s]+/) && (
                                         <div className="mt-2">
@@ -961,7 +985,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                             </div>
                                             {/* Actual Message Content */}
-                                            <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                            <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
                                             {/* Link Preview - only for actual content, not reply */}
                                             {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
                                               <div className="mt-2">
@@ -973,7 +997,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       }
                                       return (
                                         <>
-                                          <div className="whitespace-pre-wrap">{message.content}</div>
+                                          <div className="whitespace-pre-wrap">{renderTextWithLinks(message.content)}</div>
                                           {/* Link Preview - for non-reply messages */}
                                           {message.content.match(/https?:\/\/[^\s]+/) && (
                                             <div className="mt-2">
