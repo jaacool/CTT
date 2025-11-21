@@ -327,7 +327,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-glow-purple hover:text-glow-pink underline transition-colors"
+            className="underline transition-all hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]"
+            style={{
+              background: 'linear-gradient(135deg, #A855F7, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {part}
