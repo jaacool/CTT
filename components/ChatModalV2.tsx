@@ -50,11 +50,33 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);
   const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Click outside to close dropdown - PROFESSIONELL
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProjectDropdown(false);
+        setProjectSearchQuery('');
+      }
+    };
+
+    if (showProjectDropdown) {
+      // Delay um zu verhindern dass der öffnende Klick sofort schließt
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProjectDropdown]);
 
   // Get accessible channels
   const accessibleChannels = channels.filter(channel =>
@@ -169,30 +191,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           </div>
 
           {/* Project Filter Dropdown */}
-          <div className="relative mr-2">
+          <div className="relative mr-2" ref={dropdownRef}>
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
               className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
             >
               <FolderIcon className="w-4 h-4" />
               <span className="hidden md:inline">
-                {currentProject ? getCleanProjectName(currentProject.name) : 'Alle Projekte'}
+                {currentProject ? currentProject.name : 'Alle Projekte'}
               </span>
               <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
               <ChevronDownIcon className="w-4 h-4" />
             </button>
 
             {showProjectDropdown && (
-              <>
-                {/* Overlay zum Schließen - muss ÜBER dem Chat-Modal sein */}
-                <div 
-                  className="fixed inset-0 bg-transparent z-[100]" 
-                  onClick={() => {
-                    setShowProjectDropdown(false);
-                    setProjectSearchQuery('');
-                  }}
-                />
-                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-[101] max-h-96 overflow-hidden flex flex-col">
+                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-[60] max-h-96 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-border">
                   <input
                     type="text"
@@ -234,7 +247,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     >
                       <span className="text-xl flex-shrink-0">{project.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{getCleanProjectName(project.name)}</div>
+                        <div className="text-sm font-medium">{project.name}</div>
                         {project.status === 'AKTIV' && (
                           <div className="text-xs text-glow-purple mt-0.5">Aktiv</div>
                         )}
@@ -243,7 +256,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   ))}
                 </div>
               </div>
-              </>
             )}
           </div>
 
