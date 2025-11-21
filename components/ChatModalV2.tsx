@@ -1096,12 +1096,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 onMouseLeave={() => setHoveredMessageId(null)}
                               >
                                 {/* Message Content Bubble */}
-                                <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
+                                <div className="rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent overflow-hidden"
                                   style={{
                                     background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
                                     border: '1px solid transparent'
                                   }}
                                 >
+                                <div className="px-4 py-2.5">
                                 {(() => {
                                   const reply = parseReply(message.content);
                                   
@@ -1184,10 +1185,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     </>
                                   );
                                 })()}
+                                </div>
                                 
                                 {/* Attachments */}
                                 {message.attachments && message.attachments.length > 0 && (
-                                  <div className="mt-2 space-y-2 flex flex-col items-center">
+                                  <div className="flex flex-col items-stretch">
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx}>
                                         {isImageFile(attachment.type) ? (
@@ -1196,14 +1198,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             src={attachment.url} 
                                             alt={attachment.name}
                                             onClick={() => setPreviewAttachment(attachment)}
-                                            className="max-w-xs rounded-lg cursor-pointer"
+                                            className="w-full cursor-pointer"
                                           />
                                         ) : isVideoFile(attachment.type) ? (
                                           // Video Preview - Click to enlarge
                                           <video 
                                             src={attachment.url} 
                                             onClick={() => setPreviewAttachment(attachment)}
-                                            className="max-w-xs rounded-lg w-full cursor-pointer"
+                                            className="w-full cursor-pointer"
                                           />
                                         ) : isAudioFile(attachment.type) ? (
                                           // Audio Player
@@ -1458,7 +1460,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
                                   {/* Message Content Bubble */}
-                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                  <div className="rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md overflow-hidden">
+                                  <div className="px-4 py-2.5">
                                     {(() => {
                                       const reply = parseReply(message.content);
                                       
@@ -1542,10 +1545,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         </>
                                       );
                                     })()}
+                                    </div>
                                     
                                     {/* Attachments */}
                                     {message.attachments && message.attachments.length > 0 && (
-                                      <div className="mt-2 space-y-2 flex flex-col items-center">
+                                      <div className="flex flex-col items-stretch">
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx}>
                                             {!attachment.url ? (
@@ -1609,14 +1613,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 src={attachment.url} 
                                                 alt={attachment.name}
                                                 onClick={() => setPreviewAttachment(attachment)}
-                                                className="max-w-xs rounded-lg cursor-pointer"
+                                                className="w-full cursor-pointer"
                                               />
                                             ) : isVideoFile(attachment.type) ? (
                                               // Video Preview - Click to enlarge
                                               <video 
                                                 src={attachment.url} 
                                                 onClick={() => setPreviewAttachment(attachment)}
-                                                className="max-w-xs rounded-lg w-full cursor-pointer"
+                                                className="w-full cursor-pointer"
                                               />
                                             ) : isAudioFile(attachment.type) ? (
                                               // Audio Player
