@@ -808,11 +808,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <button
                       onClick={() => {
                         const messageId = showThreadView;
+                        scrollToMessage(messageId);
                         setShowThreadView(null);
-                        // Scrolle zur ursprünglichen Nachricht nach kurzer Verzögerung
-                        setTimeout(() => {
-                          scrollToMessage(messageId);
-                        }, 100);
                       }}
                       className="p-2 hover:bg-overlay rounded-lg transition-colors"
                       title="Zurück zum Haupt-Chat"
