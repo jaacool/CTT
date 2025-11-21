@@ -205,6 +205,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioPlaybackRef = useRef<HTMLAudioElement | null>(null);
+
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
   
@@ -521,6 +531,117 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         alert('Fehler beim Senden der Nachricht. Bitte versuche es erneut.');
       }
     }
+  };
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      // Start timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Fehler beim Starten der Aufnahme. Bitte erlaube Mikrofon-Zugriff.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+    setAudioBlob(null);
+    setRecordingTime(0);
+  };
+
+  const playRecording = () => {
+    if (audioBlob) {
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      audioPlaybackRef.current = audio;
+      audio.play();
+      setIsPlayingRecording(true);
+      audio.onended = () => {
+        setIsPlayingRecording(false);
+      };
+    }
+  };
+
+  const pausePlayback = () => {
+    if (audioPlaybackRef.current) {
+      audioPlaybackRef.current.pause();
+      setIsPlayingRecording(false);
+    }
+  };
+
+  const sendVoiceMessage = async () => {
+    if (!audioBlob || !currentChannel) return;
+
+    try {
+      // Create File from Blob
+      const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+      
+      // Upload to Supabase
+      const { uploadChatFiles } = await import('../utils/fileUpload');
+      const uploadedAttachments = await uploadChatFiles([audioFile], currentChannel.id);
+      
+      // Send as message
+      if (uploadedAttachments.length > 0) {
+        onSendMessage('', currentChannel.id, currentProject?.id || '', uploadedAttachments);
+      }
+
+      // Reset
+      setAudioBlob(null);
+      setRecordingTime(0);
+
+      // Scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 50);
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      alert('Fehler beim Senden der Sprachnachricht.');
+    }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Handle file selection
@@ -2107,25 +2228,93 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       }}
                     />
                   </div>
-                  <button
-                    onClick={() => {
-                      console.log('🚀 Send button clicked! Files:', selectedFiles.length, 'Text:', messageInput.trim().length);
-                      handleSendMessage();
-                    }}
-                    disabled={messageInput.trim().length === 0 && selectedFiles.length === 0}
-                    className="p-3 rounded-full transition-all relative overflow-hidden"
-                    style={{
-                      background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
-                        ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
-                        : 'var(--color-overlay)'
-                    }}
-                  >
-                    {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
-                      <SendIcon className="w-5 h-5 text-white" />
-                    ) : (
-                      <MicIcon className="w-5 h-5 text-text-secondary" />
-                    )}
-                  </button>
+                  
+                  {/* Voice Recording UI or Send Button */}
+                  {isRecording || audioBlob ? (
+                    <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-full">
+                      {isRecording ? (
+                        <>
+                          {/* Recording indicator */}
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-mono text-text-primary">{formatRecordingTime(recordingTime)}</span>
+                          <button
+                            onClick={stopRecording}
+                            className="p-2 hover:bg-overlay/80 rounded-full transition-colors"
+                            title="Aufnahme beenden"
+                          >
+                            <svg className="w-5 h-5 text-text-primary" fill="currentColor" viewBox="0 0 24 24">
+                              <rect x="6" y="6" width="12" height="12" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={cancelRecording}
+                            className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
+                            title="Abbrechen"
+                          >
+                            <XIcon className="w-5 h-5 text-red-500" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Preview controls */}
+                          <span className="text-sm font-mono text-text-primary">{formatRecordingTime(recordingTime)}</span>
+                          <button
+                            onClick={isPlayingRecording ? pausePlayback : playRecording}
+                            className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors"
+                            title={isPlayingRecording ? "Pause" : "Abspielen"}
+                          >
+                            {isPlayingRecording ? (
+                              <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            )}
+                          </button>
+                          <button
+                            onClick={cancelRecording}
+                            className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
+                            title="Löschen"
+                          >
+                            <TrashIcon className="w-5 h-5 text-red-500" />
+                          </button>
+                          <button
+                            onClick={sendVoiceMessage}
+                            className="p-2 rounded-full transition-all"
+                            style={{ background: 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)' }}
+                            title="Senden"
+                          >
+                            <SendIcon className="w-5 h-5 text-white" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (messageInput.trim().length > 0 || selectedFiles.length > 0) {
+                          handleSendMessage();
+                        } else {
+                          startRecording();
+                        }
+                      }}
+                      disabled={false}
+                      className="p-3 rounded-full transition-all relative overflow-hidden"
+                      style={{
+                        background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
+                          ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
+                          : 'var(--color-overlay)'
+                      }}
+                    >
+                      {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
+                        <SendIcon className="w-5 h-5 text-white" />
+                      ) : (
+                        <MicIcon className="w-5 h-5 text-text-secondary" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
