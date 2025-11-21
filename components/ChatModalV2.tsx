@@ -71,12 +71,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
   ];
 
-  // Scroll to bottom when opening chat or switching channels
+  // Scroll to bottom when opening chat or switching channels (instant, no animation)
   useEffect(() => {
     if (isOpen && currentChannel) {
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      }, 50);
     }
   }, [isOpen, currentChannel?.id]);
 
