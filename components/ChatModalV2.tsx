@@ -170,7 +170,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             >
               <FolderIcon className="w-4 h-4" />
               <span className="hidden md:inline">
-                {currentProject ? currentProject.name.replace(/^#[a-zA-Z0-9]+\s+/, '') : 'Alle Projekte'}
+                {currentProject ? currentProject.name : 'Alle Projekte'}
               </span>
               <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
               <ChevronDownIcon className="w-4 h-4" />
@@ -178,16 +178,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {showProjectDropdown && (
               <>
-                {/* Overlay zum Schließen */}
+                {/* Overlay zum Schließen - muss ÜBER dem Chat-Modal sein */}
                 <div 
-                  className="fixed inset-0 z-[45]" 
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  className="fixed inset-0 bg-transparent z-[100]" 
+                  onClick={() => {
                     setShowProjectDropdown(false);
                     setProjectSearchQuery('');
                   }}
                 />
-                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-[60] max-h-96 overflow-hidden flex flex-col">
+                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-[101] max-h-96 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-border">
                   <input
                     type="text"
@@ -229,10 +228,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     >
                       <span className="text-xl flex-shrink-0">{project.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">
-                          {/* Entferne Projekt-ID aus dem Namen */}
-                          {project.name.replace(/^#[a-zA-Z0-9]+\s+/, '')}
-                        </div>
+                        <div className="text-sm font-medium">{project.name}</div>
                         {project.status === 'AKTIV' && (
                           <div className="text-xs text-glow-purple mt-0.5">Aktiv</div>
                         )}
