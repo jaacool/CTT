@@ -2281,161 +2281,202 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     onChange={handleFileSelect}
                     className="hidden"
                   />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors"
-                    title="Datei anhängen"
-                  >
-                    <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                    </svg>
-                  </button>
-                  <div 
-                    className="flex-1 relative"
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const files = Array.from(e.dataTransfer.files);
-                      if (files.length > 0) {
-                        setSelectedFiles(prev => [...prev, ...files]);
-                      }
-                    }}
-                  >
-                    <textarea
-                      ref={textareaRef}
-                      value={messageInput}
-                      onChange={(e) => {
-                        setMessageInput(e.target.value);
-                        // Dynamische Höhenanpassung - reset to auto to get correct scrollHeight
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        // Set height based on content, but respect min/max
-                        const newHeight = Math.max(44, Math.min(target.scrollHeight, 200));
-                        target.style.height = newHeight + 'px';
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
-                      className="w-full px-4 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none transition-all resize-none overflow-y-auto flex items-center caret-glow-purple placeholder:opacity-40"
-                      rows={1}
-                      style={{
-                        height: '44px',
-                        minHeight: '44px',
-                        maxHeight: '200px',
-                        paddingTop: '11px',
-                        paddingBottom: '11px',
-                        lineHeight: '22px',
-                        boxShadow: 'none',
-                      }}
-                    />
-                  </div>
                   
-                  {/* Voice Recording UI or Send Button */}
+                  {/* Voice Recording UI - Full Width */}
                   {isRecording || audioBlob ? (
-                    <div className="flex items-center space-x-3 bg-overlay px-4 py-3 rounded-full">
-                      {isRecording ? (
-                        <>
-                          {/* Waveform Visualization */}
-                          <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
-                            {audioLevels.map((level, index) => {
-                              const height = Math.max(4, level * 48); // Min 4px, max 48px
-                              const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
-                              return (
-                                <div
-                                  key={index}
-                                  className="flex-1 bg-red-500 rounded-full transition-all duration-75"
-                                  style={{
-                                    height: `${height}px`,
-                                    opacity: opacity,
-                                    minWidth: '2px',
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                          
-                          {/* Time Display */}
-                          <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
-                          
-                          {/* Stop Button */}
-                          <button
-                            onClick={stopRecording}
-                            className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors flex-shrink-0"
-                            title="Aufnahme beenden"
-                          >
-                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <rect x="6" y="6" width="12" height="12" />
-                            </svg>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {/* Preview controls */}
-                          <span className="text-sm font-mono text-text-primary">{formatRecordingTime(recordingTime)}</span>
-                          <button
-                            onClick={isPlayingRecording ? pausePlayback : playRecording}
-                            className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors"
-                            title={isPlayingRecording ? "Pause" : "Abspielen"}
-                          >
-                            {isPlayingRecording ? (
-                              <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    <>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors flex-shrink-0"
+                        title="Datei anhängen"
+                      >
+                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                      </button>
+                      
+                      <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 py-3 rounded-full">
+                        {isRecording ? (
+                          <>
+                            {/* Waveform Visualization */}
+                            <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
+                              {audioLevels.map((level, index) => {
+                                const height = Math.max(4, level * 48); // Min 4px, max 48px
+                                const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
+                                return (
+                                  <div
+                                    key={index}
+                                    className="flex-1 bg-red-500 rounded-full transition-all duration-75"
+                                    style={{
+                                      height: `${height}px`,
+                                      opacity: opacity,
+                                      minWidth: '2px',
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Time Display */}
+                            <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
+                            
+                            {/* Stop Button */}
+                            <button
+                              onClick={stopRecording}
+                              className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors flex-shrink-0"
+                              title="Aufnahme beenden"
+                            >
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <rect x="6" y="6" width="12" height="12" />
                               </svg>
-                            ) : (
-                              <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={cancelRecording}
-                            className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
-                            title="Löschen"
-                          >
-                            <TrashIcon className="w-5 h-5 text-red-500" />
-                          </button>
-                          <button
-                            onClick={sendVoiceMessage}
-                            className="p-2 rounded-full transition-all"
-                            style={{ background: 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)' }}
-                            title="Senden"
-                          >
-                            <SendIcon className="w-5 h-5 text-white" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {/* Waveform Placeholder for Preview */}
+                            <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
+                              {audioLevels.map((level, index) => {
+                                const height = Math.max(4, level * 48);
+                                return (
+                                  <div
+                                    key={index}
+                                    className="flex-1 bg-glow-purple rounded-full"
+                                    style={{
+                                      height: `${height}px`,
+                                      opacity: 0.5,
+                                      minWidth: '2px',
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Time Display */}
+                            <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
+                            
+                            {/* Play/Pause Button */}
+                            <button
+                              onClick={isPlayingRecording ? pausePlayback : playRecording}
+                              className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors flex-shrink-0"
+                              title={isPlayingRecording ? "Pause" : "Abspielen"}
+                            >
+                              {isPlayingRecording ? (
+                                <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z"/>
+                                </svg>
+                              )}
+                            </button>
+                            
+                            {/* Delete Button */}
+                            <button
+                              onClick={cancelRecording}
+                              className="p-2 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0"
+                              title="Löschen"
+                            >
+                              <TrashIcon className="w-5 h-5 text-red-500" />
+                            </button>
+                            
+                            {/* Send Button */}
+                            <button
+                              onClick={sendVoiceMessage}
+                              className="p-2 rounded-full transition-all flex-shrink-0"
+                              style={{ background: 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)' }}
+                              title="Senden"
+                            >
+                              <SendIcon className="w-5 h-5 text-white" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
                   ) : (
-                    <button
-                      onClick={() => {
-                        if (messageInput.trim().length > 0 || selectedFiles.length > 0) {
-                          handleSendMessage();
-                        } else {
-                          startRecording();
-                        }
-                      }}
-                      disabled={false}
-                      className="p-3 rounded-full transition-all relative overflow-hidden"
-                      style={{
-                        background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
-                          ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
-                          : 'var(--color-overlay)'
-                      }}
-                    >
-                      {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
-                        <SendIcon className="w-5 h-5 text-white" />
-                      ) : (
-                        <MicIcon className="w-5 h-5 text-text-secondary" />
-                      )}
-                    </button>
+                    <>
+                      {/* Normal Input Mode */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors"
+                        title="Datei anhängen"
+                      >
+                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                      </button>
+                      
+                      <div 
+                        className="flex-1 relative"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const files = Array.from(e.dataTransfer.files);
+                          if (files.length > 0) {
+                            setSelectedFiles(prev => [...prev, ...files]);
+                          }
+                        }}
+                      >
+                        <textarea
+                          ref={textareaRef}
+                          value={messageInput}
+                          onChange={(e) => {
+                            setMessageInput(e.target.value);
+                            // Dynamische Höhenanpassung - reset to auto to get correct scrollHeight
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            // Set height based on content, but respect min/max
+                            const newHeight = Math.max(44, Math.min(target.scrollHeight, 200));
+                            target.style.height = newHeight + 'px';
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
+                          className="w-full px-4 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none transition-all resize-none overflow-y-auto flex items-center caret-glow-purple placeholder:opacity-40"
+                          rows={1}
+                          style={{
+                            height: '44px',
+                            minHeight: '44px',
+                            maxHeight: '200px',
+                            paddingTop: '11px',
+                            paddingBottom: '11px',
+                            lineHeight: '22px',
+                            boxShadow: 'none',
+                          }}
+                        />
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          if (messageInput.trim().length > 0 || selectedFiles.length > 0) {
+                            handleSendMessage();
+                          } else {
+                            startRecording();
+                          }
+                        }}
+                        disabled={false}
+                        className="p-3 rounded-full transition-all relative overflow-hidden"
+                        style={{
+                          background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
+                            ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
+                            : 'var(--color-overlay)'
+                        }}
+                      >
+                        {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
+                          <SendIcon className="w-5 h-5 text-white" />
+                        ) : (
+                          <MicIcon className="w-5 h-5 text-text-secondary" />
+                        )}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
