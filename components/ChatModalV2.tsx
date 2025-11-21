@@ -998,8 +998,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               </svg>
                                               <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                             </div>
-                                            {/* Thread View Button - nur anzeigen wenn Thread mehr als 1 Nachricht hat */}
-                                            {buildThreadChain(message.id).length > 1 && (
+                                            {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
+                                            {buildThreadChain(message.id).length > 2 && (
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
@@ -1285,8 +1285,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   </svg>
                                                   <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                                 </div>
-                                                {/* Thread View Button - nur anzeigen wenn Thread mehr als 1 Nachricht hat */}
-                                                {buildThreadChain(message.id).length > 1 && (
+                                                {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
+                                                {buildThreadChain(message.id).length > 2 && (
                                                   <button
                                                     onClick={(e) => {
                                                       e.stopPropagation();
