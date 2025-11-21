@@ -60,6 +60,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
@@ -229,6 +230,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       onSendMessage(content, currentChannel.id, projectId);
       setMessageInput('');
       setReplyToMessage(null);
+      
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '48px';
+      }
     }
   };
 
@@ -1002,6 +1008,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 <div className="flex items-end space-x-3">
                   <div className="flex-1 relative">
                     <textarea
+                      ref={textareaRef}
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyDown={(e) => {
