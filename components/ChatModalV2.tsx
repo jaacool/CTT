@@ -131,11 +131,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return partner?.name || 'Unbekannt';
   };
 
-  // Clean project name - remove color codes like #0ea5e9
-  const getCleanProjectName = (name: string) => {
-    // Entferne alles was mit # startet und mit Leerzeichen endet
-    return name.replace(/^#[a-fA-F0-9]{6}\s+/, '').replace(/^#[a-zA-Z0-9]+\s+/, '');
-  };
 
   // Format timestamp
   const formatTimestamp = (timestamp: string) => {
@@ -190,7 +185,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <h2 className="text-xl font-bold text-text-primary">Chat</h2>
           </div>
 
-          {/* Project Filter Dropdown */}
+          {/* Project Filter Dropdown - NEU GEBAUT */}
           <div className="relative mr-2" ref={dropdownRef}>
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
@@ -205,7 +200,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </button>
 
             {showProjectDropdown && (
-                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-[60] max-h-96 overflow-hidden flex flex-col">
+              <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
+                {/* Suchfeld */}
                 <div className="p-3 border-b border-border">
                   <input
                     type="text"
@@ -213,10 +209,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     value={projectSearchQuery}
                     onChange={(e) => setProjectSearchQuery(e.target.value)}
                     className="w-full px-3 py-2 bg-overlay rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                    autoFocus
                   />
                 </div>
                 
-                <div className="overflow-y-auto">
+                {/* Projekt-Liste */}
+                <div className="max-h-80 overflow-y-auto">
+                  {/* Alle Projekte Option */}
                   <button
                     onClick={() => {
                       onSwitchProject('');
@@ -224,36 +223,47 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       setProjectSearchQuery('');
                     }}
                     className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
-                      !currentProject ? 'bg-glow-purple/20' : 'hover:bg-overlay'
+                      !currentProject 
+                        ? 'bg-glow-purple/20 text-text-primary' 
+                        : 'hover:bg-overlay text-text-secondary'
                     }`}
                   >
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
-                    <span className="text-sm font-medium">Alle Projekte</span>
+                    <span className="text-sm font-semibold">Alle Projekte</span>
                   </button>
                   
-                  {filteredProjects.map(project => (
-                    <button
-                      key={project.id}
-                      onClick={() => {
-                        onSwitchProject(project.id);
-                        setShowProjectDropdown(false);
-                        setProjectSearchQuery('');
-                      }}
-                      className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
-                        currentProject?.id === project.id ? 'bg-glow-purple/20' : 'hover:bg-overlay'
-                      }`}
-                    >
-                      <span className="text-xl flex-shrink-0">{project.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{project.name}</div>
-                        {project.status === 'AKTIV' && (
-                          <div className="text-xs text-glow-purple mt-0.5">Aktiv</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {/* Gefilterte Projekte */}
+                  {filteredProjects.length === 0 ? (
+                    <div className="p-4 text-center text-text-secondary text-sm">
+                      Keine Projekte gefunden
+                    </div>
+                  ) : (
+                    filteredProjects.map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          onSwitchProject(project.id);
+                          setShowProjectDropdown(false);
+                          setProjectSearchQuery('');
+                        }}
+                        className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                          currentProject?.id === project.id 
+                            ? 'bg-glow-purple/20 text-text-primary' 
+                            : 'hover:bg-overlay text-text-secondary'
+                        }`}
+                      >
+                        <span className="text-xl flex-shrink-0">{project.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{project.name}</div>
+                          {project.status === 'AKTIV' && (
+                            <div className="text-xs text-glow-purple">Aktiv</div>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             )}
