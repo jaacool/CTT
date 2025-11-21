@@ -2301,18 +2301,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         </svg>
                       </button>
                       
-                      <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 py-3 rounded-full">
+                      <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
                         {isRecording ? (
                           <>
                             {/* Scrolling Waveform Visualization */}
-                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 h-12 overflow-hidden">
+                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
                               {(() => {
                                 // Show last ~100 bars that fit in the container
                                 const maxBars = 100;
                                 const displayWaveform = recordedWaveform.slice(-maxBars);
                                 
                                 return displayWaveform.map((level, index) => {
-                                  const height = Math.max(4, level * 48); // Min 4px, max 48px
+                                  const height = Math.max(3, level * 28); // Min 3px, max 28px
                                   const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
                                   return (
                                     <div
@@ -2321,7 +2321,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       style={{
                                         height: `${height}px`,
                                         opacity: opacity,
-                                        width: '3px',
+                                        width: '2px',
                                       }}
                                     />
                                   );
@@ -2346,7 +2346,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         ) : (
                           <>
                             {/* Recorded Waveform Preview */}
-                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 h-12 overflow-hidden">
+                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
                               {(() => {
                                 // Limit to max 100 bars and downsample if necessary
                                 const maxBars = 100;
@@ -2367,7 +2367,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 }
                                 
                                 return displayWaveform.map((level, index) => {
-                                  const height = Math.max(4, level * 48);
+                                  const height = Math.max(3, level * 28);
                                   return (
                                     <div
                                       key={index}
@@ -2375,7 +2375,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       style={{
                                         height: `${height}px`,
                                         opacity: 0.5,
-                                        width: '3px',
+                                        width: '2px',
                                       }}
                                     />
                                   );
