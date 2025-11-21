@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChatChannel, ChatChannelType, User } from '../types';
 import { XIcon, PlusIcon, HashIcon, TrashIcon, EditIcon, UsersIcon } from './Icons';
+import { ConfirmModal } from './ConfirmModal';
 
 interface ChannelManagementProps {
   channels: ChatChannel[];
@@ -26,6 +27,7 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteConfirmChannel, setDeleteConfirmChannel] = useState<ChatChannel | null>(null);
 
   // Filter nur Group Channels (keine Direct Messages)
   const groupChannels = channels.filter(c => c.type === ChatChannelType.Group);
@@ -134,11 +136,7 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
                   <EditIcon className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Channel "${channel.name}" wirklich löschen?`)) {
-                      onDeleteChannel(channel.id);
-                    }
-                  }}
+                  onClick={() => setDeleteConfirmChannel(channel)}
                   className="p-1.5 hover:bg-overlay rounded-lg text-text-secondary hover:text-red-500 transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
@@ -305,6 +303,20 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmChannel && (
+        <ConfirmModal
+          isOpen={true}
+          title="Channel löschen"
+          message={`Möchtest du den Channel "${deleteConfirmChannel.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
+          onConfirm={() => {
+            onDeleteChannel(deleteConfirmChannel.id);
+            setDeleteConfirmChannel(null);
+          }}
+          onCancel={() => setDeleteConfirmChannel(null)}
+        />
       )}
     </div>
   );
