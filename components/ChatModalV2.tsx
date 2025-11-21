@@ -806,18 +806,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               </div>
                             ) : (
                               <>
-                                {/* Message Content Bubble - mit Hover für Emoji-Bar */}
+                                {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
-                                  className="relative px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md"
+                                  className="relative"
                                   onMouseEnter={() => setHoveredMessageId(message.id)}
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
-                                  {message.content}
-                                  {message.edited && (
-                                    <span className="text-xs ml-2 italic text-text-secondary">
-                                      (bearbeitet)
-                                    </span>
-                                  )}
+                                  {/* Message Content Bubble */}
+                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                    {message.content}
+                                    {message.edited && (
+                                      <span className="text-xs ml-2 italic text-text-secondary">
+                                        (bearbeitet)
+                                      </span>
+                                    )}
+                                  </div>
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {hoveredMessageId === message.id && !isOwnMessage && (
