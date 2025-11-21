@@ -809,27 +809,32 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               )}
 
               {/* Thread View Inline */}
-              {showThreadView && (
-                <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
-                  {/* Thread Header */}
-                  <div className="flex items-center justify-between p-3 bg-glow-purple/10 border-b border-glow-purple/20">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span className="text-sm font-bold text-glow-purple">Thread-Verlauf ({buildThreadChain(showThreadView).length} Nachrichten)</span>
-                    </div>
-                    <button
-                      onClick={() => setShowThreadView(null)}
-                      className="text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      <XIcon className="w-5 h-5" />
-                    </button>
-                  </div>
+              {showThreadView && (() => {
+                try {
+                  const threadChain = buildThreadChain(showThreadView);
+                  console.log('🎨 Rendering Thread-View mit', threadChain.length, 'Nachrichten');
+                  
+                  return (
+                    <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
+                      {/* Thread Header */}
+                      <div className="flex items-center justify-between p-3 bg-glow-purple/10 border-b border-glow-purple/20">
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-4 h-4 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span className="text-sm font-bold text-glow-purple">Thread-Verlauf ({threadChain.length} Nachrichten)</span>
+                        </div>
+                        <button
+                          onClick={() => setShowThreadView(null)}
+                          className="text-text-secondary hover:text-text-primary transition-colors"
+                        >
+                          <XIcon className="w-5 h-5" />
+                        </button>
+                      </div>
 
-                  {/* Thread Messages */}
-                  <div className="p-3 space-y-2 max-h-96 overflow-y-auto bg-overlay/30">
-                    {buildThreadChain(showThreadView).map((threadMsg, index) => {
+                      {/* Thread Messages */}
+                      <div className="p-3 space-y-2 max-h-96 overflow-y-auto bg-overlay/30">
+                        {threadChain.map((threadMsg, index) => {
                       const isOwnMessage = threadMsg.sender.id === currentUser.id;
                       const reply = parseReply(threadMsg.content);
                       
@@ -887,10 +892,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
-                </div>
-              )}
+                        })}
+                      </div>
+                    </div>
+                  );
+                } catch (error) {
+                  console.error('❌ Fehler beim Rendern des Thread-Views:', error);
+                  return (
+                    <div className="mb-4 p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-500">
+                      Fehler beim Laden des Threads: {String(error)}
+                    </div>
+                  );
+                }
+              })()}
 
               {filteredMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-secondary">
