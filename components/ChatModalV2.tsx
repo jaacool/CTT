@@ -374,12 +374,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   .filter(user => user.id !== currentUser.id)
                   .filter(user => !channelSearchQuery || user.name.toLowerCase().includes(channelSearchQuery.toLowerCase()))
                   .sort((a, b) => {
-                    // Finde DM-Channels für beide User
+                    // Finde DM-Channels für beide User - muss GENAU diese beiden User enthalten
                     const channelA = directMessages.find(channel => 
-                      channel.members.some(m => m.id === a.id)
+                      channel.members.length === 2 &&
+                      channel.members.some(m => m.id === a.id) &&
+                      channel.members.some(m => m.id === currentUser.id)
                     );
                     const channelB = directMessages.find(channel => 
-                      channel.members.some(m => m.id === b.id)
+                      channel.members.length === 2 &&
+                      channel.members.some(m => m.id === b.id) &&
+                      channel.members.some(m => m.id === currentUser.id)
                     );
                     
                     // Finde neueste Nachricht für jeden User
@@ -405,9 +409,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     return a.name.localeCompare(b.name);
                   })
                   .map(user => {
-                    // Finde existierenden DM-Channel
+                    // Finde existierenden DM-Channel - muss GENAU diese beiden User enthalten
                     const existingDM = directMessages.find(channel => 
-                      channel.members.some(m => m.id === user.id)
+                      channel.members.length === 2 &&
+                      channel.members.some(m => m.id === user.id) &&
+                      channel.members.some(m => m.id === currentUser.id)
                     );
                     const unreadCount = existingDM ? getUnreadCountForChannel(existingDM.id) : 0;
                     
