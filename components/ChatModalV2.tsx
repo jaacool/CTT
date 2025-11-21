@@ -1094,7 +1094,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 })
               )}
               {/* Spacer for hover menu - ensures last message has room for the hover menu */}
-              <div className="h-16" />
+              <div className="h-10" />
               <div ref={messagesEndRef} />
             </div>
 
