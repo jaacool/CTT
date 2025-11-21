@@ -222,7 +222,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle send message
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
-      const projectId = currentProject?.id || '';
+      // Use project ID from reply message if replying, otherwise use current project
+      const projectId = replyToMessage?.projectId || currentProject?.id || '';
       let content = messageInput.trim();
       
       // Add reply reference if replying to a message
