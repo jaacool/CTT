@@ -2060,7 +2060,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                   </button>
-                  <div className="flex-1 relative">
+                  <div 
+                    className="flex-1 relative"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const files = Array.from(e.dataTransfer.files);
+                      if (files.length > 0) {
+                        setSelectedFiles(prev => [...prev, ...files]);
+                      }
+                    }}
+                  >
                     <textarea
                       ref={textareaRef}
                       value={messageInput}
