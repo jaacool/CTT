@@ -71,8 +71,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
   ];
 
-  // Scroll to bottom only when sending a new message (not on reactions or edits)
-  // Removed automatic scroll on every message change to prevent unwanted scrolling
+  // Scroll to bottom when opening chat or switching channels
+  useEffect(() => {
+    if (isOpen && currentChannel) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [isOpen, currentChannel?.id]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
