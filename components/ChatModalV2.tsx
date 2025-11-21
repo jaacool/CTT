@@ -485,10 +485,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           textareaRef.current.style.height = '44px';
         }
         
-        // Scroll to bottom immediately
+        // Scroll to bottom immediately (instant, no animation like channel switch)
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 50);
         
         // 3. Upload files in background and update messages with real URLs
         if (filesToUpload.length > 0) {
