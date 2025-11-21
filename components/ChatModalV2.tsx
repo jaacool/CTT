@@ -691,7 +691,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Messages */}
             <div 
-              className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
+              className="flex-1 overflow-y-auto overflow-x-visible p-4 pb-16 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
               {filteredMessages.length === 0 ? (
@@ -943,7 +943,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
+                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
