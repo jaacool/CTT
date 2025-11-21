@@ -161,7 +161,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Scroll to bottom when project filter changes
   useEffect(() => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }, 100);
   }, [currentProject?.id]);
 
