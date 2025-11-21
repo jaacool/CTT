@@ -2080,12 +2080,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         }
                       }}
                       placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
-                      className="w-full px-4 py-2 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none overflow-y-auto"
+                      className="w-full px-4 bg-overlay rounded-2xl text-sm focus:outline-none transition-all resize-none overflow-y-auto flex items-center"
                       rows={1}
                       style={{
                         height: '44px',
                         minHeight: '44px',
                         maxHeight: '200px',
+                        paddingTop: '11px',
+                        paddingBottom: '11px',
+                        lineHeight: '22px',
                       }}
                     />
                   </div>
