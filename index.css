@@ -1322,21 +1322,23 @@ textarea:focus {
 /* Message Highlight Glow - Simple fade in/out effect for quoted message navigation */
 @keyframes messageHighlightGlow {
   0% {
-    opacity: 0;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0),
+                0 0 40px rgba(236, 72, 153, 0);
   }
   20% {
-    opacity: 1;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
+                0 0 40px rgba(236, 72, 153, 0.5);
   }
   80% {
-    opacity: 1;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
+                0 0 40px rgba(236, 72, 153, 0.5);
   }
   100% {
-    opacity: 0;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0),
+                0 0 40px rgba(236, 72, 153, 0);
   }
 }
 
 .glow-pulse {
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
-              0 0 40px rgba(236, 72, 153, 0.5);
   animation: messageHighlightGlow 2.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
