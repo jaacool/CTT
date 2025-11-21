@@ -16,7 +16,8 @@ import { TimeStatistics } from './components/TimeStatistics';
 import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
-import { ChatModal } from './components/ChatModal';
+import { ChatModalV2 as ChatModal } from './components/ChatModalV2'; // Neue, saubere Version
+// import { ChatModal as ChatModalLegacy } from './components/ChatModalLegacy'; // Backup (alte Version)
 import { StartTimeTrackingModal } from './components/StartTimeTrackingModal';
 import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
