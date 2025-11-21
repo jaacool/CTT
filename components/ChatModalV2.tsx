@@ -421,33 +421,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <button
                         key={user.id}
                         onClick={() => {
+                          // DM-Channel sollte bereits existieren (wird automatisch in App.tsx erstellt)
                           if (existingDM) {
-                            // Wechsle zu existierendem Channel
                             onSwitchChannel(existingDM.id);
+                            setShowSidebar(false);
                           } else {
-                            // Erstelle neuen DM-Channel
-                            const channelName = `${currentUser.name} & ${user.name}`;
-                            onCreateChannel(
-                              channelName,
-                              '',
-                              [currentUser.id, user.id],
-                              false
-                            );
-                            
-                            // Warte kurz und wechsle zum neuen Channel
-                            setTimeout(() => {
-                              const newDM = channels.find(c => 
-                                c.type === ChatChannelType.Direct &&
-                                c.members.length === 2 &&
-                                c.members.some(m => m.id === user.id) &&
-                                c.members.some(m => m.id === currentUser.id)
-                              );
-                              if (newDM) {
-                                onSwitchChannel(newDM.id);
-                              }
-                            }, 100);
+                            console.warn(`⚠️ Kein DM-Channel gefunden für User ${user.name}`);
                           }
-                          setShowSidebar(false);
                         }}
                         className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                           currentChannel?.id === existingDM?.id ? 'glow-button' : 'hover-glow'

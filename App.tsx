@@ -1050,6 +1050,54 @@ const App: React.FC = () => {
     supaSaveChatMessage(newMessage);
   };
 
+  // Erstelle automatisch DM-Channels für alle User-Paare
+  const ensureDirectMessageChannels = useCallback(() => {
+    if (!currentUser || users.length === 0) return;
+    
+    const newChannels: ChatChannel[] = [];
+    
+    // Für jeden User (außer currentUser) prüfe ob ein DM-Channel existiert
+    users.forEach(otherUser => {
+      if (otherUser.id === currentUser.id) return;
+      
+      // Prüfe ob bereits ein DM-Channel zwischen diesen beiden Usern existiert
+      const existingDM = chatChannels.find(channel => 
+        channel.type === ChatChannelType.Direct &&
+        channel.members.length === 2 &&
+        channel.members.some(m => m.id === otherUser.id) &&
+        channel.members.some(m => m.id === currentUser.id)
+      );
+      
+      // Wenn kein Channel existiert, erstelle einen
+      if (!existingDM) {
+        const newChannel: ChatChannel = {
+          id: `dm-${currentUser.id}-${otherUser.id}-${Date.now()}`,
+          name: `${currentUser.name} & ${otherUser.name}`,
+          description: '',
+          members: [currentUser, otherUser],
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser,
+          type: ChatChannelType.Direct,
+          isPrivate: true,
+        };
+        newChannels.push(newChannel);
+      }
+    });
+    
+    // Füge alle neuen Channels hinzu
+    if (newChannels.length > 0) {
+      console.log(`📨 Erstelle ${newChannels.length} neue DM-Channels`);
+      setChatChannels(prev => [...prev, ...newChannels]);
+      // Persist alle neuen Channels
+      newChannels.forEach(channel => saveChatChannel(channel));
+    }
+  }, [currentUser, users, chatChannels]);
+
+  // Stelle sicher, dass DM-Channels existieren wenn Users oder currentUser sich ändern
+  useEffect(() => {
+    ensureDirectMessageChannels();
+  }, [users, currentUser]);
+
   const handleCreateChannel = (name: string, description: string, memberIds: string[], isPrivate: boolean = false) => {
     if (!currentUser) return;
     
