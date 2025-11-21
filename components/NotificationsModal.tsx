@@ -220,16 +220,17 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        // Close modal when clicking on backdrop
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="bg-surface rounded-xl max-w-4xl w-full max-h-[80vh] border border-border shadow-2xl flex flex-col">
+    <>
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={(e) => {
+          // Close modal when clicking on backdrop
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
+      >
+        <div className="bg-surface rounded-xl max-w-4xl w-full max-h-[80vh] border border-border shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
@@ -678,6 +679,7 @@ Mit freundlichen Grüßen`;
           </div>
         )}
         </div>
+        </div>
       </div>
 
       {/* Reject Reason Modal */}
@@ -714,6 +716,6 @@ Mit freundlichen Grüßen`;
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
