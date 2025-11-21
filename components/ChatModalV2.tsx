@@ -2043,7 +2043,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                 )}
 
-                <div className="flex items-end space-x-3">
+                <div className="flex items-center space-x-3">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -2053,7 +2053,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors self-end mb-1"
+                    className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors"
                     title="Datei anhängen"
                   >
                     <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2098,7 +2098,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       handleSendMessage();
                     }}
                     disabled={messageInput.trim().length === 0 && selectedFiles.length === 0}
-                    className="p-3 rounded-full transition-all relative overflow-hidden self-end mb-1"
+                    className="p-3 rounded-full transition-all relative overflow-hidden"
                     style={{
                       background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
                         ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
