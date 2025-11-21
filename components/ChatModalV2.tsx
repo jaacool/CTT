@@ -836,14 +836,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     (bearbeitet)
                                   </span>
                                 )}
+                                
+                                {/* Link Preview */}
+                                {message.content.match(/https?:\/\/[^\s]+/) && (
+                                  <div className="mt-2">
+                                    <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                  </div>
+                                )}
                               </div>
-
-                              {/* Link Preview */}
-                              {message.content.match(/https?:\/\/[^\s]+/) && (
-                                <div className="mt-2">
-                                  <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                                </div>
-                              )}
                             </>
                           )}
                         </div>
@@ -962,6 +962,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <span className="text-xs ml-2 italic text-text-secondary">
                                         (bearbeitet)
                                       </span>
+                                    )}
+                                    
+                                    {/* Link Preview */}
+                                    {message.content.match(/https?:\/\/[^\s]+/) && (
+                                      <div className="mt-2">
+                                        <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                      </div>
                                     )}
                                   </div>
                                   
@@ -1084,13 +1091,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     </div>
                                   )}
                                 </div>
-
-                                {/* Link Preview */}
-                                {message.content.match(/https?:\/\/[^\s]+/) && (
-                                  <div className="mt-2">
-                                    <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                                  </div>
-                                )}
 
                                 {/* Reactions Display */}
                                 {message.reactions && Object.keys(message.reactions).length > 0 && (
