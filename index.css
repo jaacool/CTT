@@ -1319,38 +1319,24 @@ textarea:focus {
   animation: highlightGlow 3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Message Highlight Glow - Smooth pulsing effect for quoted message navigation */
+/* Message Highlight Glow - Simple fade in/out effect for quoted message navigation */
 @keyframes messageHighlightGlow {
   0% {
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.6),
-                0 0 50px rgba(236, 72, 153, 0.4);
+    opacity: 0;
   }
-  15% {
-    box-shadow: 0 0 35px rgba(168, 85, 247, 0.8),
-                0 0 70px rgba(236, 72, 153, 0.6);
+  20% {
+    opacity: 1;
   }
-  30% {
-    box-shadow: 0 0 45px rgba(168, 85, 247, 0.9),
-                0 0 90px rgba(236, 72, 153, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 35px rgba(168, 85, 247, 0.8),
-                0 0 70px rgba(236, 72, 153, 0.6);
-  }
-  70% {
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.6),
-                0 0 50px rgba(236, 72, 153, 0.4);
-  }
-  85% {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4),
-                0 0 30px rgba(236, 72, 153, 0.2);
+  80% {
+    opacity: 1;
   }
   100% {
-    box-shadow: 0 0 0 rgba(168, 85, 247, 0),
-                0 0 0 rgba(236, 72, 153, 0);
+    opacity: 0;
   }
 }
 
 .glow-pulse {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
+              0 0 40px rgba(236, 72, 153, 0.5);
   animation: messageHighlightGlow 2.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
