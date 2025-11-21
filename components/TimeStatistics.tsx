@@ -75,7 +75,8 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     endDate.setHours(23, 59, 59);
   } else {
     // Label ist Wochentag (z.B. "Mo", "Di")
-    const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    // Korrigierte Reihenfolge: Montag ist Index 0, da selectedWeek Montag ist
+    const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     const dayIndex = days.indexOf(label as string);
     startDate = new Date(selectedWeek);
     startDate.setDate(startDate.getDate() + dayIndex);
