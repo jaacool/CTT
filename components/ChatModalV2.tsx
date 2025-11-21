@@ -250,22 +250,27 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
       {/* Waveform with Playhead */}
       <div className="flex-1 flex flex-col space-y-2">
         <div
-          className="flex items-center gap-[2px] h-12 cursor-pointer relative"
+          className="flex items-center justify-between h-12 cursor-pointer relative"
           onClick={handleSeek}
         >
-          {/* Waveform Bars - statisch, nur Farbe ändert sich */}
-          {waveformBars.map((height, index) => (
-            <div
-              key={index}
-              className="flex-1 rounded-full"
-              style={{
-                height: `${height * 100}%`,
-                backgroundColor: '#4B5563',
-                opacity: 0.5,
-                minWidth: '2px',
-              }}
-            />
-          ))}
+          {/* Waveform Bars - statisch mit variabler Höhe */}
+          {waveformBars.map((level, index) => {
+            const amplifiedLevel = Math.min(1, level * 2);
+            const height = Math.max(3, amplifiedLevel * 48); // Max height 48px for h-12 container
+            
+            return (
+              <div
+                key={index}
+                className="bg-glow-purple rounded-full"
+                style={{
+                  height: `${height}px`,
+                  opacity: 0.5,
+                  width: '2px',
+                  flex: '1 1 0',
+                }}
+              />
+            );
+          })}
           
           {/* Playhead Indicator - bewegt sich von links nach rechts */}
           {duration > 0 && (
