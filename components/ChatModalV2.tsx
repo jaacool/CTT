@@ -1035,7 +1035,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
-                    className="p-3 rounded-full transition-all relative overflow-hidden"
+                    className="p-3 rounded-full transition-all relative overflow-hidden self-end mb-1"
                     style={{
                       background: messageInput.trim() 
                         ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
