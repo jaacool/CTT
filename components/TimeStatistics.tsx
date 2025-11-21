@@ -28,6 +28,53 @@ interface TimeStatisticsProps {
 
 type ViewMode = 'year' | 'month' | 'week';
 
+// Constants and Helpers defined OUTSIDE component to avoid re-creation
+const ABSENCE_LABELS: Record<string, string> = {
+  'VACATION': 'Urlaub',
+  'COMPENSATORY_DAY': 'Ausgleichstag',
+  'SICK': 'Krankheit',
+  'HOME_OFFICE': 'Home Office',
+  'BUSINESS_TRIP': 'Dienstreise',
+  'OTHER': 'Sonstiges'
+};
+
+const ABSENCE_COLORS: Record<string, string> = {
+  'VACATION': '#F59E0B', // Amber
+  'COMPENSATORY_DAY': '#3B82F6', // Blue
+  'SICK': '#EF4444', // Red
+  'HOME_OFFICE': '#10B981', // Emerald
+  'BUSINESS_TRIP': '#8B5CF6', // Violet
+  'OTHER': '#6B7280' // Gray
+};
+
+const COLORS = {
+  worked: '#a855f7', // Purple
+  target: '#10b981', // Green
+  average: '#f59e0b', // Orange
+  background: '#1a1625',
+  surface: '#241b2f',
+  text: '#e5e7eb',
+  textSecondary: '#9ca3af',
+  border: '#3f3351',
+  overlay: '#322a3d',
+};
+
+// Helper: Datum zu YYYY-MM-DD String konvertieren (lokal)
+const toLocalISOString = (date: Date) => {
+  const offset = date.getTimezoneOffset();
+  const adjusted = new Date(date.getTime() - (offset * 60 * 1000));
+  return adjusted.toISOString().split('T')[0];
+};
+
+// Helper: Prüfe Überlappung auf Tagesbasis (String Vergleich)
+const isDateOverlap = (viewStart: Date, viewEnd: Date, reqStartStr: string, reqEndStr: string) => {
+  const vStart = toLocalISOString(viewStart);
+  const vEnd = toLocalISOString(viewEnd);
+  const rStart = reqStartStr.split('T')[0];
+  const rEnd = reqEndStr.split('T')[0];
+  return vStart <= rEnd && vEnd >= rStart;
+};
+
 // Custom Tooltip Component
 interface CustomTooltipProps extends TooltipProps<number, string> {
   absenceRequests: AbsenceRequest[];
@@ -59,13 +106,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   let endDate: Date;
 
   if (viewMode === 'year') {
-    // Label ist Monatsname (z.B. "Jan", "Feb")
-    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-    const monthIndex = monthNames.indexOf(label as string);
+    const shortMonthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const monthIndex = shortMonthNames.indexOf(label as string);
     startDate = new Date(selectedYear, monthIndex, 1);
     endDate = new Date(selectedYear, monthIndex + 1, 0, 23, 59, 59);
   } else if (viewMode === 'month') {
-    // Label ist Wochennummer (z.B. "KW 1")
     const weekNumber = parseInt((label as string).replace('KW ', '')) - 1;
     const monthStart = new Date(selectedYear, selectedMonth, 1);
     startDate = new Date(monthStart);
@@ -74,8 +119,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     endDate.setDate(endDate.getDate() + 6);
     endDate.setHours(23, 59, 59);
   } else {
-    // Label ist Wochentag (z.B. "Mo", "Di")
-    // Korrigierte Reihenfolge: Montag ist Index 0, da selectedWeek Montag ist
     const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     const dayIndex = days.indexOf(label as string);
     startDate = new Date(selectedWeek);
@@ -86,37 +129,11 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
   // Finde Abwesenheiten in diesem Zeitraum
   const relevantAbsences = absenceRequests.filter(request => {
-    // Prüfe User ID - AbsenceRequest hat ein user Objekt, nicht userId
     if (request.user?.id !== selectedUser?.id) return false;
-    
-    // Prüfe Status - nur genehmigte Abwesenheiten
     if (request.status !== AbsenceStatus.Approved) return false;
 
-    const reqStart = new Date(request.startDate);
-    const reqEnd = new Date(request.endDate);
-
-    // Prüfe ob Überschneidung existiert
-    return reqStart <= endDate && reqEnd >= startDate;
+    return isDateOverlap(startDate, endDate, request.startDate, request.endDate);
   });
-
-  const COLORS = {
-    surface: '#1a1625',
-    border: '#3f3351',
-    text: '#e5e1eb',
-    textSecondary: '#9d94ab',
-    worked: '#a855f7',
-    average: '#fb923c',
-    target: '#4ade80',
-  };
-
-  const absenceTypeLabels: Record<string, string> = {
-    'VACATION': 'Urlaub',
-    'COMPENSATORY_DAY': 'Ausgleichstag',
-    'SICK': 'Krankheit',
-    'HOME_OFFICE': 'Home Office',
-    'BUSINESS_TRIP': 'Dienstreise',
-    'OTHER': 'Sonstiges'
-  };
 
   // Formatiere Datumsbereich
   const dateRangeText = viewMode === 'week' 
@@ -151,7 +168,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
             {relevantAbsences.map((absence, index) => (
               <div key={index} className="text-xs flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                <span>{absenceTypeLabels[absence.type] || absence.type}</span>
+                <span>{ABSENCE_LABELS[absence.type] || absence.type}</span>
                 {viewMode !== 'week' && (
                   <span className="text-text-secondary">
                     ({new Date(absence.startDate).toLocaleDateString('de-DE')} - {new Date(absence.endDate).toLocaleDateString('de-DE')})
@@ -171,18 +188,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
       </div>
     </div>
   );
-};
-
-const COLORS = {
-  worked: '#a855f7', // Purple
-  target: '#10b981', // Green
-  average: '#f59e0b', // Orange
-  background: '#1a1625',
-  surface: '#241b2f',
-  text: '#e5e7eb',
-  textSecondary: '#9ca3af',
-  border: '#3f3351',
-  overlay: '#322a3d',
 };
 
 export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
@@ -209,23 +214,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
   ];
 
-  const ABSENCE_LABELS: Record<string, string> = {
-    'VACATION': 'Urlaub',
-    'COMPENSATORY_DAY': 'Ausgleichstag',
-    'SICK': 'Krankheit',
-    'HOME_OFFICE': 'Home Office',
-    'BUSINESS_TRIP': 'Dienstreise',
-    'OTHER': 'Sonstiges'
-  };
-
-  const ABSENCE_COLORS: Record<string, string> = {
-    'VACATION': '#F59E0B', // Amber
-    'COMPENSATORY_DAY': '#3B82F6', // Blue
-    'SICK': '#EF4444', // Red
-    'HOME_OFFICE': '#10B981', // Emerald
-    'BUSINESS_TRIP': '#8B5CF6', // Violet
-    'OTHER': '#6B7280' // Gray
-  };
+  const shortMonthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
   // Berechne Start- und Enddatum der aktuellen Ansicht
   const { viewStartDate, viewEndDate } = useMemo(() => {
@@ -255,17 +244,19 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
       if (req.user.id !== selectedUser.id) return;
       if (req.status !== AbsenceStatus.Approved) return;
       
-      const reqStart = new Date(req.startDate);
-      const reqEnd = new Date(req.endDate);
-      
-      // Schnittmenge berechnen
-      const start = reqStart < viewStartDate ? viewStartDate : reqStart;
-      const end = reqEnd > viewEndDate ? viewEndDate : reqEnd;
-      
-      if (start <= end) {
-         // Berechne Arbeitstage (Mo-Fr) dazwischen
+      if (isDateOverlap(viewStartDate, viewEndDate, req.startDate, req.endDate)) {
+         const vStart = toLocalISOString(viewStartDate);
+         const vEnd = toLocalISOString(viewEndDate);
+         const rStart = req.startDate.split('T')[0];
+         const rEnd = req.endDate.split('T')[0];
+         
+         const startStr = rStart > vStart ? rStart : vStart;
+         const endStr = rEnd < vEnd ? rEnd : vEnd;
+         
+         const curr = new Date(startStr);
+         const end = new Date(endStr);
+         
          let days = 0;
-         let curr = new Date(start);
          while (curr <= end) {
            const day = curr.getDay();
            if (day !== 0 && day !== 6) days++;
@@ -313,8 +304,6 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
       setSelectedWeek(newWeek);
     }
   };
-
-  const shortMonthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
   // Berechne Daten basierend auf ViewMode
   const rawChartData = useMemo(() => {
@@ -364,11 +353,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         if (req.user.id !== selectedUser?.id) return false;
         if (req.status !== AbsenceStatus.Approved) return false;
         
-        const reqStart = new Date(req.startDate);
-        const reqEnd = new Date(req.endDate);
-        
-        // Prüfe auf Überlappung
-        return reqStart <= endDate && reqEnd >= startDate;
+        return isDateOverlap(startDate, endDate, req.startDate, req.endDate);
       });
 
       return {
