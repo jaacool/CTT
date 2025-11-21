@@ -718,7 +718,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Message Content Bubble */}
                               <div
-                                className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
+                                className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent whitespace-pre-wrap"
                                 style={{
                                   background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
                                   border: '1px solid transparent'
@@ -819,7 +819,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
                                   {/* Message Content Bubble */}
-                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md whitespace-pre-wrap">
                                     {message.content}
                                     {message.edited && (
                                       <span className="text-xs ml-2 italic text-text-secondary">
