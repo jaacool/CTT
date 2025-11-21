@@ -1095,7 +1095,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 onMouseEnter={() => setHoveredMessageId(message.id)}
                                 onMouseLeave={() => setHoveredMessageId(null)}
                               >
-                                {/* Message Content Bubble */}
+                                {/* Message Content Bubble - nur wenn Text vorhanden */}
+                                {message.content.trim() && (
                                 <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
                                   style={{
                                     background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
@@ -1187,7 +1188,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 
                                 {/* Attachments */}
                                 {message.attachments && message.attachments.length > 0 && (
-                                  <div className="mt-2 space-y-2">
+                                  <div className={message.content.trim() ? "mt-2 space-y-2" : "space-y-2"}>
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx}>
                                         {isImageFile(attachment.type) ? (
@@ -1196,14 +1197,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             src={attachment.url} 
                                             alt={attachment.name}
                                             onClick={() => setPreviewAttachment(attachment)}
-                                            className="max-w-xs rounded-lg cursor-pointer"
+                                            className={message.content.trim() ? "max-w-xs rounded-lg cursor-pointer" : "max-w-md rounded-lg cursor-pointer"}
                                           />
                                         ) : isVideoFile(attachment.type) ? (
                                           // Video Preview - Click to enlarge
                                           <video 
                                             src={attachment.url} 
                                             onClick={() => setPreviewAttachment(attachment)}
-                                            className="max-w-xs rounded-lg w-full cursor-pointer"
+                                            className={message.content.trim() ? "max-w-xs rounded-lg w-full cursor-pointer" : "max-w-md rounded-lg w-full cursor-pointer"}
                                           />
                                         ) : isAudioFile(attachment.type) ? (
                                           // Audio Player
@@ -1242,6 +1243,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   </span>
                                 )}
                               </div>
+                                )}
                               
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
@@ -1457,7 +1459,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   onMouseEnter={() => setHoveredMessageId(message.id)}
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
-                                  {/* Message Content Bubble */}
+                                  {/* Message Content Bubble - nur wenn Text vorhanden */}
+                                  {message.content.trim() && (
                                   <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
                                     {(() => {
                                       const reply = parseReply(message.content);
@@ -1545,12 +1548,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     
                                     {/* Attachments */}
                                     {message.attachments && message.attachments.length > 0 && (
-                                      <div className="mt-2 space-y-2">
+                                      <div className={message.content.trim() ? "mt-2 space-y-2" : "space-y-2"}>
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx}>
                                             {!attachment.url ? (
                                               // Uploading - Show progress with preview
-                                              <div className="relative max-w-xs rounded-lg overflow-hidden">
+                                              <div className={message.content.trim() ? "relative max-w-xs rounded-lg overflow-hidden" : "relative max-w-md rounded-lg overflow-hidden"}>
                                                 {isImageFile(attachment.type) ? (
                                                   // Image preview while uploading
                                                   <div className="relative">
@@ -1609,14 +1612,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 src={attachment.url} 
                                                 alt={attachment.name}
                                                 onClick={() => setPreviewAttachment(attachment)}
-                                                className="max-w-xs rounded-lg cursor-pointer"
+                                                className={message.content.trim() ? "max-w-xs rounded-lg cursor-pointer" : "max-w-md rounded-lg cursor-pointer"}
                                               />
                                             ) : isVideoFile(attachment.type) ? (
                                               // Video Preview - Click to enlarge
                                               <video 
                                                 src={attachment.url} 
                                                 onClick={() => setPreviewAttachment(attachment)}
-                                                className="max-w-xs rounded-lg w-full cursor-pointer"
+                                                className={message.content.trim() ? "max-w-xs rounded-lg w-full cursor-pointer" : "max-w-md rounded-lg w-full cursor-pointer"}
                                               />
                                             ) : isAudioFile(attachment.type) ? (
                                               // Audio Player
@@ -1655,6 +1658,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       </span>
                                     )}
                                   </div>
+                                  )}
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
