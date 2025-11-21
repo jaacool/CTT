@@ -1991,7 +1991,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Message Input */}
             {currentChannel && (
-              <div className="p-4 border-t border-border bg-surface/50">
+              <div className="p-4 border-t border-transparent bg-transparent">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
