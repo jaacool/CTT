@@ -195,8 +195,20 @@ const App: React.FC = () => {
         // Lade aus Cache
         if (cachedData.users.length > 0) {
           setUsers(cachedData.users);
-          const adminUser = cachedData.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || cachedData.users[0]);
+          
+          // Versuche den letzten User wiederherzustellen
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          let userToSet = null;
+          
+          if (lastUserId) {
+            userToSet = cachedData.users.find(u => u.id === lastUserId);
+          }
+          
+          if (!userToSet) {
+            userToSet = cachedData.users.find(u => u.role === 'role-1') || cachedData.users[0];
+          }
+          
+          setCurrentUser(userToSet);
         }
         
         if (cachedData.projects.length > 0) {
@@ -226,8 +238,20 @@ const App: React.FC = () => {
         // Lade aus Backup
         if (backupData.users.length > 0) {
           setUsers(backupData.users);
-          const adminUser = backupData.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || backupData.users[0]);
+          
+          // Versuche den letzten User wiederherzustellen
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          let userToSet = null;
+          
+          if (lastUserId) {
+            userToSet = backupData.users.find(u => u.id === lastUserId);
+          }
+          
+          if (!userToSet) {
+            userToSet = backupData.users.find(u => u.role === 'role-1') || backupData.users[0];
+          }
+          
+          setCurrentUser(userToSet);
         }
         
         if (backupData.projects.length > 0) {
@@ -278,8 +302,19 @@ const App: React.FC = () => {
         
         // Setze currentUser wenn vorhanden
         if (data.users.length > 0) {
-          const adminUser = data.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || data.users[0]);
+          // Versuche den letzten User wiederherzustellen
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          let userToSet = null;
+          
+          if (lastUserId) {
+            userToSet = data.users.find(u => u.id === lastUserId);
+          }
+          
+          if (!userToSet) {
+            userToSet = data.users.find(u => u.role === 'role-1') || data.users[0];
+          }
+          
+          setCurrentUser(userToSet);
         }
         
         // Setze History wenn Projekte vorhanden
