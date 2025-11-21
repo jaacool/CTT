@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { ChatChannel, ChatMessage, Project, User, ChatChannelType } from '../types';
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
@@ -58,6 +58,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+  const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -71,10 +72,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
   ];
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Scroll to bottom when opening chat or switching channels (instant, no animation)
+  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
+  useLayoutEffect(() => {
+    if (isOpen && currentChannel) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [isOpen, currentChannel?.id]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -126,6 +130,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [contextMenu]);
+
+  // Auto-focus textarea when replying to a message
+  useEffect(() => {
+    if (replyToMessage && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [replyToMessage]);
+
 
   // Get accessible channels
   const accessibleChannels = channels.filter(channel =>
@@ -219,12 +231,39 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle send message
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
-      const projectId = currentProject?.id || '';
+      // Im Thread-Modus: Automatisch auf die letzte Nachricht im Thread antworten
+      let messageToReplyTo = replyToMessage;
+      
+      if (showThreadView && !replyToMessage) {
+        // Hole die letzte Nachricht im Thread
+        const threadChain = buildThreadChain(showThreadView);
+        if (threadChain.length > 0) {
+          messageToReplyTo = threadChain[threadChain.length - 1];
+        }
+      }
+      
+      // Use project ID from reply message if replying, otherwise use current project
+      const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
       let content = messageInput.trim();
       
-      // Add reply reference if replying to a message
-      if (replyToMessage) {
-        content = `@${replyToMessage.sender.name}: "${replyToMessage.content}"\n\n${content}`;
+      // Debug: Log project ID selection
+      console.log('Sending message with projectId:', projectId, {
+        replyToMessageProjectId: messageToReplyTo?.projectId,
+        currentProjectId: currentProject?.id,
+        isReplying: !!messageToReplyTo,
+        isThreadMode: !!showThreadView
+      });
+      
+      // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
+      if (messageToReplyTo) {
+        // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
+        let quotedContent = messageToReplyTo.content;
+        const reply = parseReply(messageToReplyTo.content);
+        if (reply) {
+          // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
+          quotedContent = reply.actualContent;
+        }
+        content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
       }
       
       onSendMessage(content, currentChannel.id, projectId);
@@ -235,6 +274,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       if (textareaRef.current) {
         textareaRef.current.style.height = '48px';
       }
+      
+      // Scroll to bottom after sending a message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   };
 
@@ -276,27 +320,141 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     // TODO: Implement star message functionality
   };
   
-  // Parse reply from message content
+  // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
   const parseReply = (content: string) => {
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
     if (replyMatch) {
+      let replyContent = replyMatch[2];
+      
+      // Wenn das Zitat selbst ein verschachteltes Zitat enthält, extrahiere nur den Text NACH dem verschachtelten Zitat
+      const nestedReplyMatch = replyContent.match(/^@.+?: ".+?"\n\n(.+)$/s);
+      if (nestedReplyMatch) {
+        replyContent = nestedReplyMatch[1];
+      }
+      
       return {
         senderName: replyMatch[1],
-        replyContent: replyMatch[2],
+        replyContent: replyContent,
         actualContent: replyMatch[3],
       };
     }
     return null;
   };
   
+  // Build thread chain - finde alle Nachrichten in einem Reply-Thread
+  const buildThreadChain = (messageId: string): ChatMessage[] => {
+    const chain: ChatMessage[] = [];
+    const message = messages.find(m => m.id === messageId);
+    
+    if (!message) return chain;
+    
+    // Füge die aktuelle Nachricht hinzu
+    chain.push(message);
+    
+    // 1. RÜCKWÄRTS: Finde die ursprüngliche Nachricht durch Rückwärtsverfolgung
+    let currentMsg = message;
+    while (currentMsg) {
+      const reply = parseReply(currentMsg.content);
+      if (!reply) break;
+      
+      // Finde die Nachricht, auf die geantwortet wurde
+      const parentMsg = messages.find(m => 
+        m.sender.name === reply.senderName && 
+        m.content.includes(reply.replyContent)
+      );
+      
+      if (parentMsg && !chain.find(m => m.id === parentMsg.id)) {
+        chain.unshift(parentMsg);
+        currentMsg = parentMsg;
+      } else {
+        break;
+      }
+    }
+    
+    // 2. VORWÄRTS: Finde alle Nachrichten, die auf Thread-Nachrichten antworten
+    const findReplies = (threadMessages: ChatMessage[]) => {
+      const newReplies: ChatMessage[] = [];
+      
+      for (const threadMsg of threadMessages) {
+        // Extrahiere den Inhalt der Thread-Nachricht
+        const threadReply = parseReply(threadMsg.content);
+        const threadContent = threadReply ? threadReply.actualContent : threadMsg.content;
+        
+        // Finde alle Nachrichten, die auf diese Thread-Nachricht antworten
+        const replies = messages.filter(m => {
+          if (chain.find(cm => cm.id === m.id)) return false; // Bereits im Thread
+          if (newReplies.find(nr => nr.id === m.id)) return false; // Bereits gefunden
+          
+          const reply = parseReply(m.content);
+          if (!reply) return false;
+          
+          // Prüfe ob diese Nachricht auf die Thread-Nachricht antwortet
+          return reply.senderName === threadMsg.sender.name && 
+                 reply.replyContent === threadContent;
+        });
+        
+        newReplies.push(...replies);
+      }
+      
+      return newReplies;
+    };
+    
+    // Iterativ alle Antworten finden
+    let foundNewReplies = true;
+    while (foundNewReplies) {
+      const newReplies = findReplies(chain);
+      if (newReplies.length > 0) {
+        chain.push(...newReplies);
+      } else {
+        foundNewReplies = false;
+      }
+    }
+    
+    // Sortiere die gesamte Chain chronologisch nach Timestamp
+    chain.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    return chain;
+  };
+  
+  // Convert URLs in text to clickable links
+  const renderTextWithLinks = (text: string) => {
+    // Match URLs with or without protocol
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        // Add https:// if no protocol is present
+        const href = part.match(/^https?:\/\//) ? part : `https://${part}`;
+        
+        return (
+          <a
+            key={index}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline transition-all hover:drop-shadow-[0_0_5px_rgba(168,85,247,1)] hover:drop-shadow-[0_0_5px_rgba(168,85,247,1)] hover:drop-shadow-[0_0_5px_rgba(168,85,247,1)]"
+            style={{
+              background: 'linear-gradient(135deg, #A855F7, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+  
   // Scroll to message
   const scrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Highlight effect
-      messageElement.classList.add('highlight-message');
-      setTimeout(() => messageElement.classList.remove('highlight-message'), 2000);
+      messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
     }
   };
 
@@ -323,18 +481,37 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           </div>
 
           {/* Project Filter Dropdown - NEU GEBAUT */}
-          <div className="relative mr-2" ref={dropdownRef}>
-            <button
-              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-              className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
-            >
-              <FolderIcon className="w-4 h-4" />
-              <span className="hidden md:inline">
-                {currentProject ? currentProject.name : 'Alle Projekte'}
-              </span>
-              <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
-              <ChevronDownIcon className="w-4 h-4" />
-            </button>
+          <div className="flex items-center mr-2">
+            <div className="relative" ref={dropdownRef}>
+              <div className="flex items-center bg-overlay rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm hover:bg-overlay/80 transition-colors"
+                >
+                  <FolderIcon className="w-4 h-4" />
+                  <span className="hidden md:inline">
+                    {currentProject ? currentProject.name : 'Alle Projekte'}
+                  </span>
+                  <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+                
+                {/* Reset Button - nur anzeigen wenn ein Projekt ausgewählt ist */}
+                {currentProject && (
+                  <>
+                    <div className="w-px h-6 bg-border"></div>
+                    <button
+                      onClick={() => onSwitchProject('')}
+                      className="px-2 py-2 hover:bg-overlay/80 transition-colors"
+                      title="Filter zurücksetzen"
+                    >
+                      <svg className="w-4 h-4 text-text-secondary hover:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
 
             {showProjectDropdown && (
               <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[1000] overflow-hidden">
@@ -419,6 +596,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
@@ -626,6 +804,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {currentChannel && (
               <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
                 <div className="flex items-center space-x-3">
+                  {/* Zurück-Button im Thread-Modus */}
+                  {showThreadView && (
+                    <button
+                      onClick={() => {
+                        setShowThreadView(null);
+                        // Scrolle zur neuesten Nachricht (ganz unten)
+                        requestAnimationFrame(() => {
+                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                        });
+                      }}
+                      className="p-2 hover:bg-overlay rounded-lg transition-colors"
+                      title="Zurück zum Haupt-Chat"
+                    >
+                      <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  )}
                   {currentChannel.type === ChatChannelType.Direct ? (
                     <>
                       {(() => {
@@ -663,21 +859,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Messages */}
             <div 
-              className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
+              className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
-              {filteredMessages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-text-secondary">
-                  <div className="text-center">
-                    <p className="text-lg mb-2">Noch keine Nachrichten</p>
-                    <p className="text-sm">Starte eine Unterhaltung!</p>
-                  </div>
-                </div>
-              ) : (
-                filteredMessages.map((message, index) => {
+              {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
+              {(() => {
+                const messagesToShow = showThreadView ? buildThreadChain(showThreadView) : filteredMessages;
+                
+                if (messagesToShow.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center h-full text-text-secondary">
+                      <div className="text-center">
+                        <p className="text-lg mb-2">Noch keine Nachrichten</p>
+                        <p className="text-sm">Starte eine Unterhaltung!</p>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return messagesToShow.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
-                  const prevMessage = index > 0 ? filteredMessages[index - 1] : null;
-                  const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id;
+                  const prevMessage = index > 0 ? messagesToShow[index - 1] : null;
+                  // Show avatar/timestamp if sender changed OR project changed
+                  const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id || prevMessage.projectId !== message.projectId;
                   const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
                   
                   return (
@@ -704,9 +908,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
                         <div className="flex flex-col items-end max-w-[75%]">
-                          {/* Nur Timestamp, kein Name */}
+                          {/* Projekt-Tag & Timestamp */}
                           {showAvatar && (
-                            <div className="flex items-center mb-1 px-1">
+                            <div className="flex items-center space-x-2 mb-1 px-1">
+                              {/* Projekt-Tag */}
+                              {message.projectId && (
+                                <button
+                                  onClick={() => onSwitchProject(message.projectId)}
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-overlay/50 text-text-secondary hover:bg-overlay hover:text-text-primary transition-colors"
+                                  title="Zu diesem Projekt wechseln"
+                                >
+                                  {projects.find(p => p.id === message.projectId)?.name || 'Projekt'}
+                                </button>
+                              )}
                               <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
                           )}
@@ -741,21 +955,44 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             </div>
                           ) : (
                             <>
-                              {/* Message Content Bubble */}
-                              <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
-                                style={{
-                                  background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
-                                  border: '1px solid transparent'
-                                }}
+                              {/* Wrapper für Bubble und Hover-Menü */}
+                              <div 
+                                className="relative"
+                                onMouseEnter={() => setHoveredMessageId(message.id)}
+                                onMouseLeave={() => setHoveredMessageId(null)}
                               >
+                                {/* Message Content Bubble */}
+                                <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
+                                  style={{
+                                    background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
+                                    border: '1px solid transparent'
+                                  }}
+                                >
                                 {(() => {
                                   const reply = parseReply(message.content);
+                                  
+                                  // Im Thread-Modus: Zeige nur actualContent ohne Reply-Referenz
+                                  if (showThreadView) {
+                                    const contentToShow = reply ? reply.actualContent : message.content;
+                                    return (
+                                      <>
+                                        <div className="whitespace-pre-wrap">{renderTextWithLinks(contentToShow)}</div>
+                                        {contentToShow.match(/https?:\/\/[^\s]+/) && (
+                                          <div className="mt-2">
+                                            <LinkPreview url={contentToShow.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                  
+                                  // Haupt-Chat: Zeige Reply-Referenz wie gewohnt
                                   if (reply) {
                                     return (
                                       <>
                                         {/* Reply Reference */}
                                         <div 
-                                          className="mb-2 pl-3 border-l-2 border-glow-purple/60 bg-glow-purple/10 rounded-lg p-2.5 cursor-pointer hover:bg-glow-purple/15 transition-all"
+                                          className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                           onClick={() => {
                                             const originalMsg = messages.find(m => 
                                               m.sender.name === reply.senderName && 
@@ -764,20 +1001,54 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             if (originalMsg) scrollToMessage(originalMsg.id);
                                           }}
                                         >
-                                          <div className="flex items-center space-x-2 mb-1">
-                                            <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                            </svg>
-                                            <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center space-x-2">
+                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                              </svg>
+                                              <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                            </div>
+                                            {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
+                                            {buildThreadChain(message.id).length > 2 && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  e.preventDefault();
+                                                  setShowThreadView(message.id);
+                                                }}
+                                                className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                                title="Thread anzeigen"
+                                              >
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                              </button>
+                                            )}
                                           </div>
-                                          <div className="text-xs text-text-secondary/90 line-clamp-2 pl-5">{reply.replyContent}</div>
+                                          <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                         </div>
                                         {/* Actual Message Content */}
-                                        <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                        <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
+                                        {/* Link Preview - only for actual content, not reply */}
+                                        {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
+                                          <div className="mt-2">
+                                            <LinkPreview url={reply.actualContent.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                          </div>
+                                        )}
                                       </>
                                     );
                                   }
-                                  return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                  return (
+                                    <>
+                                      <div className="whitespace-pre-wrap">{renderTextWithLinks(message.content)}</div>
+                                      {/* Link Preview - for non-reply messages */}
+                                      {message.content.match(/https?:\/\/[^\s]+/) && (
+                                        <div className="mt-2">
+                                          <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                        </div>
+                                      )}
+                                    </>
+                                  );
                                 })()}
                                 {message.edited && (
                                   <span className="text-xs ml-2 italic text-text-secondary">
@@ -785,16 +1056,144 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   </span>
                                 )}
                               </div>
-
-                              {/* Link Preview */}
-                              {message.content.match(/https?:\/\/[^\s]+/) && (
-                                <div className="mt-2">
-                                  <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                              
+                              {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
+                              {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
+                              {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
+                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                  {/* Quick Reactions */}
+                                  <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
+                                    {quickReactions.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReaction(message.id, emoji)}
+                                        className="text-lg hover:scale-125 transition-transform"
+                                        title={`Mit ${emoji} reagieren`}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center space-x-1 px-2 py-1 relative">
+                                    {/* Emoji Picker Button */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                        }}
+                                        className="p-1 hover:bg-overlay rounded transition-colors"
+                                        title="Weitere Reaktionen"
+                                      >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* Emoji Picker Dropdown */}
+                                      {showEmojiPicker === message.id && (
+                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
+                                          <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
+                                          <div className="grid grid-cols-5 gap-2">
+                                            {allEmojis.map((emoji) => (
+                                              <button
+                                                key={emoji}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleReaction(message.id, emoji);
+                                                }}
+                                                className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
+                                                title={`Mit ${emoji} reagieren`}
+                                              >
+                                                {emoji}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Reply Button */}
+                                    <button
+                                      onClick={() => handleReplyToMessage(message)}
+                                      className="p-1 hover:bg-overlay rounded transition-colors"
+                                      title="Antworten"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                      </svg>
+                                    </button>
+                                    
+                                    {/* More Options (3 dots) */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
+                                        }}
+                                        className="p-1 hover:bg-overlay rounded transition-colors"
+                                        title="Mehr Optionen"
+                                      >
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* More Options Menu */}
+                                      {showMoreMenu === message.id && (
+                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleMarkAsUnread(message.id);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                          >
+                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="text-text-primary">Als ungelesen markieren</span>
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleStarMessage(message.id);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                          >
+                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                            </svg>
+                                            <span className="text-text-primary">Markieren</span>
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               )}
-                            </>
-                          )}
-                        </div>
+                            </div>
+
+                            {/* Reactions Display für eigene Nachrichten */}
+                            {message.reactions && Object.keys(message.reactions).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => handleReaction(message.id, emoji)}
+                                    className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-overlay/50 hover:bg-overlay text-xs transition-colors"
+                                  >
+                                    <span>{emoji}</span>
+                                    <span className="text-text-secondary">{(userIds as string[]).length}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                       ) : (
                         /* Fremde Nachrichten: Avatar links oben bündig mit Bubble */
                         <div className="flex flex-row items-start space-x-2 max-w-[75%] relative">
@@ -876,12 +1275,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
                                     {(() => {
                                       const reply = parseReply(message.content);
+                                      
+                                      // Im Thread-Modus: Zeige nur actualContent ohne Reply-Referenz
+                                      if (showThreadView) {
+                                        const contentToShow = reply ? reply.actualContent : message.content;
+                                        return (
+                                          <>
+                                            <div className="whitespace-pre-wrap">{renderTextWithLinks(contentToShow)}</div>
+                                            {contentToShow.match(/https?:\/\/[^\s]+/) && (
+                                              <div className="mt-2">
+                                                <LinkPreview url={contentToShow.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                              </div>
+                                            )}
+                                          </>
+                                        );
+                                      }
+                                      
+                                      // Haupt-Chat: Zeige Reply-Referenz wie gewohnt
                                       if (reply) {
                                         return (
                                           <>
                                             {/* Reply Reference */}
                                             <div 
-                                              className="mb-2 pl-3 border-l-2 border-glow-purple/60 bg-glow-purple/10 rounded-lg p-2.5 cursor-pointer hover:bg-glow-purple/15 transition-all"
+                                              className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                               onClick={() => {
                                                 // Find original message and scroll to it
                                                 const originalMsg = messages.find(m => 
@@ -891,20 +1307,54 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 if (originalMsg) scrollToMessage(originalMsg.id);
                                               }}
                                             >
-                                              <div className="flex items-center space-x-2 mb-1">
-                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                                </svg>
-                                                <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center space-x-2">
+                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                  </svg>
+                                                  <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                                </div>
+                                                {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
+                                                {buildThreadChain(message.id).length > 2 && (
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      e.preventDefault();
+                                                      setShowThreadView(message.id);
+                                                    }}
+                                                    className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                                    title="Thread anzeigen"
+                                                  >
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                  </button>
+                                                )}
                                               </div>
-                                              <div className="text-xs text-text-secondary/90 line-clamp-2 pl-5">{reply.replyContent}</div>
+                                              <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                             </div>
                                             {/* Actual Message Content */}
-                                            <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                            <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
+                                            {/* Link Preview - only for actual content, not reply */}
+                                            {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
+                                              <div className="mt-2">
+                                                <LinkPreview url={reply.actualContent.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                              </div>
+                                            )}
                                           </>
                                         );
                                       }
-                                      return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                      return (
+                                        <>
+                                          <div className="whitespace-pre-wrap">{renderTextWithLinks(message.content)}</div>
+                                          {/* Link Preview - for non-reply messages */}
+                                          {message.content.match(/https?:\/\/[^\s]+/) && (
+                                            <div className="mt-2">
+                                              <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                            </div>
+                                          )}
+                                        </>
+                                      );
                                     })()}
                                     {message.edited && (
                                       <span className="text-xs ml-2 italic text-text-secondary">
@@ -914,8 +1364,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   </div>
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
-                                  {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
+                                  {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
+                                  {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
+                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
@@ -1033,13 +1484,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   )}
                                 </div>
 
-                                {/* Link Preview */}
-                                {message.content.match(/https?:\/\/[^\s]+/) && (
-                                  <div className="mt-2">
-                                    <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                                  </div>
-                                )}
-
                                 {/* Reactions Display */}
                                 {message.reactions && Object.keys(message.reactions).length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-1">
@@ -1063,8 +1507,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       </div>
                     </React.Fragment>
                   );
-                })
-              )}
+                });
+              })()}
+              {/* Spacer for hover menu - ensures last message has room for the hover menu */}
+              <div className="h-4" />
               <div ref={messagesEndRef} />
             </div>
 
