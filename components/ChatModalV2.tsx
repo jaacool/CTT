@@ -792,6 +792,90 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
+              {/* Thread View Inline */}
+              {showThreadView && (
+                <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
+                  {/* Thread Header */}
+                  <div className="flex items-center justify-between p-3 bg-glow-purple/10 border-b border-glow-purple/20">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <span className="text-sm font-bold text-glow-purple">Thread-Verlauf ({buildThreadChain(showThreadView).length} Nachrichten)</span>
+                    </div>
+                    <button
+                      onClick={() => setShowThreadView(null)}
+                      className="text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      <XIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Thread Messages */}
+                  <div className="p-3 space-y-2 max-h-96 overflow-y-auto bg-overlay/30">
+                    {buildThreadChain(showThreadView).map((threadMsg, index) => {
+                      const isOwnMessage = threadMsg.sender.id === currentUser.id;
+                      const reply = parseReply(threadMsg.content);
+                      
+                      return (
+                        <div key={threadMsg.id} className="relative">
+                          {/* Connection Line */}
+                          {index > 0 && (
+                            <div className="absolute left-6 -top-2 w-0.5 h-2 bg-glow-purple/30"></div>
+                          )}
+                          
+                          <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} items-start space-x-2`}>
+                            {/* Avatar für fremde Nachrichten */}
+                            {!isOwnMessage && (
+                              <img
+                                src={threadMsg.sender.avatarUrl}
+                                alt={threadMsg.sender.name}
+                                className="w-7 h-7 rounded-full flex-shrink-0"
+                              />
+                            )}
+                            
+                            <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                              {/* Sender Name & Timestamp */}
+                              <div className="flex items-center space-x-2 mb-0.5 px-1">
+                                <span className="text-[10px] font-semibold text-text-primary">{threadMsg.sender.name}</span>
+                                <span className="text-[9px] text-text-secondary">{formatTimestamp(threadMsg.timestamp)}</span>
+                              </div>
+                              
+                              {/* Message Bubble */}
+                              <div className={`px-3 py-2 rounded-xl text-xs break-words ${
+                                isOwnMessage 
+                                  ? 'bg-transparent text-text-primary rounded-br-md border border-transparent' 
+                                  : 'bg-overlay text-text-primary rounded-bl-md'
+                              }`}
+                                style={isOwnMessage ? {
+                                  background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
+                                  border: '1px solid transparent'
+                                } : {}}
+                              >
+                                {reply ? (
+                                  <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
+                                ) : (
+                                  <div className="whitespace-pre-wrap">{renderTextWithLinks(threadMsg.content)}</div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Avatar für eigene Nachrichten */}
+                            {isOwnMessage && (
+                              <img
+                                src={threadMsg.sender.avatarUrl}
+                                alt={threadMsg.sender.name}
+                                className="w-7 h-7 rounded-full flex-shrink-0"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {filteredMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-secondary">
                   <div className="text-center">
@@ -1531,102 +1615,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 className="px-4 py-2 glow-button rounded-lg"
               >
                 OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Thread View Modal */}
-      {showThreadView && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <h3 className="text-lg font-bold text-text-primary">Thread-Verlauf</h3>
-              </div>
-              <button
-                onClick={() => setShowThreadView(null)}
-                className="text-text-secondary hover:text-text-primary transition-colors"
-              >
-                <XIcon className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Thread Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {buildThreadChain(showThreadView).map((threadMsg, index) => {
-                const isOwnMessage = threadMsg.sender.id === currentUser.id;
-                const reply = parseReply(threadMsg.content);
-                
-                return (
-                  <div key={threadMsg.id} className="relative">
-                    {/* Connection Line */}
-                    {index > 0 && (
-                      <div className="absolute left-6 -top-3 w-0.5 h-3 bg-glow-purple/30"></div>
-                    )}
-                    
-                    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} items-start space-x-2`}>
-                      {/* Avatar für fremde Nachrichten */}
-                      {!isOwnMessage && (
-                        <img
-                          src={threadMsg.sender.avatarUrl}
-                          alt={threadMsg.sender.name}
-                          className="w-8 h-8 rounded-full flex-shrink-0"
-                        />
-                      )}
-                      
-                      <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                        {/* Sender Name & Timestamp */}
-                        <div className="flex items-center space-x-2 mb-1 px-1">
-                          <span className="text-xs font-semibold text-text-primary">{threadMsg.sender.name}</span>
-                          <span className="text-[10px] text-text-secondary">{formatTimestamp(threadMsg.timestamp)}</span>
-                        </div>
-                        
-                        {/* Message Bubble */}
-                        <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${
-                          isOwnMessage 
-                            ? 'bg-transparent text-text-primary rounded-br-md border border-transparent' 
-                            : 'bg-overlay text-text-primary rounded-bl-md'
-                        }`}
-                          style={isOwnMessage ? {
-                            background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
-                            border: '1px solid transparent'
-                          } : {}}
-                        >
-                          {reply ? (
-                            <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
-                          ) : (
-                            <div className="whitespace-pre-wrap">{renderTextWithLinks(threadMsg.content)}</div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Avatar für eigene Nachrichten */}
-                      {isOwnMessage && (
-                        <img
-                          src={threadMsg.sender.avatarUrl}
-                          alt={threadMsg.sender.name}
-                          className="w-8 h-8 rounded-full flex-shrink-0"
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-border">
-              <button
-                onClick={() => setShowThreadView(null)}
-                className="w-full px-4 py-2 glow-button rounded-lg"
-              >
-                Schließen
               </button>
             </div>
           </div>
