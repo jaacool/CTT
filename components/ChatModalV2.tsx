@@ -226,6 +226,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       const projectId = replyToMessage?.projectId || currentProject?.id || '';
       let content = messageInput.trim();
       
+      // Debug: Log project ID selection
+      console.log('Sending message with projectId:', projectId, {
+        replyToMessageProjectId: replyToMessage?.projectId,
+        currentProjectId: currentProject?.id,
+        isReplying: !!replyToMessage
+      });
+      
       // Add reply reference if replying to a message
       if (replyToMessage) {
         content = `@${replyToMessage.sender.name}: "${replyToMessage.content}"\n\n${content}`;
