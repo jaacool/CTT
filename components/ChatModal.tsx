@@ -39,7 +39,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   onSwitchProject,
   allUsers,
 }) => {
-  // ViewMode entfernt - nur noch eine Ansicht
+  // View Mode State (Channel vs Project)
+  const [viewMode, setViewMode] = useState<ChatViewMode>(ChatViewMode.ByChannel);
   const [messageInput, setMessageInput] = useState('');
   const [suggestedChannel, setSuggestedChannel] = useState<ChatChannel | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

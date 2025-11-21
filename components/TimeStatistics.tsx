@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus, AnomalyType, Anomaly, Project } from '../types';
+import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus, AnomalyType, Anomaly, Project, AnomalyStatus, AnomalyComment } from '../types';
 import { TimeView } from './TimeView';
 import { 
   aggregateByYear, 
@@ -18,8 +18,8 @@ import {
   formatDateRange
 } from '../utils/timeStatistics';
 import { detectAnomalies } from '../utils/anomalyDetection';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps, LabelList } from 'recharts';
-import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps, LabelList, Cell } from 'recharts';
+import { ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon } from './Icons';
 
 interface TimeStatisticsProps {
   users: User[];
@@ -28,10 +28,13 @@ interface TimeStatisticsProps {
   currentUser: User | null;
   targetAnomaly?: Anomaly | null; // Prop für Navigation zu einer Anomalie
   projects: Project[];
+  anomalies?: Anomaly[]; // Anomalien aus App (inkl. Status)
   onUpdateTimeEntry: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange: (taskId: string, billable: boolean) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
+  onResolveAnomaly?: (anomaly: Anomaly) => void;
+  onAddAnomalyComment?: (anomaly: Anomaly, message: string) => void;
 }
 
 type ViewMode = 'year' | 'month' | 'week';
@@ -115,7 +118,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   if (!active || !payload || !payload.length) return null;
 
   const dataItem = payload[0].payload; // Zugriff auf angereicherte Daten
-  const hours = payload[0].value as number;
+  const hours = dataItem.hours; // WICHTIG: Nutze echte Stunden aus payload, nicht den visualHours Wert
   const targetHours = dataItem.targetHours as number;
   const anomaly = dataItem.anomaly as Anomaly | undefined;
 
@@ -229,10 +232,13 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   currentUser,
   targetAnomaly,
   projects,
+  anomalies,
   onUpdateTimeEntry,
   onBillableChange,
   onDeleteTimeEntry,
   onDuplicateTimeEntry,
+  onResolveAnomaly,
+  onAddAnomalyComment,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(currentUser);
   const [viewMode, setViewMode] = useState<ViewMode>('week');
@@ -271,6 +277,9 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
       if (targetUser) {
         setSelectedUser(targetUser);
       }
+      
+      // 5. Öffne Detail-View für diesen Tag
+      setSelectedBarDate(targetAnomaly.date);
     }
   }, [targetAnomaly, users]);
 
@@ -300,11 +309,17 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     return { viewStartDate: start, viewEndDate: end };
   }, [viewMode, selectedYear, selectedMonth, selectedWeek]);
 
-  // Berechne Anomalien für aktuellen View
+  // Berechne Anomalien für aktuellen View aus globalen anomalies (inkl. Status)
   const viewAnomalies = useMemo(() => {
-    if (!selectedUser) return [];
-    return detectAnomalies(selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate);
-  }, [selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate]);
+    if (!selectedUser || !anomalies) return [];
+    const startStr = toLocalISOString(viewStartDate);
+    const endStr = toLocalISOString(viewEndDate);
+    return anomalies.filter(a => 
+      a.userId === selectedUser.id &&
+      a.date >= startStr &&
+      a.date <= endStr
+    );
+  }, [selectedUser, anomalies, viewStartDate, viewEndDate]);
 
   // Berechne Abwesenheitsstatistik
   const absenceStats = useMemo(() => {
@@ -435,8 +450,16 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         return aDate >= sDate && aDate <= eDate;
       });
 
+      // Berechne visualHours für MISSING_ENTRY Anomalie beim Highlighting
+      const isTarget = targetAnomaly && toLocalISOString(startDate) === targetAnomaly.date;
+      const isMissing = anomaly?.type === AnomalyType.MISSING_ENTRY;
+      // Wenn Ziel-Anomalie UND Missing Entry: Zeige Balken mit Soll-Höhe (oder 8h fallback)
+      const visualHours = (isTarget && isMissing) ? (item.targetHours || 8) : item.hours;
+
       return {
         ...item,
+        date: toLocalISOString(startDate), // Für Matching mit targetAnomaly
+        visualHours, // Für Chart-Darstellung
         absence,
         anomaly
       };
@@ -546,7 +569,6 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     });
     
     const hasAbsence = !!item?.absence;
-    const hasAnomaly = !!item?.anomaly;
     const color = hasAbsence ? ABSENCE_COLORS[item.absence.type] : 'transparent';
     const isRotated = isMobile && viewMode !== 'week';
 
@@ -563,17 +585,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         >
           {payload.value}
         </text>
-        {hasAnomaly ? (
-          <text 
-            x={isRotated ? -5 : 0} 
-            y={isRotated ? -10 : -20} 
-            textAnchor="middle" 
-            fontSize={10}
-            fill={COLORS.anomaly}
-          >
-            ⚠️
-          </text>
-        ) : hasAbsence && (
+        {hasAbsence && (
           <circle 
             cx={isRotated ? -5 : 0} 
             cy={isRotated ? 20 : 24} 
@@ -581,6 +593,121 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             fill={color} 
           />
         )}
+      </g>
+    );
+  };
+
+  // Custom Label für Stunden (oder "leer") - Memoized to prevent re-render
+  const CustomBarLabel = React.memo((props: any) => {
+    const { x, y, width, value, index } = props;
+    const item = chartData[index];
+    const isTarget = item.date === targetAnomaly?.date;
+    const isMissing = item.anomaly?.type === AnomalyType.MISSING_ENTRY;
+    const isAdmin = selectedUser?.role === 'role-1' || selectedUser?.role === 'admin';
+
+    // Wenn Missing Entry Highlight: Zeige "leer" (NUR für Nicht-Admins)
+    if (isTarget && isMissing && !isAdmin) {
+      return (
+        <text 
+          x={x + width / 2} 
+          y={y + 20} // Etwas tiefer im Balken
+          textAnchor="middle" 
+          fill={COLORS.anomaly}
+          fontSize={isMobile ? 10 : 12}
+          className="font-bold italic"
+        >
+          leer
+        </text>
+      );
+    }
+
+    // Standard Stunden Anzeige
+    if (item.hours > 0) {
+      return (
+        <text 
+          x={x + width / 2} 
+          y={y + 12} 
+          textAnchor="middle" 
+          fill="#4c1d95"
+          fontSize={isMobile ? 10 : 12}
+          className="font-bold"
+        >
+          {Math.round(item.hours * 10) / 10}h
+        </text>
+      );
+    }
+    return null;
+  }, (prevProps, nextProps) => {
+    // Nur neu rendern wenn Position oder Wert sich ändert, nicht bei Anomalie-Status
+    return prevProps.x === nextProps.x && 
+           prevProps.y === nextProps.y && 
+           prevProps.value === nextProps.value &&
+           prevProps.index === nextProps.index;
+  });
+
+  // Custom Label Component for Anomaly Warnings (above bars)
+  const CustomAnomalyLabel = (props: any) => {
+    const { x, y, width, value, index } = props;
+    
+    // Finde Item basierend auf Index
+    const item = chartData[index];
+    const anomaly = item?.anomaly;
+    
+    if (!anomaly) return null;
+
+    // Falls doch eine durchrutscht bei Admin (selbst)
+    if (selectedUser?.role === 'role-1' && selectedUser.id === currentUser?.id) return null;
+    
+    const isResolved = anomaly.status === AnomalyStatus.Resolved;
+    const color = isResolved ? '#9CA3AF' : '#EAB308'; // gray-400 vs yellow-500
+    const canResolve = currentUser?.role === 'role-1';
+    
+    const centerX = x + width / 2;
+    const centerY = y - 15;
+    
+    return (
+      <g
+        onClick={(e) => {
+          if (canResolve && onResolveAnomaly) {
+            e.stopPropagation();
+            onResolveAnomaly(anomaly);
+          }
+        }}
+        style={{ 
+          cursor: canResolve ? 'pointer' : 'default',
+          pointerEvents: 'all'
+        }}
+      >
+        <title>{isResolved ? "Erledigt" : (canResolve ? "Als erledigt markieren" : "Auffälligkeit")}</title>
+        <circle 
+          cx={centerX} 
+          cy={centerY} 
+          r="10" 
+          fill="none"
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+        />
+        <line 
+          x1={centerX} 
+          y1={centerY - 4} 
+          x2={centerX} 
+          y2={centerY + 1}
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
+        <line 
+          x1={centerX} 
+          y1={centerY + 5} 
+          x2={centerX + 0.01} 
+          y2={centerY + 5}
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
       </g>
     );
   };
@@ -594,7 +721,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col p-6 space-y-6 overflow-hidden">
+    <div className="h-full flex flex-col p-6 space-y-6 overflow-y-auto">
       {/* Header: Title & User Tabs */}
       <div className="flex flex-col space-y-4 flex-shrink-0">
         <h1 className="text-2xl font-bold text-text-primary">Zeitauswertungen</h1>
@@ -788,11 +915,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 }}
               />
               <Bar 
-                dataKey="hours" 
+                dataKey="visualHours" 
                 fill={COLORS.worked} 
                 name="Gearbeitete Stunden" 
                 radius={[6, 6, 0, 0]} 
                 maxBarSize={isMobile ? 30 : 60}
+                isAnimationActive={false}
                 onClick={(data: any) => {
                   if (!data) return;
                   
@@ -834,14 +962,43 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                   }
                 }}
               >
+                {chartData.map((entry: any, index: number) => {
+                  const isTargetDate = entry.date === targetAnomaly?.date;
+                  const isMissingEntry = entry.anomaly?.type === AnomalyType.MISSING_ENTRY;
+
+                  // Standard: Balken immer in worked-Farbe, außer Spezialfall "Keine Zeit erfasst"
+                  const fill = isTargetDate && isMissingEntry
+                    ? 'transparent'
+                    : COLORS.worked;
+
+                  const stroke = isTargetDate && isMissingEntry
+                    ? COLORS.anomaly
+                    : 'none';
+
+                  const strokeDasharray = isTargetDate && isMissingEntry
+                    ? '5 5'
+                    : undefined;
+
+                  const strokeWidth = isTargetDate && isMissingEntry ? 2 : 0;
+
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      strokeDasharray={strokeDasharray}
+                      fillOpacity={1}
+                    />
+                  );
+                })}
                 <LabelList 
-                  dataKey="hours" 
-                  position="insideTop" 
-                  fill="#4c1d95" 
-                  className="font-bold"
-                  offset={10}
-                  fontSize={isMobile ? 10 : 12} 
-                  formatter={(value: number) => value > 0 ? `${Math.round(value * 10) / 10}h` : ''} 
+                  dataKey="visualHours" 
+                  content={<CustomBarLabel />}
+                />
+                <LabelList 
+                  dataKey="visualHours" 
+                  content={<CustomAnomalyLabel />}
                 />
               </Bar>
             </BarChart>

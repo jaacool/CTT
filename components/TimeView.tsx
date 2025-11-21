@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Project, TimeEntry } from '../types';
+import { Project, TimeEntry, User } from '../types';
 import { formatTime } from './utils';
 
 interface TimeViewProps {
   project: Project;
   timeEntries: TimeEntry[];
+  currentUser?: User;
   onUpdateEntry: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange: (taskId: string, billable: boolean) => void;
   onStartTimer?: (taskId: string) => void;
@@ -12,7 +13,7 @@ interface TimeViewProps {
   onDuplicateEntry?: (entry: TimeEntry) => void;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
@@ -77,6 +78,9 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
 
   const totalDuration = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
+  // Check if user can edit time entries (only admins and producers)
+  const canEditTimeEntries = currentUser && (currentUser.role === 'role-1' || currentUser.role === 'role-5');
+
   // Group entries by date
   const entriesByDate = timeEntries.reduce((acc, entry) => {
     const date = new Date(entry.startTime).toLocaleDateString('de-DE');
@@ -86,19 +90,9 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
   }, {} as Record<string, TimeEntry[]>);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold glow-text">Zeiterfassung</h2>
-        <div className="flex items-center gap-4">
-          <div className="text-text-secondary text-sm">
-            Gesamt: <span className="text-text-primary font-bold">{formatTime(totalDuration)}</span>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-2">
       {Object.entries(entriesByDate).reverse().map(([date, entries]: [string, TimeEntry[]]) => (
-        <div key={date} className="space-y-2">
-          <div className="text-xs text-text-secondary font-bold uppercase px-2">{date}</div>
+        <React.Fragment key={date}>
           {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
             <div
               key={entry.id}
@@ -328,22 +322,23 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                       )}
                     </div>
                     
-                    <div className="relative">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setContextMenuEntryId(contextMenuEntryId === entry.id ? null : entry.id);
-                        }}
-                        className="text-text-secondary hover:text-text-primary"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="1"></circle>
-                          <circle cx="12" cy="5" r="1"></circle>
-                          <circle cx="12" cy="19" r="1"></circle>
-                        </svg>
-                      </button>
-                      
-                      {contextMenuEntryId === entry.id && (
+                    {canEditTimeEntries && (
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setContextMenuEntryId(contextMenuEntryId === entry.id ? null : entry.id);
+                          }}
+                          className="text-text-secondary hover:text-text-primary"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                          </svg>
+                        </button>
+                        
+                        {contextMenuEntryId === entry.id && (
                         <>
                           <div 
                             className="fixed inset-0 z-40" 
@@ -382,14 +377,15 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, onUpda
                             </button>
                           </div>
                         </>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           ))}
-        </div>
+        </React.Fragment>
       ))}
       
       {/* Delete confirmation modal */}

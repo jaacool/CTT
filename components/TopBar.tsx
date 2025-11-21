@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Role, AbsenceRequest, UserStatus, Anomaly } from '../types';
+import { User, Role, AbsenceRequest, UserStatus, Anomaly, AnomalyStatus } from '../types';
 
 interface TopBarProps {
   user: User;
@@ -39,8 +39,11 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
     return false;
   }).length;
 
-  // Anomalien zählen (nur eigene oder alle für Admin)
-  const anomalyCount = anomalies.filter(a => isAdmin || a.userId === user.id).length;
+  // Anomalien zählen (nur eigene oder alle für Admin, NUR offene)
+  const anomalyCount = anomalies.filter(a => 
+    (isAdmin || a.userId === user.id) && 
+    a.status !== AnomalyStatus.Resolved
+  ).length;
   
   const totalNotificationCount = absenceNotificationCount + anomalyCount;
 

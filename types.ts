@@ -251,6 +251,24 @@ export enum AnomalyType {
   UNDER_PERFORMANCE = 'UNDER_PERFORMANCE', // Unter 50% des Solls (ohne halben Urlaubstag)
 }
 
+export enum AnomalyStatus {
+  Open = 'OPEN',
+  Resolved = 'RESOLVED'
+}
+
+export interface AnomalyComment {
+  id: string;
+  userId: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface AnomalyRecord {
+  id: string; // userId-date-type
+  status: AnomalyStatus;
+  comments: AnomalyComment[];
+}
+
 export interface Anomaly {
   date: string; // ISO Date String YYYY-MM-DD
   userId: string;
@@ -260,4 +278,6 @@ export interface Anomaly {
     targetHours: number;
     hasShoot: boolean;
   };
+  status?: AnomalyStatus;
+  comments?: AnomalyComment[];
 }
