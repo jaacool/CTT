@@ -2303,24 +2303,40 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   {isRecording ? (
                     // Aufnahme-Modus
                     <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
-                      {/* Scrolling Waveform */}
-                      <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
+                      {/* Scrolling Waveform - volle Breite */}
+                      <div className="flex items-center justify-between flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
                         {(() => {
-                          const maxBars = 100;
-                          const displayWaveform = recordedWaveform.slice(-maxBars);
+                          // Immer 100 Balken anzeigen, von rechts nach links scrollend
+                          const targetBars = 100;
+                          let displayWaveform: number[];
+                          
+                          if (recordedWaveform.length === 0) {
+                            // Zu Beginn: leere Balken
+                            displayWaveform = new Array(targetBars).fill(0);
+                          } else if (recordedWaveform.length < targetBars) {
+                            // Auffüllen: alte Samples links (0), neue rechts
+                            displayWaveform = [
+                              ...new Array(targetBars - recordedWaveform.length).fill(0),
+                              ...recordedWaveform
+                            ];
+                          } else {
+                            // Voll: nur die letzten 100 Samples
+                            displayWaveform = recordedWaveform.slice(-targetBars);
+                          }
                           
                           return displayWaveform.map((level, index) => {
                             const amplifiedLevel = Math.min(1, level * 2);
                             const height = Math.max(3, amplifiedLevel * 28);
-                            const opacity = 0.3 + (amplifiedLevel * 0.7);
+                            const opacity = level === 0 ? 0.1 : 0.3 + (amplifiedLevel * 0.7);
                             return (
                               <div
-                                key={recordedWaveform.length - displayWaveform.length + index}
-                                className="bg-red-500 rounded-full flex-shrink-0"
+                                key={index}
+                                className="bg-red-500 rounded-full"
                                 style={{
                                   height: `${height}px`,
                                   opacity: opacity,
                                   width: '2px',
+                                  flex: '1 1 0',
                                 }}
                               />
                             );
