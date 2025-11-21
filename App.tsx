@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, Anomaly, AnomalyType } from './types';
 import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
@@ -29,6 +29,7 @@ import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject
 import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
 import { loadCompressedBackupFromSupabase } from './utils/supabaseBackup';
 import { startPollingSync, stopPollingSync } from './utils/supabasePolling';
+import { detectAnomalies } from './utils/anomalyDetection';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -120,6 +121,33 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('ctt_show_admins_in_dms');
     return saved ? JSON.parse(saved) : true; // Default: Admins werden angezeigt
   });
+  
+  // Anomaly Detection State
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [targetAnomaly, setTargetAnomaly] = useState<Anomaly | null>(null);
+
+  // Calculate Anomalies Effect
+  useEffect(() => {
+    if (users.length === 0) return;
+
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30); // Last 30 days
+
+    let allAnomalies: Anomaly[] = [];
+    
+    // Admin checks all active users, User checks only themselves
+    const usersToCheck = currentUser?.role === 'role-1' 
+      ? users.filter(u => u.status === UserStatus.Active) 
+      : (currentUser ? [currentUser] : []);
+    
+    usersToCheck.forEach(user => {
+       const userAnomalies = detectAnomalies(user, timeEntries, absenceRequests, startDate, endDate);
+       allAnomalies = [...allAnomalies, ...userAnomalies];
+    });
+    
+    setAnomalies(allAnomalies);
+  }, [timeEntries, absenceRequests, users, currentUser]);
 
   // Berechne ungelesene Nachrichten
   const unreadMessagesCount = useMemo(() => {
@@ -1601,6 +1629,21 @@ const App: React.FC = () => {
     return null;
   };
 
+  const handleSelectAnomaly = useCallback((anomaly: Anomaly) => {
+    setTargetAnomaly(anomaly);
+    setShowNotifications(false);
+    setShowTimeStatistics(true);
+    setShowDashboard(false);
+    setShowProjectsOverview(false);
+    setShowVacationAbsence(false);
+    setShowTimeTracking(false);
+    setShowSettings(false);
+  }, []);
+
+  if (!currentUser) {
+    return <LoginScreen users={users} onLogin={setCurrentUser} />;
+  }
+
   return (
     <div className="flex flex-col h-screen font-sans text-sm">
       <TopBar
@@ -1611,10 +1654,27 @@ const App: React.FC = () => {
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
-        onChangeRole={handleChangeCurrentUserRole}
-        onChangeUser={handleChangeUser}
+        onChangeRole={(roleId) => {
+          const role = MOCK_ROLES.find(r => r.id === roleId);
+          if (currentUser && role) {
+            // Temporäres Update für UI
+            setCurrentUser({ ...currentUser, role: roleId });
+          }
+        }}
+        onChangeUser={(userId) => {
+          const user = users.find(u => u.id === userId);
+          if (user) {
+            setCurrentUser(user);
+            // Speichere Auswahl
+            localStorage.setItem('ctt_last_user_id', userId);
+            // Reset selection
+            setSelectedProject(null);
+            setSelectedTask(null);
+          }
+        }}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         absenceRequests={absenceRequests}
+        anomalies={anomalies}
         onOpenNotifications={() => setShowNotifications(true)}
       />
       
@@ -1762,6 +1822,12 @@ const App: React.FC = () => {
             timeEntries={timeEntries}
             absenceRequests={absenceRequests}
             currentUser={currentUser}
+            targetAnomaly={targetAnomaly}
+            projects={projects}
+            onUpdateTimeEntry={handleUpdateTimeEntry}
+            onBillableChange={handleBillableChange}
+            onDeleteTimeEntry={handleDeleteTimeEntry}
+            onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
         ) : selectedProject ? (
           <TaskArea 
@@ -2032,13 +2098,66 @@ const App: React.FC = () => {
             setSelectedNotificationRequestId(undefined);
           }}
           absenceRequests={absenceRequests}
-          onApproveRequest={handleApproveRequest}
-          onRejectRequest={handleRejectRequest}
-          onAddComment={handleAddComment}
-          onMarkCommentsRead={handleMarkCommentsRead}
-          onDeleteRequest={handleDeleteRequest}
-          onMarkSickLeaveReported={handleMarkSickLeaveReported}
-          currentUser={currentUser!}
+          anomalies={anomalies}
+          onSelectAnomaly={handleSelectAnomaly}
+          users={users}
+          onApproveRequest={(requestId) => {
+            const request = absenceRequests.find(r => r.id === requestId);
+            if (request) {
+              const updatedRequest = { ...request, status: AbsenceStatus.Approved, approvedBy: currentUser, approvedAt: new Date().toISOString() };
+              saveAbsenceRequest(updatedRequest);
+              setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+            }
+          }}
+          onRejectRequest={(requestId, reason) => {
+            const request = absenceRequests.find(r => r.id === requestId);
+            if (request) {
+              const updatedRequest = { ...request, status: AbsenceStatus.Rejected, rejectedReason: reason };
+              saveAbsenceRequest(updatedRequest);
+              setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+            }
+          }}
+          onAddComment={(requestId, message) => {
+            const request = absenceRequests.find(r => r.id === requestId);
+            if (request && currentUser) {
+              const newComment = {
+                id: `comment-${Date.now()}`,
+                user: currentUser,
+                message,
+                timestamp: new Date().toISOString(),
+                read: false
+              };
+              const updatedRequest = { 
+                ...request, 
+                comments: [...(request.comments || []), newComment] 
+              };
+              saveAbsenceRequest(updatedRequest);
+              setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+            }
+          }}
+          onMarkCommentsRead={(requestId) => {
+            const request = absenceRequests.find(r => r.id === requestId);
+            if (request && request.comments) {
+              const updatedComments = request.comments.map(c => 
+                c.user.id !== currentUser?.id ? { ...c, read: true } : c
+              );
+              const updatedRequest = { ...request, comments: updatedComments };
+              saveAbsenceRequest(updatedRequest);
+              setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+            }
+          }}
+          onDeleteRequest={(requestId) => {
+            deleteAbsenceRequest(requestId);
+            setAbsenceRequests(prev => prev.filter(r => r.id !== requestId));
+          }}
+          onMarkSickLeaveReported={(requestId) => {
+            const request = absenceRequests.find(r => r.id === requestId);
+            if (request) {
+              const updatedRequest = { ...request, sickLeaveReported: true };
+              saveAbsenceRequest(updatedRequest);
+              setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+            }
+          }}
           initialSelectedRequestId={selectedNotificationRequestId}
         />
       )}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus } from '../types';
+import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus, AnomalyType, Anomaly, Project } from '../types';
+import { TimeView } from './TimeView';
 import { 
   aggregateByYear, 
   aggregateByMonth, 
@@ -16,6 +17,7 @@ import {
   getWeekStart,
   formatDateRange
 } from '../utils/timeStatistics';
+import { detectAnomalies } from '../utils/anomalyDetection';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps, LabelList } from 'recharts';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
@@ -24,6 +26,12 @@ interface TimeStatisticsProps {
   timeEntries: TimeEntry[];
   absenceRequests: AbsenceRequest[];
   currentUser: User | null;
+  targetAnomaly?: Anomaly | null; // Prop für Navigation zu einer Anomalie
+  projects: Project[];
+  onUpdateTimeEntry: (entryId: string, startTime: string, endTime: string) => void;
+  onBillableChange: (taskId: string, billable: boolean) => void;
+  onDeleteTimeEntry?: (entryId: string) => void;
+  onDuplicateTimeEntry?: (entry: TimeEntry) => void;
 }
 
 type ViewMode = 'year' | 'month' | 'week';
@@ -36,6 +44,13 @@ const ABSENCE_LABELS: Record<string, string> = {
   'HOME_OFFICE': 'Home Office',
   'BUSINESS_TRIP': 'Dienstreise',
   'OTHER': 'Sonstiges'
+};
+
+const ANOMALY_LABELS: Record<string, string> = {
+  [AnomalyType.MISSING_ENTRY]: 'Keine Zeit erfasst',
+  [AnomalyType.EXCESS_WORK_SHOOT]: 'Überlast (Dreh > 15h)',
+  [AnomalyType.EXCESS_WORK_REGULAR]: 'Überlast (> 9h)',
+  [AnomalyType.UNDER_PERFORMANCE]: 'Unterperformance (< 50%)',
 };
 
 const ABSENCE_COLORS: Record<string, string> = {
@@ -57,6 +72,7 @@ const COLORS = {
   textSecondary: '#9ca3af',
   border: '#3f3351',
   overlay: '#322a3d',
+  anomaly: '#EAB308', // Yellow for anomalies
 };
 
 // Helper: Datum zu YYYY-MM-DD String konvertieren (lokal)
@@ -98,8 +114,10 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 }) => {
   if (!active || !payload || !payload.length) return null;
 
+  const dataItem = payload[0].payload; // Zugriff auf angereicherte Daten
   const hours = payload[0].value as number;
-  const targetHours = payload[0].payload.targetHours as number;
+  const targetHours = dataItem.targetHours as number;
+  const anomaly = dataItem.anomaly as Anomaly | undefined;
 
   // Bestimme Datumsbereich basierend auf ViewMode und Label
   let startDate: Date;
@@ -161,6 +179,17 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           <span className="font-semibold" style={{ color: COLORS.target }}>{targetHours}h</span>
         </div>
         
+        {anomaly && (
+          <>
+            <div className="border-t border-border my-2"></div>
+            <p className="text-text-secondary text-xs mb-1">Auffälligkeiten:</p>
+            <div className="flex items-center gap-2 text-xs">
+               <span className="text-yellow-500 font-bold">⚠️</span>
+               <span style={{ color: COLORS.anomaly }}>{ANOMALY_LABELS[anomaly.type]}</span>
+            </div>
+          </>
+        )}
+
         {relevantAbsences.length > 0 && (
           <>
             <div className="border-t border-border my-2"></div>
@@ -198,6 +227,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   timeEntries,
   absenceRequests,
   currentUser,
+  targetAnomaly,
+  projects,
+  onUpdateTimeEntry,
+  onBillableChange,
+  onDeleteTimeEntry,
+  onDuplicateTimeEntry,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(currentUser);
   const [viewMode, setViewMode] = useState<ViewMode>('week');
@@ -210,6 +245,34 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   
   // Woche Navigation
   const [selectedWeek, setSelectedWeek] = useState(getWeekStart(new Date()));
+  
+  // State für ausgewählten Balken (Zeiteinträge-Anzeige)
+  const [selectedBarDate, setSelectedBarDate] = useState<string | null>(null); // ISO date string
+  const [selectedBarWeek, setSelectedBarWeek] = useState<Date | null>(null); // For month view
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set()); // For month view collapsible weeks
+
+  // Navigation Effect für targetAnomaly
+  useEffect(() => {
+    if (targetAnomaly) {
+      // 1. Setze ViewMode auf 'week'
+      setViewMode('week');
+      
+      // 2. Parse Datum und setze Woche
+      const anomalyDate = new Date(targetAnomaly.date);
+      const newWeekStart = getWeekStart(anomalyDate);
+      setSelectedWeek(newWeekStart);
+      
+      // 3. Setze Jahr/Monat
+      setSelectedYear(anomalyDate.getFullYear());
+      setSelectedMonth(anomalyDate.getMonth());
+      
+      // 4. Setze User
+      const targetUser = users.find(u => u.id === targetAnomaly.userId);
+      if (targetUser) {
+        setSelectedUser(targetUser);
+      }
+    }
+  }, [targetAnomaly, users]);
 
   // Format für Monatsnamen
   const monthNames = [
@@ -236,6 +299,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     }
     return { viewStartDate: start, viewEndDate: end };
   }, [viewMode, selectedYear, selectedMonth, selectedWeek]);
+
+  // Berechne Anomalien für aktuellen View
+  const viewAnomalies = useMemo(() => {
+    if (!selectedUser) return [];
+    return detectAnomalies(selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate);
+  }, [selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate]);
 
   // Berechne Abwesenheitsstatistik
   const absenceStats = useMemo(() => {
@@ -359,12 +428,20 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         return isDateOverlap(startDate, endDate, req.startDate, req.endDate);
       });
 
+      const anomaly = viewAnomalies.find(a => {
+        const aDate = a.date; // YYYY-MM-DD
+        const sDate = toLocalISOString(startDate);
+        const eDate = toLocalISOString(endDate);
+        return aDate >= sDate && aDate <= eDate;
+      });
+
       return {
         ...item,
-        absence
+        absence,
+        anomaly
       };
     });
-  }, [rawChartData, absenceRequests, selectedUser, viewMode, selectedYear, selectedMonth, selectedWeek]);
+  }, [rawChartData, absenceRequests, selectedUser, viewMode, selectedYear, selectedMonth, selectedWeek, viewAnomalies]);
 
   // Berechne Durchschnitt und Soll basierend auf ViewMode
   const averageHours = useMemo(() => {
@@ -469,6 +546,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     });
     
     const hasAbsence = !!item?.absence;
+    const hasAnomaly = !!item?.anomaly;
     const color = hasAbsence ? ABSENCE_COLORS[item.absence.type] : 'transparent';
     const isRotated = isMobile && viewMode !== 'week';
 
@@ -485,7 +563,17 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         >
           {payload.value}
         </text>
-        {hasAbsence && (
+        {hasAnomaly ? (
+          <text 
+            x={isRotated ? -5 : 0} 
+            y={isRotated ? -10 : -20} 
+            textAnchor="middle" 
+            fontSize={10}
+            fill={COLORS.anomaly}
+          >
+            ⚠️
+          </text>
+        ) : hasAbsence && (
           <circle 
             cx={isRotated ? -5 : 0} 
             cy={isRotated ? 20 : 24} 
@@ -705,6 +793,46 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 name="Gearbeitete Stunden" 
                 radius={[6, 6, 0, 0]} 
                 maxBarSize={isMobile ? 30 : 60}
+                onClick={(data: any) => {
+                  if (!data) return;
+                  
+                  // In Wochenansicht: Zeige Einträge für den Tag
+                  if (viewMode === 'week') {
+                    const dayLabel = data.day;
+                    const dayIndex = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].indexOf(dayLabel);
+                    if (dayIndex === -1) return;
+                    
+                    const clickedDate = new Date(selectedWeek);
+                    clickedDate.setDate(clickedDate.getDate() + dayIndex);
+                    setSelectedBarDate(clickedDate.toISOString().split('T')[0]);
+                    setSelectedBarWeek(null);
+                  }
+                  // In Monatsansicht: Zeige Einträge für die Woche
+                  else if (viewMode === 'month') {
+                    const weekLabel = data.week;
+                    // Parse "KW XX" format
+                    const weekMatch = weekLabel.match(/KW (\d+)/);
+                    if (!weekMatch) return;
+                    
+                    // Find the week start date from chartData
+                    const weekData = chartData.find((d: any) => d.week === weekLabel);
+                    if (weekData && weekData.weekStart) {
+                      setSelectedBarWeek(new Date(weekData.weekStart));
+                      setSelectedBarDate(null);
+                    }
+                  }
+                  // In Jahresansicht: Zeige Einträge für den Monat
+                  else if (viewMode === 'year') {
+                    const monthLabel = data.month;
+                    const monthIndex = shortMonthNames.indexOf(monthLabel);
+                    if (monthIndex === -1) return;
+                    
+                    // Set to first day of month
+                    const clickedDate = new Date(selectedYear, monthIndex, 1);
+                    setSelectedBarDate(clickedDate.toISOString().split('T')[0]);
+                    setSelectedBarWeek(null);
+                  }
+                }}
               >
                 <LabelList 
                   dataKey="hours" 
@@ -719,6 +847,105 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
             </BarChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Zeiteinträge-Anzeige (Wochenansicht) */}
+        {viewMode === 'week' && selectedBarDate && selectedUser && (
+          <div className="pt-4 border-t border-border mt-4 flex-shrink-0">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-text-primary">
+                Zeiteinträge für {new Date(selectedBarDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+              </h3>
+              <button
+                onClick={() => setSelectedBarDate(null)}
+                className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Schließen
+              </button>
+            </div>
+            <TimeView
+              project={projects[0] || { id: 'dummy', name: 'Zeiteinträge', taskLists: [] } as Project}
+              timeEntries={timeEntries.filter(entry => {
+                const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
+                return entryDate === selectedBarDate && entry.user.id === selectedUser.id;
+              })}
+              onUpdateEntry={onUpdateTimeEntry}
+              onBillableChange={onBillableChange}
+              onDeleteEntry={onDeleteTimeEntry}
+              onDuplicateEntry={onDuplicateTimeEntry}
+            />
+          </div>
+        )}
+
+        {/* Zeiteinträge-Anzeige (Monatsansicht) */}
+        {viewMode === 'month' && selectedBarWeek && selectedUser && (
+          <div className="pt-4 border-t border-border mt-4 flex-shrink-0">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-text-primary">
+                Zeiteinträge für Woche {formatDateRange(selectedBarWeek, new Date(selectedBarWeek.getTime() + 6 * 24 * 60 * 60 * 1000))}
+              </h3>
+              <button
+                onClick={() => setSelectedBarWeek(null)}
+                className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Schließen
+              </button>
+            </div>
+            
+            {/* Group entries by day within the week */}
+            <div className="space-y-2">
+              {Array.from({ length: 7 }, (_, i) => {
+                const dayDate = new Date(selectedBarWeek);
+                dayDate.setDate(dayDate.getDate() + i);
+                const dayDateStr = dayDate.toISOString().split('T')[0];
+                
+                const dayEntries = timeEntries.filter(entry => {
+                  const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
+                  return entryDate === dayDateStr && entry.user.id === selectedUser.id;
+                });
+                
+                if (dayEntries.length === 0) return null;
+                
+                const isExpanded = expandedWeeks.has(dayDateStr);
+                
+                return (
+                  <div key={dayDateStr} className="bg-overlay rounded-lg border border-border/50">
+                    <button
+                      onClick={() => {
+                        const newExpanded = new Set(expandedWeeks);
+                        if (isExpanded) {
+                          newExpanded.delete(dayDateStr);
+                        } else {
+                          newExpanded.add(dayDateStr);
+                        }
+                        setExpandedWeeks(newExpanded);
+                      }}
+                      className="w-full px-4 py-3 flex justify-between items-center hover:bg-surface/50 transition-colors rounded-lg"
+                    >
+                      <span className="text-sm font-semibold text-text-primary">
+                        {dayDate.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' })} 
+                        <span className="ml-2 text-text-secondary">({dayEntries.length} {dayEntries.length === 1 ? 'Eintrag' : 'Einträge'})</span>
+                      </span>
+                      <ChevronRightIcon className={`w-4 h-4 text-text-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="px-4 pb-4">
+                        <TimeView
+                          project={projects[0] || { id: 'dummy', name: 'Zeiteinträge', taskLists: [] } as Project}
+                          timeEntries={dayEntries}
+                          onUpdateEntry={onUpdateTimeEntry}
+                          onBillableChange={onBillableChange}
+                          onDeleteEntry={onDeleteTimeEntry}
+                          onDuplicateEntry={onDuplicateTimeEntry}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              }).filter(Boolean)}
+            </div>
+          </div>
+        )}
 
         {/* Abwesenheitsstatistik */}
         {Object.keys(absenceStats).length > 0 && (

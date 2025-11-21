@@ -243,3 +243,21 @@ export enum ChatViewMode {
   ByProject = 'BY_PROJECT', // Gruppiert nach Projekten, zeigt Channels als Tabs
   ByChannel = 'BY_CHANNEL', // Gruppiert nach Channels, zeigt Projekt-Tags bei Nachrichten
 }
+
+export enum AnomalyType {
+  MISSING_ENTRY = 'MISSING_ENTRY', // Arbeitstag, aber keine Zeit und keine Abwesenheit
+  EXCESS_WORK_SHOOT = 'EXCESS_WORK_SHOOT', // Über 15h bei Dreh/Produktion
+  EXCESS_WORK_REGULAR = 'EXCESS_WORK_REGULAR', // Über 9h ohne Dreh/Produktion
+  UNDER_PERFORMANCE = 'UNDER_PERFORMANCE', // Unter 50% des Solls (ohne halben Urlaubstag)
+}
+
+export interface Anomaly {
+  date: string; // ISO Date String YYYY-MM-DD
+  userId: string;
+  type: AnomalyType;
+  details: {
+    trackedHours: number;
+    targetHours: number;
+    hasShoot: boolean;
+  };
+}
