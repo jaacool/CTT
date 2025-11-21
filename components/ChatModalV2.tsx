@@ -216,10 +216,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
+      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden relative">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-10">
           <div className="flex items-center space-x-4">
             {/* Mobile Menu Toggle */}
             <button
@@ -249,7 +249,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </button>
 
             {showProjectDropdown && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[100] overflow-hidden">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[1000] overflow-hidden">
                 {/* Suchfeld */}
                 <div className="p-3 border-b border-border">
                   <input
