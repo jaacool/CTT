@@ -763,7 +763,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -bottom-8 -right-2 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
+                                    <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
@@ -794,16 +794,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         <button
                                           className="p-1 hover:bg-overlay rounded transition-colors"
                                           title="Antworten"
-                                        >
-                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                          </svg>
-                                        </button>
-                                        
-                                        {/* Undo/Reply Button */}
-                                        <button
-                                          className="p-1 hover:bg-overlay rounded transition-colors"
-                                          title="Rückgängig"
                                         >
                                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
