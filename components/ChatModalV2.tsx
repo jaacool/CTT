@@ -25,6 +25,108 @@ interface ChatModalV2Props {
   showAdminsInDMs?: boolean;
 }
 
+// Custom Audio Player Component
+const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = ({ url, name, hasText }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (audioRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percentage = x / rect.width;
+      audioRef.current.currentTime = percentage * duration;
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
+      hasText ? 'max-w-xs' : 'max-w-[320px]'
+    }`}>
+      <audio
+        ref={audioRef}
+        src={url}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+      <div className="flex items-center space-x-3">
+        {/* Play/Pause Button */}
+        <button
+          onClick={togglePlay}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-glow-purple rounded-full hover:bg-glow-purple/80 transition-colors"
+        >
+          {isPlaying ? (
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          )}
+        </button>
+
+        {/* Timeline */}
+        <div
+          className="flex-1 h-1 bg-surface rounded-full cursor-pointer relative"
+          onClick={handleSeek}
+        >
+          <div
+            className="h-full bg-glow-purple rounded-full"
+            style={{ width: `${(currentTime / duration) * 100}%` }}
+          />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-glow-purple rounded-full"
+            style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translate(-50%, -50%)' }}
+          />
+        </div>
+
+        {/* Current Time */}
+        <div className="flex-shrink-0 text-xs text-text-secondary font-mono">
+          {formatTime(currentTime)}
+        </div>
+      </div>
+
+      {/* Filename */}
+      <div className="text-xs text-text-secondary truncate">
+        {name}
+      </div>
+    </div>
+  );
+};
+
 export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   isOpen,
   onClose,
@@ -1241,19 +1343,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           </div>
                                         ) : isAudioFile(attachment.type) ? (
                                           // Audio Player - Custom Design
-                                          <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
-                                            message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
-                                          }`}>
-                                            <audio 
-                                              src={attachment.url} 
-                                              controls
-                                              className="w-full"
-                                              style={{ height: '40px' }}
-                                            />
-                                            <div className="text-xs text-text-secondary truncate">
-                                              {attachment.name}
-                                            </div>
-                                          </div>
+                                          <AudioPlayer 
+                                            url={attachment.url}
+                                            name={attachment.name}
+                                            hasText={!!message.content.trim()}
+                                          />
                                         ) : (
                                           // File Download Button
                                           <a
@@ -1682,19 +1776,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               </div>
                                             ) : isAudioFile(attachment.type) ? (
                                               // Audio Player - Custom Design
-                                              <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
-                                                message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
-                                              }`}>
-                                                <audio 
-                                                  src={attachment.url} 
-                                                  controls
-                                                  className="w-full"
-                                                  style={{ height: '40px' }}
-                                                />
-                                                <div className="text-xs text-text-secondary truncate">
-                                                  {attachment.name}
-                                                </div>
-                                              </div>
+                                              <AudioPlayer 
+                                                url={attachment.url}
+                                                name={attachment.name}
+                                                hasText={!!message.content.trim()}
+                                              />
                                             ) : (
                                               // File Download Button
                                               <a
