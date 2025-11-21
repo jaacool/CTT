@@ -89,7 +89,7 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
   };
 
   return (
-    <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg w-full ${
+    <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg w-full overflow-visible ${
       hasText ? 'max-w-sm' : 'max-w-[384px]'
     }`}>
       <audio
@@ -125,17 +125,17 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
             className="h-full bg-glow-purple rounded-full"
             style={{ width: `${(currentTime / duration) * 100}%` }}
           />
-          {/* Cursor Line */}
+          {/* Playhead - Vertical Line */}
           <div
-            className="absolute top-1/2 flex items-center pointer-events-none"
-            style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translate(-50%, -50%)' }}
+            className="absolute pointer-events-none"
+            style={{ 
+              left: `${(currentTime / duration) * 100}%`, 
+              top: '-4px',
+              bottom: '-4px',
+              transform: 'translateX(-50%)'
+            }}
           >
-            {/* Left line */}
-            <div className="w-6 h-px bg-white"></div>
-            {/* Center bar */}
-            <div className="w-0.5 h-3 bg-white"></div>
-            {/* Right line */}
-            <div className="w-6 h-px bg-white"></div>
+            <div className="w-0.5 h-full bg-white"></div>
           </div>
         </div>
 
