@@ -552,7 +552,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Messages */}
             <div 
-              className="flex-1 overflow-y-auto p-4"
+              className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
               {filteredMessages.length === 0 ? (
@@ -647,23 +647,25 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       ) : (
                         /* Fremde Nachrichten: Avatar links oben bündig mit Bubble */
                         <div className="flex flex-row items-start space-x-2 max-w-[75%]">
-                          {/* Avatar - oben bündig mit Bubble */}
-                          <div className="flex-shrink-0 w-7">
-                            {showAvatar ? (
-                              <img
-                                src={message.sender.avatarUrl}
-                                alt={message.sender.name}
-                                className="w-7 h-7 rounded-full"
-                              />
-                            ) : (
-                              <div className="w-7 h-7" />
-                            )}
-                          </div>
+                          {/* Avatar - nur in Channels, nicht in DMs */}
+                          {currentChannel?.type !== ChatChannelType.Direct && (
+                            <div className="flex-shrink-0 w-7">
+                              {showAvatar ? (
+                                <img
+                                  src={message.sender.avatarUrl}
+                                  alt={message.sender.name}
+                                  className="w-7 h-7 rounded-full"
+                                />
+                              ) : (
+                                <div className="w-7 h-7" />
+                              )}
+                            </div>
+                          )}
 
                           {/* Message Content */}
                           <div className="flex flex-col items-start">
-                            {/* Name & Timestamp */}
-                            {showAvatar && (
+                            {/* Name & Timestamp - nur in Channels, nicht in DMs */}
+                            {showAvatar && currentChannel?.type !== ChatChannelType.Direct && (
                               <div className="flex items-center space-x-2 mb-1 px-1">
                                 <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
                                 <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
