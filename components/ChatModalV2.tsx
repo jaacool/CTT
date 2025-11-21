@@ -45,6 +45,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
+  const [showAddDMModal, setShowAddDMModal] = useState(false);
+  const [dmUserSearch, setDmUserSearch] = useState('');
+  const [showAddChannelModal, setShowAddChannelModal] = useState(false);
+  const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
@@ -159,7 +163,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           </div>
 
           {/* Project Filter Dropdown */}
-          <div className="relative">
+          <div className="relative mr-2">
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
               className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
@@ -255,7 +259,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 <div className="text-xs text-text-secondary font-semibold uppercase">Channels</div>
                 {currentUser.role === 'admin' && (
                   <button
-                    onClick={() => alert('Channel erstellen - Feature kommt bald!')}
+                    onClick={() => setShowAddChannelModal(true)}
                     className="text-glow-purple hover:text-glow-purple/80 transition-colors"
                     title="Neuen Channel erstellen"
                   >
@@ -271,13 +275,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   return (
                     <button
                       key={channel.id}
+                      draggable
+                      onDragStart={() => setDraggedChannelId(channel.id)}
+                      onDragEnd={() => setDraggedChannelId(null)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        // TODO: Implement channel reordering
+                        console.log('Dropped', draggedChannelId, 'onto', channel.id);
+                      }}
                       onClick={() => {
                         onSwitchChannel(channel.id);
                         setShowSidebar(false);
                       }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
+                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors cursor-move ${
                         currentChannel?.id === channel.id ? 'glow-button' : 'hover-glow'
-                      }`}
+                      } ${draggedChannelId === channel.id ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         <HashIcon className="w-4 h-4 flex-shrink-0" />
@@ -299,7 +312,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs text-text-secondary font-semibold uppercase">Direktnachrichten</div>
                 <button
-                  onClick={() => alert('Direktnachricht starten - Feature kommt bald!')}
+                  onClick={() => setShowAddDMModal(true)}
                   className="text-glow-purple hover:text-glow-purple/80 transition-colors"
                   title="Neue Direktnachricht starten"
                 >
@@ -515,6 +528,84 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           }}
           onCancel={() => setDeleteConfirmMessageId(null)}
         />
+      )}
+
+      {/* Add Direct Message Modal */}
+      {showAddDMModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4">Neue Direktnachricht</h3>
+            
+            <input
+              type="text"
+              placeholder="Mitarbeiter suchen..."
+              value={dmUserSearch}
+              onChange={(e) => setDmUserSearch(e.target.value)}
+              className="w-full px-4 py-2 bg-overlay rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-glow-purple"
+              autoFocus
+            />
+
+            <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
+              {allUsers
+                .filter(user => 
+                  user.id !== currentUser.id &&
+                  (!dmUserSearch || user.name.toLowerCase().includes(dmUserSearch.toLowerCase()))
+                )
+                .map(user => (
+                  <button
+                    key={user.id}
+                    onClick={() => {
+                      // TODO: Create or switch to DM channel with this user
+                      console.log('Start DM with', user.name);
+                      setShowAddDMModal(false);
+                      setDmUserSearch('');
+                    }}
+                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-overlay transition-colors"
+                  >
+                    <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full" />
+                    <div className="text-left">
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-xs text-text-secondary">{user.role}</div>
+                    </div>
+                  </button>
+                ))}
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowAddDMModal(false);
+                  setDmUserSearch('');
+                }}
+                className="px-4 py-2 bg-overlay rounded-lg hover:bg-overlay/80"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Channel Modal */}
+      {showAddChannelModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4">Neuen Channel erstellen</h3>
+            
+            <div className="text-text-secondary mb-4">
+              Feature kommt bald! Hier können Admins neue Channels erstellen.
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowAddChannelModal(false)}
+                className="px-4 py-2 glow-button rounded-lg"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
