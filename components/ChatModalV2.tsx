@@ -1241,16 +1241,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           </div>
                                         ) : isAudioFile(attachment.type) ? (
                                           // Audio Player - Custom Design
-                                          <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
+                                          <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
                                             message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
                                           }`}>
                                             <audio 
                                               src={attachment.url} 
                                               controls
-                                              className="flex-1"
+                                              className="w-full"
                                               style={{ height: '40px' }}
                                             />
-                                            <div className="text-xs text-text-secondary whitespace-nowrap">
+                                            <div className="text-xs text-text-secondary truncate">
                                               {attachment.name}
                                             </div>
                                           </div>
@@ -1682,16 +1682,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               </div>
                                             ) : isAudioFile(attachment.type) ? (
                                               // Audio Player - Custom Design
-                                              <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
+                                              <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
                                                 message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
                                               }`}>
                                                 <audio 
                                                   src={attachment.url} 
                                                   controls
-                                                  className="flex-1"
+                                                  className="w-full"
                                                   style={{ height: '40px' }}
                                                 />
-                                                <div className="text-xs text-text-secondary whitespace-nowrap">
+                                                <div className="text-xs text-text-secondary truncate">
                                                   {attachment.name}
                                                 </div>
                                               </div>
