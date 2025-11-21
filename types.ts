@@ -232,6 +232,11 @@ export interface ChatMessage {
   editedAt?: string; // ISO timestamp
   readBy: string[]; // User IDs die die Nachricht gelesen haben
   reactions?: { [emoji: string]: string[] }; // { "👍": ["user1", "user2"], "❤️": ["user3"] }
+  replyTo?: {
+    messageId: string;
+    content: string;
+    senderName: string;
+  };
 }
 
 export enum ChatViewMode {

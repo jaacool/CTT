@@ -275,6 +275,30 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setHoveredMessageId(null);
     // TODO: Implement star message functionality
   };
+  
+  // Parse reply from message content
+  const parseReply = (content: string) => {
+    const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
+    if (replyMatch) {
+      return {
+        senderName: replyMatch[1],
+        replyContent: replyMatch[2],
+        actualContent: replyMatch[3],
+      };
+    }
+    return null;
+  };
+  
+  // Scroll to message
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight effect
+      messageElement.classList.add('highlight-message');
+      setTimeout(() => messageElement.classList.remove('highlight-message'), 2000);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -668,6 +692,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       )}
                       
                       <div 
+                        id={`message-${message.id}`}
                         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mt-1.5`}
                         onContextMenu={(e) => {
                           if (isOwnMessage && canEditMessage(message.timestamp)) {
@@ -718,13 +743,38 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Message Content Bubble */}
                               <div
-                                className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent whitespace-pre-wrap"
+                                className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
                                 style={{
                                   background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
                                   border: '1px solid transparent'
                                 }}
                               >
-                                {message.content}
+                                {(() => {
+                                  const reply = parseReply(message.content);
+                                  if (reply) {
+                                    return (
+                                      <>
+                                        {/* Reply Reference */}
+                                        <div 
+                                          className="mb-2 pl-3 border-l-4 border-glow-purple bg-overlay/30 rounded p-2 cursor-pointer hover:bg-overlay/50 transition-colors"
+                                          onClick={() => {
+                                            const originalMsg = messages.find(m => 
+                                              m.sender.name === reply.senderName && 
+                                              m.content.includes(reply.replyContent)
+                                            );
+                                            if (originalMsg) scrollToMessage(originalMsg.id);
+                                          }}
+                                        >
+                                          <div className="text-xs text-glow-purple font-semibold">{reply.senderName}</div>
+                                          <div className="text-xs text-text-secondary truncate">{reply.replyContent}</div>
+                                        </div>
+                                        {/* Actual Message Content */}
+                                        <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                      </>
+                                    );
+                                  }
+                                  return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                })()}
                                 {message.edited && (
                                   <span className="text-xs ml-2 italic text-text-secondary">
                                     (bearbeitet)
@@ -819,8 +869,34 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
                                   {/* Message Content Bubble */}
-                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md whitespace-pre-wrap">
-                                    {message.content}
+                                  <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                    {(() => {
+                                      const reply = parseReply(message.content);
+                                      if (reply) {
+                                        return (
+                                          <>
+                                            {/* Reply Reference */}
+                                            <div 
+                                              className="mb-2 pl-3 border-l-4 border-glow-purple/50 bg-overlay/50 rounded p-2 cursor-pointer hover:bg-overlay/70 transition-colors"
+                                              onClick={() => {
+                                                // Find original message and scroll to it
+                                                const originalMsg = messages.find(m => 
+                                                  m.sender.name === reply.senderName && 
+                                                  m.content.includes(reply.replyContent)
+                                                );
+                                                if (originalMsg) scrollToMessage(originalMsg.id);
+                                              }}
+                                            >
+                                              <div className="text-xs text-glow-purple font-semibold">{reply.senderName}</div>
+                                              <div className="text-xs text-text-secondary truncate">{reply.replyContent}</div>
+                                            </div>
+                                            {/* Actual Message Content */}
+                                            <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                          </>
+                                        );
+                                      }
+                                      return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                    })()}
                                     {message.edited && (
                                       <span className="text-xs ml-2 italic text-text-secondary">
                                         (bearbeitet)
