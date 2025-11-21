@@ -473,7 +473,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <div className="flex-1 min-h-[300px] pb-4">
+        <div className="flex-1 min-h-[300px] pb-8">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={chartData} 
@@ -481,7 +481,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 top: 20, 
                 right: isMobile ? 10 : 30, 
                 left: isMobile ? -10 : 10, 
-                bottom: isMobile ? 40 : 30 
+                bottom: isMobile ? 80 : 50 
               }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
@@ -525,7 +525,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 }
                 cursor={{ fill: COLORS.overlay, opacity: 0.2 }}
               />
-              <Legend wrapperStyle={{ paddingTop: isMobile ? '10px' : '30px' }} />
+              <Legend wrapperStyle={{ paddingTop: isMobile ? '20px' : '40px' }} />
               <ReferenceLine 
                 y={averageHours} 
                 stroke={COLORS.average} 
