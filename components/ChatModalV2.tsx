@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { ChatChannel, ChatMessage, Project, User, ChatChannelType } from '../types';
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
@@ -72,11 +72,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   ];
 
   // Scroll to bottom when opening chat or switching channels (instant, no animation)
-  useEffect(() => {
+  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
+  useLayoutEffect(() => {
     if (isOpen && currentChannel) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-      }, 50);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [isOpen, currentChannel?.id]);
 
