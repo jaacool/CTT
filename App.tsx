@@ -1245,6 +1245,15 @@ const App: React.FC = () => {
     console.log('Edit message:', messageId, newContent);
   };
 
+  const handleUpdateMessageAttachments = (messageId: string, attachments: ChatAttachment[]) => {
+    setChatMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, attachments }
+        : msg
+    ));
+    console.log('Updated message attachments:', messageId, attachments);
+  };
+
   const handleDeleteMessage = async (messageId: string) => {
     // Find message to get attachments
     const message = chatMessages.find(msg => msg.id === messageId);
@@ -2298,6 +2307,7 @@ const App: React.FC = () => {
           currentChannel={currentChatChannel}
           onSendMessage={handleSendMessage}
           onEditMessage={handleEditMessage}
+          onUpdateMessageAttachments={handleUpdateMessageAttachments}
           onDeleteMessage={handleDeleteMessage}
           onCreateChannel={handleCreateChannel}
           onSwitchChannel={handleSwitchChatChannel}

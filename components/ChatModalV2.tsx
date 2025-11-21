@@ -16,6 +16,7 @@ interface ChatModalV2Props {
   currentChannel: ChatChannel | null;
   onSendMessage: (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[]) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
+  onUpdateMessageAttachments: (messageId: string, attachments: ChatAttachment[]) => void;
   onDeleteMessage: (messageId: string) => void;
   onCreateChannel: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
   onSwitchChannel: (channelId: string) => void;
@@ -164,6 +165,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   currentChannel,
   onSendMessage,
   onEditMessage,
+  onUpdateMessageAttachments,
   onDeleteMessage,
   onCreateChannel,
   onSwitchChannel,
@@ -453,9 +455,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           onSendMessage(content, currentChannel.id, projectId, undefined);
         }
         
-        // 2. Send each file as a separate message
+        // 2. Send each file as a separate message with Blob URL for instant preview
+        const messageIds: string[] = [];
         if (filesToUpload.length > 0) {
           filesToUpload.forEach((file, idx) => {
+            const messageId = `msg-${Date.now()}-${idx}`;
+            messageIds.push(messageId);
+            
             const placeholderAttachment: ChatAttachment = {
               id: `uploading-${Date.now()}-${idx}`,
               name: file.name,
@@ -464,7 +470,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               url: URL.createObjectURL(file), // Local blob URL for instant preview!
             };
             
-            // Send empty message with single attachment
+            // Send empty message with single attachment (Blob URL)
             onSendMessage('', currentChannel.id, projectId, [placeholderAttachment]);
           });
         }
@@ -484,7 +490,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
         
-        // Upload files in background if any
+        // 3. Upload files in background and update messages with real URLs
         if (filesToUpload.length > 0) {
           uploadChatFiles(filesToUpload, currentChannel.id, (fileIndex, progress) => {
             setUploadProgress(prev => ({
@@ -492,9 +498,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               [filesToUpload[fileIndex].name]: progress
             }));
           }).then(uploadedAttachments => {
-            // Update message with real attachments
-            // TODO: Implement update mechanism
-            console.log('Files uploaded:', uploadedAttachments);
+            // Update each message with real Supabase URLs
+            uploadedAttachments.forEach((attachment, idx) => {
+              // Find the message by looking for the one with matching filename
+              const targetMessage = messages.find(msg => 
+                msg.attachments?.some(att => att.name === attachment.name && att.url.startsWith('blob:'))
+              );
+              
+              if (targetMessage) {
+                onUpdateMessageAttachments(targetMessage.id, [attachment]);
+              }
+            });
             setUploadProgress({});
           }).catch(error => {
             console.error('Error uploading files:', error);
