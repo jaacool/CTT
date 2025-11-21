@@ -167,7 +167,10 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
             <p className="text-text-secondary text-xs mb-1">Abwesenheiten:</p>
             {relevantAbsences.map((absence, index) => (
               <div key={index} className="text-xs flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                <span 
+                  className="w-2 h-2 rounded-full" 
+                  style={{ backgroundColor: ABSENCE_COLORS[absence.type] || '#6B7280' }}
+                ></span>
                 <span>{ABSENCE_LABELS[absence.type] || absence.type}</span>
                 {viewMode !== 'week' && (
                   <span className="text-text-secondary">
