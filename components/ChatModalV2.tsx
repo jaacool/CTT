@@ -72,7 +72,7 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
 
   return (
     <div className={`flex flex-col space-y-2 p-3 bg-overlay rounded-lg ${
-      hasText ? 'max-w-xs' : 'max-w-[320px]'
+      hasText ? 'max-w-sm' : 'max-w-[384px]'
     }`}>
       <audio
         ref={audioRef}
@@ -85,14 +85,14 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
         {/* Play/Pause Button */}
         <button
           onClick={togglePlay}
-          className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-glow-purple rounded-full hover:bg-glow-purple/80 transition-colors"
+          className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-transparent hover:bg-glow-purple/20 rounded-full transition-colors"
         >
           {isPlaying ? (
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
             </svg>
           ) : (
-            <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-glow-purple ml-0.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
             </svg>
           )}
@@ -107,10 +107,18 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
             className="h-full bg-glow-purple rounded-full"
             style={{ width: `${(currentTime / duration) * 100}%` }}
           />
+          {/* Cursor Line */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-glow-purple rounded-full"
-            style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translate(-50%, -50%)' }}
-          />
+            className="absolute top-1/2 -translate-y-1/2 flex items-center"
+            style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
+          >
+            {/* Left line */}
+            <div className="w-8 h-px bg-glow-purple"></div>
+            {/* Center bar */}
+            <div className="w-0.5 h-3 bg-glow-purple"></div>
+            {/* Right line */}
+            <div className="w-8 h-px bg-glow-purple"></div>
+          </div>
         </div>
 
         {/* Current Time */}
