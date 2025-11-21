@@ -826,22 +826,31 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         </div>
                                         {/* Actual Message Content */}
                                         <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                        {/* Link Preview - only for actual content, not reply */}
+                                        {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
+                                          <div className="mt-2">
+                                            <LinkPreview url={reply.actualContent.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                          </div>
+                                        )}
                                       </>
                                     );
                                   }
-                                  return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                  return (
+                                    <>
+                                      <div className="whitespace-pre-wrap">{message.content}</div>
+                                      {/* Link Preview - for non-reply messages */}
+                                      {message.content.match(/https?:\/\/[^\s]+/) && (
+                                        <div className="mt-2">
+                                          <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                        </div>
+                                      )}
+                                    </>
+                                  );
                                 })()}
                                 {message.edited && (
                                   <span className="text-xs ml-2 italic text-text-secondary">
                                     (bearbeitet)
                                   </span>
-                                )}
-                                
-                                {/* Link Preview */}
-                                {message.content.match(/https?:\/\/[^\s]+/) && (
-                                  <div className="mt-2">
-                                    <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                                  </div>
                                 )}
                               </div>
                             </>
@@ -953,22 +962,31 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </div>
                                             {/* Actual Message Content */}
                                             <div className="whitespace-pre-wrap">{reply.actualContent}</div>
+                                            {/* Link Preview - only for actual content, not reply */}
+                                            {reply.actualContent.match(/https?:\/\/[^\s]+/) && (
+                                              <div className="mt-2">
+                                                <LinkPreview url={reply.actualContent.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                              </div>
+                                            )}
                                           </>
                                         );
                                       }
-                                      return <div className="whitespace-pre-wrap">{message.content}</div>;
+                                      return (
+                                        <>
+                                          <div className="whitespace-pre-wrap">{message.content}</div>
+                                          {/* Link Preview - for non-reply messages */}
+                                          {message.content.match(/https?:\/\/[^\s]+/) && (
+                                            <div className="mt-2">
+                                              <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                            </div>
+                                          )}
+                                        </>
+                                      );
                                     })()}
                                     {message.edited && (
                                       <span className="text-xs ml-2 italic text-text-secondary">
                                         (bearbeitet)
                                       </span>
-                                    )}
-                                    
-                                    {/* Link Preview */}
-                                    {message.content.match(/https?:\/\/[^\s]+/) && (
-                                      <div className="mt-2">
-                                        <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                                      </div>
                                     )}
                                   </div>
                                   
