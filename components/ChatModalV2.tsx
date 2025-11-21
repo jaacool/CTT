@@ -404,13 +404,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     while (foundNewReplies) {
       const newReplies = findReplies(chain);
       if (newReplies.length > 0) {
-        // Sortiere nach Timestamp und füge hinzu
-        newReplies.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         chain.push(...newReplies);
       } else {
         foundNewReplies = false;
       }
     }
+    
+    // Sortiere die gesamte Chain chronologisch nach Timestamp
+    chain.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     
     return chain;
   };
