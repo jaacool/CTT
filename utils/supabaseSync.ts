@@ -642,43 +642,47 @@ export async function loadAllData(): Promise<{
     
     // Lade alle Daten parallel
     // WICHTIG: Supabase hat ein Default-Limit von 1000, wir müssen das explizit erhöhen
-    const [usersResult, projectsResult, absenceRequestsResult] = await Promise.all([
+    
+    const loadTimeEntriesBatched = async () => {
+      console.log('📥 Lade TimeEntries in Batches...');
+      const allTimeEntries: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error } = await supabase!
+          .from('time_entries')
+          .select('data')
+          .range(from, from + batchSize - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allTimeEntries.push(...data);
+          console.log(`   📦 Batch geladen: ${data.length} Einträge (Total: ${allTimeEntries.length})`);
+          from += batchSize;
+          hasMore = data.length === batchSize; // Wenn weniger als batchSize, sind wir fertig
+        } else {
+          hasMore = false;
+        }
+      }
+      console.log(`✅ Alle TimeEntries geladen: ${allTimeEntries.length} Einträge`);
+      return allTimeEntries;
+    };
+
+    const [usersResult, projectsResult, absenceRequestsResult, timeEntriesData] = await Promise.all([
       supabase!.from('users').select('data'),
       supabase!.from('projects').select('data'),
-      supabase!.from('absence_requests').select('data')
+      supabase!.from('absence_requests').select('data'),
+      loadTimeEntriesBatched()
     ]);
     
-    // TimeEntries in Batches laden (Supabase hat max 1000 pro Query)
-    console.log('📥 Lade TimeEntries in Batches...');
-    const allTimeEntries: any[] = [];
-    let from = 0;
-    const batchSize = 1000;
-    let hasMore = true;
-    
-    while (hasMore) {
-      const { data, error } = await supabase!
-        .from('time_entries')
-        .select('data')
-        .range(from, from + batchSize - 1);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        allTimeEntries.push(...data);
-        console.log(`   📦 Batch geladen: ${data.length} Einträge (Total: ${allTimeEntries.length})`);
-        from += batchSize;
-        hasMore = data.length === batchSize; // Wenn weniger als batchSize, sind wir fertig
-      } else {
-        hasMore = false;
-      }
-    }
-    
-    console.log(`✅ Alle TimeEntries geladen: ${allTimeEntries.length} Einträge`);
-    const timeEntriesResult = { data: allTimeEntries, error: null };
+    const timeEntriesResult = { data: timeEntriesData, error: null };
     
     if (usersResult.error) throw usersResult.error;
     if (projectsResult.error) throw projectsResult.error;
-    if (timeEntriesResult.error) throw timeEntriesResult.error;
+    // timeEntriesResult error is handled inside loadTimeEntriesBatched
     if (absenceRequestsResult.error) throw absenceRequestsResult.error;
     
     const users = usersResult.data?.map(row => row.data as User) || [];
@@ -691,17 +695,20 @@ export async function loadAllData(): Promise<{
     // WICHTIG: Berechne timeTrackedSeconds für alle Tasks basierend auf TimeEntries
     console.log('📊 Berechne timeTrackedSeconds für Tasks...');
     
+    // Performance-Optimierung: Map erstellen (O(m) statt O(n*m))
+    const timeByTask = new Map<string, number>();
+    for (const entry of timeEntries) {
+      const current = timeByTask.get(entry.taskId) || 0;
+      timeByTask.set(entry.taskId, current + entry.duration);
+    }
+    
     for (const project of projects) {
       for (const list of project.taskLists) {
         for (const task of list.tasks) {
-          // Summiere alle TimeEntries für diesen Task
-          const taskTimeEntries = timeEntries.filter(te => te.taskId === task.id);
-          task.timeTrackedSeconds = taskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+          task.timeTrackedSeconds = timeByTask.get(task.id) || 0;
           
-          // Summiere auch für alle Subtasks
           for (const subtask of task.subtasks) {
-            const subtaskTimeEntries = timeEntries.filter(te => te.taskId === subtask.id);
-            subtask.timeTrackedSeconds = subtaskTimeEntries.reduce((sum, te) => sum + te.duration, 0);
+            subtask.timeTrackedSeconds = timeByTask.get(subtask.id) || 0;
           }
         }
       }
