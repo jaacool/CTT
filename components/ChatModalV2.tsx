@@ -527,7 +527,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
               {filteredMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-secondary">
                   <div className="text-center">
@@ -542,18 +542,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id;
                   
                   return (
-                    <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
-                      <div className={`flex ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 max-w-[70%]`}>
+                    <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group ${showAvatar ? 'mt-4' : 'mt-0.5'}`}>
+                      <div className={`flex ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 max-w-[75%]`}>
                         {/* Avatar */}
                         <div className={`flex-shrink-0 ${isOwnMessage ? 'ml-2' : 'mr-2'}`}>
                           {showAvatar ? (
                             <img
                               src={message.sender.avatarUrl}
                               alt={message.sender.name}
-                              className="w-8 h-8 rounded-full"
+                              className="w-7 h-7 rounded-full"
                             />
                           ) : (
-                            <div className="w-8 h-8" />
+                            <div className="w-7 h-7" />
                           )}
                         </div>
 
@@ -561,9 +561,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                           {/* Name & Timestamp */}
                           {showAvatar && (
-                            <div className={`flex items-center space-x-2 mb-1 px-1 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                            <div className={`flex items-center space-x-2 mb-1.5 px-1 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
                               <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
-                              <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
+                              <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
                           )}
 
@@ -599,15 +599,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Message Content Bubble */}
                               <div
-                                className={`px-4 py-2 rounded-2xl text-sm break-words ${
+                                className={`px-4 py-2.5 rounded-2xl text-sm break-words ${
                                   isOwnMessage
-                                    ? 'bg-blue-500/90 text-white rounded-br-md'
+                                    ? 'bg-transparent text-text-primary rounded-br-md border border-transparent bg-gradient-to-r from-glow-purple via-glow-pink to-glow-purple bg-clip-border'
                                     : 'bg-overlay text-text-primary rounded-bl-md'
                                 }`}
+                                style={isOwnMessage ? {
+                                  background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, #A855F7, #EC4899, #A855F7) border-box',
+                                  border: '1px solid transparent'
+                                } : undefined}
                               >
                                 {message.content}
                                 {message.edited && (
-                                  <span className={`text-xs ml-2 italic ${isOwnMessage ? 'text-blue-100' : 'text-text-secondary'}`}>
+                                  <span className={`text-xs ml-2 italic text-text-secondary`}>
                                     (bearbeitet)
                                   </span>
                                 )}
