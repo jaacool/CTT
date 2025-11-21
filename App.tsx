@@ -118,10 +118,23 @@ const App: React.FC = () => {
   // Berechne ungelesene Nachrichten
   const unreadMessagesCount = useMemo(() => {
     if (!currentUser) return 0;
-    return chatMessages.filter(msg => 
+    const unreadMessages = chatMessages.filter(msg => 
       msg.sender.id !== currentUser.id && // Nicht eigene Nachrichten
       !msg.readBy.includes(currentUser.id) // Noch nicht gelesen
-    ).length;
+    );
+    
+    // Debug: Zeige welche Nachrichten als ungelesen gezählt werden
+    if (unreadMessages.length > 0) {
+      console.log('🔴 Ungelesene Nachrichten:', unreadMessages.length);
+      console.log('Details:', unreadMessages.map(m => ({
+        channel: m.channelId,
+        sender: m.sender.name,
+        content: m.content.substring(0, 30),
+        readBy: m.readBy
+      })));
+    }
+    
+    return unreadMessages.length;
   }, [chatMessages, currentUser]);
 
   // Initialize chat channels (Group channels + Direct message channels for each user pair)
