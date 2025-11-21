@@ -147,8 +147,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   };
 
 
-  // Format timestamp - zeige Uhrzeit
+  // Format timestamp - nur Uhrzeit
   const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Format date for day separator
+  const formatDateSeparator = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
@@ -156,11 +162,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     yesterday.setDate(yesterday.getDate() - 1);
     const isYesterday = date.toDateString() === yesterday.toDateString();
     
-    const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    
-    if (isToday) return timeStr;
-    if (isYesterday) return `Gestern ${timeStr}`;
-    return `${date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${timeStr}`;
+    if (isToday) return 'Heute';
+    if (isYesterday) return 'Gestern';
+    return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  // Check if two messages are on different days
+  const isDifferentDay = (timestamp1: string, timestamp2: string) => {
+    const date1 = new Date(timestamp1);
+    const date2 = new Date(timestamp2);
+    return date1.toDateString() !== date2.toDateString();
   };
 
   // Check if message can be edited/deleted (within 5 hours)
@@ -567,18 +578,28 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   const isOwnMessage = message.sender.id === currentUser.id;
                   const prevMessage = index > 0 ? filteredMessages[index - 1] : null;
                   const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id;
+                  const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
                   
                   return (
-                    <div 
-                      key={message.id} 
-                      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mt-1.5`}
-                      onContextMenu={(e) => {
-                        if (isOwnMessage && canEditMessage(message.timestamp)) {
-                          e.preventDefault();
-                          setContextMenu({ x: e.clientX, y: e.clientY, messageId: message.id });
-                        }
-                      }}
-                    >
+                    <React.Fragment key={message.id}>
+                      {/* Day Separator */}
+                      {showDaySeparator && (
+                        <div className="flex items-center my-4">
+                          <div className="flex-1 h-px bg-border"></div>
+                          <span className="px-3 text-xs text-text-secondary">{formatDateSeparator(message.timestamp)}</span>
+                          <div className="flex-1 h-px bg-border"></div>
+                        </div>
+                      )}
+                      
+                      <div 
+                        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mt-1.5`}
+                        onContextMenu={(e) => {
+                          if (isOwnMessage && canEditMessage(message.timestamp)) {
+                            e.preventDefault();
+                            setContextMenu({ x: e.clientX, y: e.clientY, messageId: message.id });
+                          }
+                        }}
+                      >
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
                         <div className="flex flex-col items-end max-w-[75%]">
@@ -723,7 +744,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           </div>
                         </div>
                       )}
-                    </div>
+                      </div>
+                    </React.Fragment>
                   );
                 })
               )}
