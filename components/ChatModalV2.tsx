@@ -834,13 +834,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
-                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg p-2 z-[20] w-64">
-                                              <div className="grid grid-cols-5 gap-1">
+                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
+                                              <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
+                                              <div className="grid grid-cols-5 gap-2">
                                                 {allEmojis.map((emoji) => (
                                                   <button
                                                     key={emoji}
-                                                    onClick={() => handleReaction(message.id, emoji)}
-                                                    className="text-2xl hover:bg-overlay rounded p-1 transition-colors"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleReaction(message.id, emoji);
+                                                    }}
+                                                    className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
                                                     title={`Mit ${emoji} reagieren`}
                                                   >
                                                     {emoji}
