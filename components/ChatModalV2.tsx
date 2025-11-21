@@ -55,11 +55,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
+  
+  // All emojis for picker
+  const allEmojis = [
+    '👍', '❤️', '😊', '🎉', '🔥', '😂', '😍', '🤔', '👏', '🙏',
+    '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
+  ];
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -192,8 +201,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
       const projectId = currentProject?.id || '';
-      onSendMessage(messageInput.trim(), currentChannel.id, projectId);
+      let content = messageInput.trim();
+      
+      // Add reply reference if replying to a message
+      if (replyToMessage) {
+        content = `@${replyToMessage.sender.name}: "${replyToMessage.content}"\n\n${content}`;
+      }
+      
+      onSendMessage(content, currentChannel.id, projectId);
       setMessageInput('');
+      setReplyToMessage(null);
     }
   };
 
@@ -210,6 +227,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleReaction = (messageId: string, emoji: string) => {
     onReactToMessage(messageId, emoji);
     setHoveredMessageId(null);
+    setShowEmojiPicker(null);
+  };
+  
+  // Handle reply to message
+  const handleReplyToMessage = (message: ChatMessage) => {
+    setReplyToMessage(message);
+    setHoveredMessageId(null);
+  };
+  
+  // Handle mark as unread (placeholder)
+  const handleMarkAsUnread = (messageId: string) => {
+    console.log('Mark as unread:', messageId);
+    setShowMoreMenu(null);
+    setHoveredMessageId(null);
+    // TODO: Implement mark as unread functionality
+  };
+  
+  // Handle star message (placeholder)
+  const handleStarMessage = (messageId: string) => {
+    console.log('Star message:', messageId);
+    setShowMoreMenu(null);
+    setHoveredMessageId(null);
+    // TODO: Implement star message functionality
   };
 
   if (!isOpen) return null;
@@ -763,7 +803,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
+                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
@@ -779,19 +819,41 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       </div>
                                       
                                       {/* Action Buttons */}
-                                      <div className="flex items-center space-x-1 px-2 py-1">
+                                      <div className="flex items-center space-x-1 px-2 py-1 relative">
                                         {/* Emoji Picker Button */}
-                                        <button
-                                          className="p-1 hover:bg-overlay rounded transition-colors"
-                                          title="Weitere Reaktionen"
-                                        >
-                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                          </svg>
-                                        </button>
+                                        <div className="relative">
+                                          <button
+                                            onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
+                                            className="p-1 hover:bg-overlay rounded transition-colors"
+                                            title="Weitere Reaktionen"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                          </button>
+                                          
+                                          {/* Emoji Picker Dropdown */}
+                                          {showEmojiPicker === message.id && (
+                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg p-2 z-[20] w-64">
+                                              <div className="grid grid-cols-5 gap-1">
+                                                {allEmojis.map((emoji) => (
+                                                  <button
+                                                    key={emoji}
+                                                    onClick={() => handleReaction(message.id, emoji)}
+                                                    className="text-2xl hover:bg-overlay rounded p-1 transition-colors"
+                                                    title={`Mit ${emoji} reagieren`}
+                                                  >
+                                                    {emoji}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
                                         
                                         {/* Reply Button */}
                                         <button
+                                          onClick={() => handleReplyToMessage(message)}
                                           className="p-1 hover:bg-overlay rounded transition-colors"
                                           title="Antworten"
                                         >
@@ -801,14 +863,41 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         </button>
                                         
                                         {/* More Options (3 dots) */}
-                                        <button
-                                          className="p-1 hover:bg-overlay rounded transition-colors"
-                                          title="Mehr Optionen"
-                                        >
-                                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                          </svg>
-                                        </button>
+                                        <div className="relative">
+                                          <button
+                                            onClick={() => setShowMoreMenu(showMoreMenu === message.id ? null : message.id)}
+                                            className="p-1 hover:bg-overlay rounded transition-colors"
+                                            title="Mehr Optionen"
+                                          >
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                              <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                            </svg>
+                                          </button>
+                                          
+                                          {/* More Options Menu */}
+                                          {showMoreMenu === message.id && (
+                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg py-1 z-[20] min-w-[200px]">
+                                              <button
+                                                onClick={() => handleMarkAsUnread(message.id)}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+                                              >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>Als ungelesen markieren</span>
+                                              </button>
+                                              <button
+                                                onClick={() => handleStarMessage(message.id)}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+                                              >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                </svg>
+                                                <span>Markieren</span>
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   )}
@@ -852,6 +941,25 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {/* Message Input */}
             {currentChannel && (
               <div className="p-4 border-t border-border bg-surface/50">
+                {/* Reply To Message Preview */}
+                {replyToMessage && (
+                  <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-sm">
+                      <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                      <span className="text-text-secondary">Antwort auf {replyToMessage.sender.name}:</span>
+                      <span className="text-text-primary truncate max-w-md">{replyToMessage.content}</span>
+                    </div>
+                    <button
+                      onClick={() => setReplyToMessage(null)}
+                      className="p-1 hover:bg-surface rounded transition-colors"
+                    >
+                      <XIcon className="w-4 h-4 text-text-secondary" />
+                    </button>
+                  </div>
+                )}
+                
                 <div className="flex items-center space-x-3">
                   <div className="flex-1 relative">
                     <input
