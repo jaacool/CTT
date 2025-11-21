@@ -221,7 +221,7 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
 
   return (
     <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
-      hasText ? 'max-w-sm' : 'max-w-[384px]'
+      hasText ? 'max-w-[280px]' : 'max-w-[320px]'
     }`}>
       <audio
         ref={audioRef}
@@ -247,36 +247,30 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
         )}
       </button>
 
-      {/* Waveform with Progress */}
+      {/* Waveform with Playhead */}
       <div className="flex-1 flex flex-col space-y-2">
         <div
-          className="flex items-center gap-[2px] h-10 cursor-pointer relative"
+          className="flex items-center gap-[2px] h-12 cursor-pointer relative"
           onClick={handleSeek}
         >
-          {/* Waveform Bars */}
-          {waveformBars.map((height, index) => {
-            const progress = duration > 0 ? currentTime / duration : 0;
-            const barProgress = index / waveformBars.length;
-            const isPassed = barProgress <= progress;
-            
-            return (
-              <div
-                key={index}
-                className="flex-1 rounded-full transition-colors"
-                style={{
-                  height: `${height * 100}%`,
-                  backgroundColor: isPassed ? '#A855F7' : '#4B5563',
-                  opacity: isPassed ? 1 : 0.5,
-                  minWidth: '2px',
-                }}
-              />
-            );
-          })}
+          {/* Waveform Bars - statisch, nur Farbe ändert sich */}
+          {waveformBars.map((height, index) => (
+            <div
+              key={index}
+              className="flex-1 rounded-full"
+              style={{
+                height: `${height * 100}%`,
+                backgroundColor: '#4B5563',
+                opacity: 0.5,
+                minWidth: '2px',
+              }}
+            />
+          ))}
           
-          {/* Playhead Indicator */}
+          {/* Playhead Indicator - bewegt sich von links nach rechts */}
           {duration > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-[2px] bg-white rounded-full pointer-events-none"
+              className="absolute top-0 bottom-0 w-[2px] bg-white rounded-full pointer-events-none transition-all duration-100"
               style={{ left: `${(currentTime / duration) * 100}%` }}
             />
           )}
