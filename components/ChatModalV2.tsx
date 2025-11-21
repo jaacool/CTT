@@ -579,25 +579,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         }
                       }}
                     >
-                      <div className={`flex ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 max-w-[75%]`}>
-                        {/* Avatar */}
-                        <div className={`flex-shrink-0 ${isOwnMessage ? 'ml-2' : 'mr-2'}`}>
-                          {showAvatar ? (
-                            <img
-                              src={message.sender.avatarUrl}
-                              alt={message.sender.name}
-                              className="w-7 h-7 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-7 h-7" />
-                          )}
-                        </div>
-
-                        {/* Message Bubble */}
-                        <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                      {/* Eigene Nachrichten: kein Avatar */}
+                      {isOwnMessage ? (
+                        <div className="flex flex-col items-end max-w-[75%]">
                           {/* Name & Timestamp */}
                           {showAvatar && (
-                            <div className={`flex items-center space-x-2 mb-1.5 px-1 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                            <div className="flex items-center space-x-2 mb-1.5 px-1 flex-row-reverse space-x-reverse">
                               <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
                               <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
@@ -635,19 +622,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Message Content Bubble */}
                               <div
-                                className={`px-4 py-2.5 rounded-2xl text-sm break-words ${
-                                  isOwnMessage
-                                    ? 'bg-transparent text-text-primary rounded-br-md border border-transparent'
-                                    : 'bg-overlay text-text-primary rounded-bl-md'
-                                }`}
-                                style={isOwnMessage ? {
+                                className="px-4 py-2.5 rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent"
+                                style={{
                                   background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
                                   border: '1px solid transparent'
-                                } : undefined}
+                                }}
                               >
                                 {message.content}
                                 {message.edited && (
-                                  <span className={`text-xs ml-2 italic text-text-secondary`}>
+                                  <span className="text-xs ml-2 italic text-text-secondary">
                                     (bearbeitet)
                                   </span>
                                 )}
@@ -662,7 +645,83 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             </>
                           )}
                         </div>
-                      </div>
+                      ) : (
+                        /* Fremde Nachrichten: Avatar links oben bündig */
+                        <div className="flex flex-row items-start space-x-2 max-w-[75%]">
+                          {/* Avatar - nur bei erster Nachricht, sonst Platzhalter */}
+                          <div className="flex-shrink-0 w-7">
+                            {showAvatar ? (
+                              <img
+                                src={message.sender.avatarUrl}
+                                alt={message.sender.name}
+                                className="w-7 h-7 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-7 h-7" />
+                            )}
+                          </div>
+
+                          {/* Message Content */}
+                          <div className="flex flex-col items-start">
+                            {/* Name & Timestamp */}
+                            {showAvatar && (
+                              <div className="flex items-center space-x-2 mb-1.5 px-1">
+                                <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
+                              </div>
+                            )}
+
+                            {editingMessageId === message.id ? (
+                              <div className="w-full">
+                                <input
+                                  type="text"
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  onKeyPress={(e) => e.key === 'Enter' && handleEditMessage(message.id)}
+                                  className="w-full px-4 py-2 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                                  autoFocus
+                                />
+                                <div className="flex space-x-2 mt-2">
+                                  <button
+                                    onClick={() => handleEditMessage(message.id)}
+                                    className="px-3 py-1 bg-glow-purple rounded-lg text-xs"
+                                  >
+                                    Speichern
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMessageId(null);
+                                      setEditingContent('');
+                                    }}
+                                    className="px-3 py-1 bg-overlay rounded-lg text-xs"
+                                  >
+                                    Abbrechen
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {/* Message Content Bubble */}
+                                <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                  {message.content}
+                                  {message.edited && (
+                                    <span className="text-xs ml-2 italic text-text-secondary">
+                                      (bearbeitet)
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Link Preview */}
+                                {message.content.match(/https?:\/\/[^\s]+/) && (
+                                  <div className="mt-2">
+                                    <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })
