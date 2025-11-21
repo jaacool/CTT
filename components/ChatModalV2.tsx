@@ -187,9 +187,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <h2 className="text-xl font-bold text-text-primary">Chat</h2>
           </div>
 
-          <div className="flex items-center space-x-3">
-            {/* Project Filter Dropdown - NEU GEBAUT */}
-            <div className="relative" ref={dropdownRef}>
+          {/* Project Filter Dropdown - NEU GEBAUT */}
+          <div className="relative mr-2" ref={dropdownRef}>
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
               className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
@@ -203,7 +202,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </button>
 
             {showProjectDropdown && (
-              <div className="absolute right-0 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
                 {/* Suchfeld */}
                 <div className="p-3 border-b border-border">
                   <input
@@ -285,12 +284,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 </div>
               </div>
             )}
-            </div>
-
-            <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
-              <XIcon className="w-6 h-6" />
-            </button>
           </div>
+
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
+            <XIcon className="w-6 h-6" />
+          </button>
         </div>
 
         {/* Content */}
