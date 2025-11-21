@@ -248,43 +248,43 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
       </button>
 
       {/* Waveform with Progress */}
-      <div className="flex-1 flex flex-col space-y-1">
+      <div className="flex-1 flex flex-col space-y-2">
         <div
-          className="flex items-center justify-between h-8 cursor-pointer relative"
+          className="flex items-center gap-[2px] h-10 cursor-pointer relative"
           onClick={handleSeek}
         >
           {/* Waveform Bars */}
-          <div className="absolute inset-0 flex items-center justify-between px-0.5">
-            {waveformBars.map((height, index) => {
-              const progress = currentTime / duration;
-              const barProgress = index / waveformBars.length;
-              const isPassed = barProgress <= progress;
-              
-              return (
-                <div
-                  key={index}
-                  className="flex-1 mx-[1px] rounded-full transition-colors"
-                  style={{
-                    height: `${height * 100}%`,
-                    backgroundColor: isPassed ? '#A855F7' : '#4B5563',
-                    opacity: isPassed ? 1 : 0.5,
-                  }}
-                />
-              );
-            })}
-          </div>
+          {waveformBars.map((height, index) => {
+            const progress = duration > 0 ? currentTime / duration : 0;
+            const barProgress = index / waveformBars.length;
+            const isPassed = barProgress <= progress;
+            
+            return (
+              <div
+                key={index}
+                className="flex-1 rounded-full transition-colors"
+                style={{
+                  height: `${height * 100}%`,
+                  backgroundColor: isPassed ? '#A855F7' : '#4B5563',
+                  opacity: isPassed ? 1 : 0.5,
+                  minWidth: '2px',
+                }}
+              />
+            );
+          })}
           
           {/* Playhead Indicator */}
-          <div
-            className="absolute top-0 bottom-0 w-0.5 bg-white rounded-full pointer-events-none"
-            style={{ left: `${(currentTime / duration) * 100}%` }}
-          />
+          {duration > 0 && (
+            <div
+              className="absolute top-0 bottom-0 w-[2px] bg-white rounded-full pointer-events-none"
+              style={{ left: `${(currentTime / duration) * 100}%` }}
+            />
+          )}
         </div>
         
-        {/* Time Display */}
-        <div className="flex items-center justify-between text-xs text-text-secondary font-mono">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+        {/* Time Display - nur aktueller Timecode */}
+        <div className="text-xs text-text-secondary font-mono text-center">
+          {duration > 0 ? formatTime(currentTime) : '0:00'}
         </div>
       </div>
 
