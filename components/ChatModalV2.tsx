@@ -453,10 +453,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const scrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Highlight effect
-      messageElement.classList.add('highlight-message');
-      setTimeout(() => messageElement.classList.remove('highlight-message'), 2000);
+      messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
     }
   };
 
