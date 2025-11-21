@@ -742,11 +742,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           ) : (
                             <>
                               {/* Message Content Bubble */}
-                              <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-[#141414] text-text-primary rounded-br-md"
-                                style={{
-                                  boxShadow: '0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)'
-                                }}
-                              >
+                              <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-br-md">
                                 {(() => {
                                   const reply = parseReply(message.content);
                                   if (reply) {
