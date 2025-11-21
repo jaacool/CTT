@@ -1245,7 +1245,23 @@ const App: React.FC = () => {
     console.log('Edit message:', messageId, newContent);
   };
 
-  const handleDeleteMessage = (messageId: string) => {
+  const handleDeleteMessage = async (messageId: string) => {
+    // Find message to get attachments
+    const message = chatMessages.find(msg => msg.id === messageId);
+    
+    // Delete attachments from storage if any
+    if (message?.attachments && message.attachments.length > 0) {
+      const { deleteChatFile } = await import('./utils/fileUpload');
+      for (const attachment of message.attachments) {
+        try {
+          await deleteChatFile(attachment.url);
+          console.log('Deleted attachment:', attachment.name);
+        } catch (error) {
+          console.error('Error deleting attachment:', error);
+        }
+      }
+    }
+    
     setChatMessages(prev => prev.filter(msg => msg.id !== messageId));
     // TODO: Persist to Supabase
     console.log('Delete message:', messageId);
