@@ -718,7 +718,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 filteredMessages.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
                   const prevMessage = index > 0 ? filteredMessages[index - 1] : null;
-                  const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id;
+                  // Show avatar/timestamp if sender changed OR project changed
+                  const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id || prevMessage.projectId !== message.projectId;
                   const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
                   
                   return (
