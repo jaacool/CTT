@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus } from '../types';
 import { 
   aggregateByYear, 
@@ -293,6 +293,15 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   
   const totalHours = useMemo(() => calculateTotalHours(chartData), [chartData]);
 
+  // Berechne maximalen Y-Wert für Skalierung (damit Soll-Linie immer sichtbar ist)
+  const maxYValue = useMemo(() => {
+    const maxData = Math.max(...chartData.map(d => d.hours), 0);
+    const maxTarget = averageTarget || 0;
+    const maxAverage = averageHours || 0;
+    // Nimm das Maximum und füge 20% Puffer hinzu für Labels/Linien oben
+    return Math.ceil(Math.max(maxData, maxTarget, maxAverage) * 1.2);
+  }, [chartData, averageTarget, averageHours]);
+
   // Berechne Wochende für Wochenansicht
   const weekEnd = useMemo(() => {
     const end = new Date(selectedWeek);
@@ -331,6 +340,15 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
       case 'week': return 'day';
     }
   }, [viewMode]);
+
+  // Responsive Check
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!selectedUser) {
     return (
@@ -457,23 +475,42 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         {/* Chart */}
         <div className="flex-1 min-h-[300px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 30 }}>
+            <BarChart 
+              data={chartData} 
+              margin={{ 
+                top: 20, 
+                right: isMobile ? 10 : 30, 
+                left: isMobile ? -10 : 10, 
+                bottom: isMobile ? 40 : 30 
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
               <XAxis 
                 dataKey={xAxisKey} 
                 stroke={COLORS.textSecondary}
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: isMobile ? '10px' : '12px' }}
                 tickLine={false}
                 axisLine={false}
                 dy={10}
+                angle={isMobile && viewMode !== 'week' ? -45 : 0}
+                textAnchor={isMobile && viewMode !== 'week' ? 'end' : 'middle'}
+                height={isMobile && viewMode !== 'week' ? 60 : 30}
+                interval={0}
               />
               <YAxis 
                 stroke={COLORS.textSecondary}
-                style={{ fontSize: '12px' }}
-                label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary, style: { textAnchor: 'middle' } }}
+                style={{ fontSize: isMobile ? '10px' : '12px' }}
+                label={{ 
+                  value: isMobile ? '' : 'Stunden', 
+                  angle: -90, 
+                  position: 'insideLeft', 
+                  fill: COLORS.textSecondary, 
+                  style: { textAnchor: 'middle' } 
+                }}
                 tickLine={false}
                 axisLine={false}
-                width={40}
+                width={isMobile ? 30 : 40}
+                domain={[0, maxYValue]}
               />
               <Tooltip 
                 content={
@@ -488,25 +525,35 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 }
                 cursor={{ fill: COLORS.overlay, opacity: 0.2 }}
               />
-              <Legend wrapperStyle={{ paddingTop: '30px' }} />
+              <Legend wrapperStyle={{ paddingTop: isMobile ? '10px' : '30px' }} />
               <ReferenceLine 
                 y={averageHours} 
                 stroke={COLORS.average} 
                 strokeDasharray="5 5" 
-                label={{ value: 'Ø', fill: COLORS.average, fontSize: 12, position: 'right' }}
+                label={{ 
+                  value: 'Ø', 
+                  fill: COLORS.average, 
+                  fontSize: isMobile ? 10 : 12, 
+                  position: 'right' 
+                }}
               />
               <ReferenceLine 
                 y={averageTarget} 
                 stroke={COLORS.target} 
                 strokeDasharray="5 5" 
-                label={{ value: 'Soll', fill: COLORS.target, fontSize: 12, position: 'right' }}
+                label={{ 
+                  value: 'Soll', 
+                  fill: COLORS.target, 
+                  fontSize: isMobile ? 10 : 12, 
+                  position: 'right' 
+                }}
               />
               <Bar 
                 dataKey="hours" 
                 fill={COLORS.worked} 
                 name="Gearbeitete Stunden" 
                 radius={[6, 6, 0, 0]} 
-                maxBarSize={60}
+                maxBarSize={isMobile ? 30 : 60}
               />
             </BarChart>
           </ResponsiveContainer>
