@@ -109,6 +109,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return partner?.name || 'Unbekannt';
   };
 
+  // Clean project name - remove color codes like #0ea5e9
+  const getCleanProjectName = (name: string) => {
+    // Entferne alles was mit # startet und mit Leerzeichen endet
+    return name.replace(/^#[a-fA-F0-9]{6}\s+/, '').replace(/^#[a-zA-Z0-9]+\s+/, '');
+  };
+
   // Format timestamp
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -170,7 +176,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             >
               <FolderIcon className="w-4 h-4" />
               <span className="hidden md:inline">
-                {currentProject ? currentProject.name : 'Alle Projekte'}
+                {currentProject ? getCleanProjectName(currentProject.name) : 'Alle Projekte'}
               </span>
               <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
               <ChevronDownIcon className="w-4 h-4" />
@@ -228,7 +234,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     >
                       <span className="text-xl flex-shrink-0">{project.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{project.name}</div>
+                        <div className="text-sm font-medium">{getCleanProjectName(project.name)}</div>
                         {project.status === 'AKTIV' && (
                           <div className="text-xs text-glow-purple mt-0.5">Aktiv</div>
                         )}
