@@ -701,11 +701,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
                           {/* Message Content */}
                           <div className="flex flex-col items-start">
-                            {/* Name & Timestamp - nur in Channels, nicht in DMs */}
-                            {showAvatar && currentChannel?.type !== ChatChannelType.Direct && (
+                            {/* Name & Timestamp & Projekt-Tag */}
+                            {showAvatar && (
                               <div className="flex items-center space-x-2 mb-1 px-1">
-                                <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                {/* Name nur in Channels */}
+                                {currentChannel?.type !== ChatChannelType.Direct && (
+                                  <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                )}
                                 <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
+                                {/* Projekt-Tag */}
+                                {message.projectId && (
+                                  <button
+                                    onClick={() => onSwitchProject(message.projectId)}
+                                    className="text-[10px] px-1.5 py-0.5 rounded bg-overlay/50 text-text-secondary hover:bg-overlay hover:text-text-primary transition-colors"
+                                    title="Zu diesem Projekt wechseln"
+                                  >
+                                    {projects.find(p => p.id === message.projectId)?.name || 'Projekt'}
+                                  </button>
+                                )}
                               </div>
                             )}
 
