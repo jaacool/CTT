@@ -232,9 +232,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // useLayoutEffect runs before browser paint, preventing flash of old scroll position
   useLayoutEffect(() => {
     if (isOpen && currentChannel) {
+      // Immediate scroll
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      
+      // Additional scroll after messages are rendered (ensures DOM is ready)
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 0);
     }
-  }, [isOpen, currentChannel?.id]);
+  }, [isOpen, currentChannel?.id, messages.length]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
