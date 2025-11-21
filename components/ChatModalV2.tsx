@@ -998,19 +998,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               </svg>
                                               <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                             </div>
-                                            {/* Thread View Button */}
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowThreadView(message.id);
-                                              }}
-                                              className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
-                                              title="Thread anzeigen"
-                                            >
-                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                              </svg>
-                                            </button>
+                                            {/* Thread View Button - nur anzeigen wenn Thread mehr als 1 Nachricht hat */}
+                                            {buildThreadChain(message.id).length > 1 && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setShowThreadView(message.id);
+                                                }}
+                                                className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                                title="Thread anzeigen"
+                                              >
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                              </button>
+                                            )}
                                           </div>
                                           <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                         </div>
@@ -1283,19 +1285,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   </svg>
                                                   <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                                 </div>
-                                                {/* Thread View Button */}
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowThreadView(message.id);
-                                                  }}
-                                                  className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
-                                                  title="Thread anzeigen"
-                                                >
-                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                  </svg>
-                                                </button>
+                                                {/* Thread View Button - nur anzeigen wenn Thread mehr als 1 Nachricht hat */}
+                                                {buildThreadChain(message.id).length > 1 && (
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setShowThreadView(message.id);
+                                                    }}
+                                                    className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                                    title="Thread anzeigen"
+                                                  >
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                  </button>
+                                                )}
                                               </div>
                                               <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                             </div>
