@@ -244,11 +244,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
   const isAdmin = currentUser?.role === 'role-1';
 
   return (
-    <div className="p-6 w-full max-h-screen overflow-hidden flex flex-col">
-      <div className="flex space-x-4 mb-6">
+    <div className="p-4 md:p-6 w-full max-h-screen overflow-hidden flex flex-col">
+      <div className="flex space-x-2 md:space-x-4 mb-6 overflow-x-auto pb-2 scrollbar-hide flex-shrink-0">
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'users' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -256,7 +256,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('roles')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'roles' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -264,7 +264,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('appearance')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'appearance' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -272,7 +272,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('import-export')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'import-export' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -280,7 +280,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('supabase')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'supabase' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -288,7 +288,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('channels')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'channels' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
@@ -296,7 +296,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
         <button
           onClick={() => setActiveTab('calendar')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
             activeTab === 'calendar' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
