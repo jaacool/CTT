@@ -64,6 +64,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
   const [maxUploadSize, setMaxUploadSize] = useState<number>(100); // MB, Standard 100 MB
   const [previewAttachment, setPreviewAttachment] = useState<ChatAttachment | null>(null);
+  const [previewZoom, setPreviewZoom] = useState<number>(1);
+  const [previewPosition, setPreviewPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -143,6 +148,46 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       textareaRef.current.focus();
     }
   }, [replyToMessage]);
+
+  // Reset zoom when preview changes
+  useEffect(() => {
+    if (previewAttachment) {
+      setPreviewZoom(1);
+      setPreviewPosition({x: 0, y: 0});
+      setIsDragging(false);
+    }
+  }, [previewAttachment]);
+
+  // Handle wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!previewAttachment || !isImageFile(previewAttachment.type)) return;
+    e.preventDefault();
+    const delta = e.deltaY * -0.01;
+    const newZoom = Math.min(Math.max(1, previewZoom + delta), 5);
+    setPreviewZoom(newZoom);
+    if (newZoom === 1) {
+      setPreviewPosition({x: 0, y: 0});
+    }
+  };
+
+  // Handle mouse drag
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!previewAttachment || !isImageFile(previewAttachment.type) || previewZoom === 1) return;
+    setIsDragging(true);
+    setDragStart({x: e.clientX - previewPosition.x, y: e.clientY - previewPosition.y});
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPreviewPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
 
   // Get accessible channels
@@ -1982,13 +2027,28 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </div>
 
             {/* Preview Content */}
-            <div className="flex items-center justify-center w-full h-full">
+            <div 
+              className="flex items-center justify-center w-full h-full overflow-hidden"
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ cursor: previewZoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+            >
               {isImageFile(previewAttachment.type) ? (
                 <img 
+                  ref={previewImageRef}
                   src={previewAttachment.url} 
                   alt={previewAttachment.name}
-                  className="max-w-full max-h-full object-contain rounded-lg"
+                  className="max-w-full max-h-full object-contain rounded-lg transition-transform"
+                  style={{
+                    transform: `scale(${previewZoom}) translate(${previewPosition.x / previewZoom}px, ${previewPosition.y / previewZoom}px)`,
+                    transformOrigin: 'center',
+                    userSelect: 'none'
+                  }}
                   onClick={(e) => e.stopPropagation()}
+                  onDragStart={(e) => e.preventDefault()}
                 />
               ) : isVideoFile(previewAttachment.type) ? (
                 <video 
