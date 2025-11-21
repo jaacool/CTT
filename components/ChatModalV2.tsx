@@ -154,6 +154,151 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
   );
 };
 
+// Voice Message Player Component - Compact Waveform Design
+const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, hasText }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (audioRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percentage = x / rect.width;
+      audioRef.current.currentTime = percentage * duration;
+    }
+  };
+
+  const togglePlaybackRate = () => {
+    const rates = [1, 1.5, 2];
+    const currentIndex = rates.indexOf(playbackRate);
+    const nextRate = rates[(currentIndex + 1) % rates.length];
+    setPlaybackRate(nextRate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate;
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Generate fake waveform bars (in production, you'd analyze the audio)
+  const waveformBars = Array.from({ length: 60 }, (_, i) => {
+    // Create a more natural waveform pattern
+    const position = i / 60;
+    const baseHeight = 0.3 + Math.sin(position * Math.PI * 4) * 0.3;
+    const noise = Math.random() * 0.4;
+    return Math.min(1, baseHeight + noise);
+  });
+
+  return (
+    <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
+      hasText ? 'max-w-sm' : 'max-w-[384px]'
+    }`}>
+      <audio
+        ref={audioRef}
+        src={url}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+      
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-transparent hover:bg-glow-purple/20 rounded-full transition-colors"
+      >
+        {isPlaying ? (
+          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+          </svg>
+        ) : (
+          <svg className="w-5 h-5 text-glow-purple ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        )}
+      </button>
+
+      {/* Waveform with Progress */}
+      <div className="flex-1 flex flex-col space-y-1">
+        <div
+          className="flex items-center justify-between h-8 cursor-pointer relative"
+          onClick={handleSeek}
+        >
+          {/* Waveform Bars */}
+          <div className="absolute inset-0 flex items-center justify-between px-0.5">
+            {waveformBars.map((height, index) => {
+              const progress = currentTime / duration;
+              const barProgress = index / waveformBars.length;
+              const isPassed = barProgress <= progress;
+              
+              return (
+                <div
+                  key={index}
+                  className="flex-1 mx-[1px] rounded-full transition-colors"
+                  style={{
+                    height: `${height * 100}%`,
+                    backgroundColor: isPassed ? '#A855F7' : '#4B5563',
+                    opacity: isPassed ? 1 : 0.5,
+                  }}
+                />
+              );
+            })}
+          </div>
+          
+          {/* Playhead Indicator */}
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-white rounded-full pointer-events-none"
+            style={{ left: `${(currentTime / duration) * 100}%` }}
+          />
+        </div>
+        
+        {/* Time Display */}
+        <div className="flex items-center justify-between text-xs text-text-secondary font-mono">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* Playback Speed Button */}
+      <button
+        onClick={togglePlaybackRate}
+        className="flex-shrink-0 w-10 h-8 flex items-center justify-center hover:bg-glow-purple/20 rounded-lg transition-colors text-xs font-semibold text-text-secondary hover:text-glow-purple"
+      >
+        {playbackRate}x
+      </button>
+    </div>
+  );
+};
+
 export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   isOpen,
   onClose,
@@ -1749,12 +1894,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </div>
                                           </div>
                                         ) : isAudioFile(attachment.type) ? (
-                                          // Audio Player - Custom Design
-                                          <AudioPlayer 
-                                            url={attachment.url}
-                                            name={attachment.name}
-                                            hasText={!!message.content.trim()}
-                                          />
+                                          // Audio Player - Different design for voice messages
+                                          attachment.name.startsWith('voice-') ? (
+                                            <VoiceMessagePlayer 
+                                              url={attachment.url}
+                                              hasText={!!message.content.trim()}
+                                            />
+                                          ) : (
+                                            <AudioPlayer 
+                                              url={attachment.url}
+                                              name={attachment.name}
+                                              hasText={!!message.content.trim()}
+                                            />
+                                          )
                                         ) : (
                                           // File Download Button
                                           <a
@@ -2180,12 +2332,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </div>
                                               </div>
                                             ) : isAudioFile(attachment.type) ? (
-                                              // Audio Player - Custom Design
-                                              <AudioPlayer 
-                                                url={attachment.url}
-                                                name={attachment.name}
-                                                hasText={!!message.content.trim()}
-                                              />
+                                              // Audio Player - Different design for voice messages
+                                              attachment.name.startsWith('voice-') ? (
+                                                <VoiceMessagePlayer 
+                                                  url={attachment.url}
+                                                  hasText={!!message.content.trim()}
+                                                />
+                                              ) : (
+                                                <AudioPlayer 
+                                                  url={attachment.url}
+                                                  name={attachment.name}
+                                                  hasText={!!message.content.trim()}
+                                                />
+                                              )
                                             ) : (
                                               // File Download Button
                                               <a
