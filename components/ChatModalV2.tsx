@@ -679,11 +679,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         </div>
                       ) : (
                         /* Fremde Nachrichten: Avatar links oben bündig mit Bubble */
-                        <div 
-                          className="flex flex-row items-start space-x-2 max-w-[75%] relative"
-                          onMouseEnter={() => setHoveredMessageId(message.id)}
-                          onMouseLeave={() => setHoveredMessageId(null)}
-                        >
+                        <div className="flex flex-row items-start space-x-2 max-w-[75%] relative">
                           {/* Avatar - nur in Channels, nicht in DMs */}
                           {currentChannel?.type !== ChatChannelType.Direct && (
                             <div className="flex-shrink-0 w-7">
@@ -752,31 +748,35 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               </div>
                             ) : (
                               <>
-                                {/* Message Content Bubble - mit relativer Position für Emoji-Bar */}
-                                <div className="relative px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                {/* Message Content Bubble - mit Hover für Emoji-Bar */}
+                                <div 
+                                  className="relative px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md"
+                                  onMouseEnter={() => setHoveredMessageId(message.id)}
+                                  onMouseLeave={() => setHoveredMessageId(null)}
+                                >
                                   {message.content}
                                   {message.edited && (
                                     <span className="text-xs ml-2 italic text-text-secondary">
                                       (bearbeitet)
                                     </span>
                                   )}
-                                  
-                                  {/* Emoji Reaction Bar - rechts oben über der Bubble */}
-                                  {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -top-10 -right-2 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-[5]">
-                                      {quickReactions.map((emoji) => (
-                                        <button
-                                          key={emoji}
-                                          onClick={() => handleReaction(message.id, emoji)}
-                                          className="text-lg hover:scale-125 transition-transform"
-                                          title={`Mit ${emoji} reagieren`}
-                                        >
-                                          {emoji}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
                                 </div>
+                                
+                                {/* Emoji Reaction Bar - unter der Bubble */}
+                                {hoveredMessageId === message.id && !isOwnMessage && (
+                                  <div className="flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-[5] mt-1">
+                                    {quickReactions.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReaction(message.id, emoji)}
+                                        className="text-lg hover:scale-125 transition-transform"
+                                        title={`Mit ${emoji} reagieren`}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
 
                                 {/* Link Preview */}
                                 {message.content.match(/https?:\/\/[^\s]+/) && (
