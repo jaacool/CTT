@@ -312,15 +312,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   // Convert URLs in text to clickable links
   const renderTextWithLinks = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    // Match URLs with or without protocol
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/g;
     const parts = text.split(urlRegex);
     
     return parts.map((part, index) => {
       if (part.match(urlRegex)) {
+        // Add https:// if no protocol is present
+        const href = part.match(/^https?:\/\//) ? part : `https://${part}`;
         return (
           <a
             key={index}
-            href={part}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-400 hover:text-blue-300 underline"
