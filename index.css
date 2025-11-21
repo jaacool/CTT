@@ -1303,15 +1303,19 @@ textarea:focus {
 }
 
 /* Highlight Message Animation */
-@keyframes highlightPulse {
-  0%, 100% {
-    background-color: transparent;
+@keyframes highlightGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
   }
   50% {
-    background-color: rgba(168, 85, 247, 0.2);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
   }
 }
 
 .highlight-message {
-  animation: highlightPulse 2s ease-in-out;
+  animation: highlightGlow 2s ease-in-out;
+  border-radius: 12px;
 }
