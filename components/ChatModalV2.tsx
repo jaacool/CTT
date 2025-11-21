@@ -240,29 +240,44 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       Keine Projekte gefunden
                     </div>
                   ) : (
-                    filteredProjects.map(project => (
-                      <button
-                        key={project.id}
-                        onClick={() => {
-                          onSwitchProject(project.id);
-                          setShowProjectDropdown(false);
-                          setProjectSearchQuery('');
-                        }}
-                        className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
-                          currentProject?.id === project.id 
-                            ? 'bg-glow-purple/20 text-text-primary' 
-                            : 'hover:bg-overlay text-text-secondary'
-                        }`}
-                      >
-                        <span className="text-xl flex-shrink-0">{project.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{project.name}</div>
-                          {project.status === 'AKTIV' && (
-                            <div className="text-xs text-glow-purple">Aktiv</div>
+                    filteredProjects.map(project => {
+                      // Prüfe ob icon ein Farbcode ist (wie in Sidebar)
+                      const isColorCode = project.icon?.startsWith('#');
+                      
+                      return (
+                        <button
+                          key={project.id}
+                          onClick={() => {
+                            onSwitchProject(project.id);
+                            setShowProjectDropdown(false);
+                            setProjectSearchQuery('');
+                          }}
+                          className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                            currentProject?.id === project.id 
+                              ? 'bg-glow-purple/20 text-text-primary' 
+                              : 'hover:bg-overlay text-text-secondary'
+                          }`}
+                        >
+                          {/* Icon-Rendering GENAU wie in Sidebar */}
+                          {isColorCode ? (
+                            <div 
+                              className="w-5 h-5 rounded-md flex-shrink-0" 
+                              style={{ backgroundColor: project.icon }}
+                            />
+                          ) : (
+                            <span className="text-xl flex-shrink-0">{project.icon}</span>
                           )}
-                        </div>
-                      </button>
-                    ))
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{project.name}</div>
+                            {project.status === 'AKTIV' && (
+                              <div className="text-xs text-glow-purple">Aktiv</div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })
+                  
                   )}
                 </div>
               </div>
