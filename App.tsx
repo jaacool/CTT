@@ -1250,12 +1250,24 @@ const App: React.FC = () => {
     const message = chatMessages.find(msg => msg.id === messageId);
     
     // Delete attachments from storage if any
+    // BUT: Only delete if no other message uses the same attachment URL
     if (message?.attachments && message.attachments.length > 0) {
       const { deleteChatFile } = await import('./utils/fileUpload');
       for (const attachment of message.attachments) {
         try {
-          await deleteChatFile(attachment.url);
-          console.log('Deleted attachment:', attachment.name);
+          // Check if any other message uses this attachment
+          const isUsedElsewhere = chatMessages.some(msg => 
+            msg.id !== messageId && 
+            msg.attachments?.some(att => att.url === attachment.url)
+          );
+          
+          // Only delete if not used by other messages
+          if (!isUsedElsewhere) {
+            await deleteChatFile(attachment.url);
+            console.log('Deleted attachment:', attachment.name);
+          } else {
+            console.log('Attachment still in use, keeping:', attachment.name);
+          }
         } catch (error) {
           console.error('Error deleting attachment:', error);
         }

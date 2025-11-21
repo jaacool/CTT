@@ -156,63 +156,15 @@ export const isAudioFile = (fileType: string): boolean => {
 };
 
 /**
- * Copy attachments to another channel (for forwarding messages)
- * @param attachments - Array of attachments to copy
- * @param targetChannelId - The target channel ID
- * @returns Array of new attachments with updated URLs
+ * Forward attachments to another channel (reuse same files, no copy needed!)
+ * @param attachments - Array of attachments to forward
+ * @returns The same attachments array (no copy, just reference)
  */
-export const copyAttachmentsToChannel = async (
-  attachments: ChatAttachment[],
-  targetChannelId: string
-): Promise<ChatAttachment[]> => {
-  const newAttachments: ChatAttachment[] = [];
-
-  for (const attachment of attachments) {
-    try {
-      // Extract file path from URL
-      const urlParts = attachment.url.split('/chat-attachments/');
-      if (urlParts.length < 2) {
-        console.error('Invalid attachment URL:', attachment.url);
-        continue;
-      }
-      const sourcePath = urlParts[1];
-
-      // Generate new file path for target channel
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(7);
-      const fileExtension = attachment.name.split('.').pop();
-      const fileName = `${timestamp}_${randomString}.${fileExtension}`;
-      const targetPath = `chat-files/${targetChannelId}/${fileName}`;
-
-      // Copy file in Supabase Storage
-      const { data: copyData, error: copyError } = await supabase.storage
-        .from('chat-attachments')
-        .copy(sourcePath, targetPath);
-
-      if (copyError) {
-        console.error('Copy error:', copyError);
-        continue;
-      }
-
-      // Get public URL for new file
-      const { data: urlData } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(targetPath);
-
-      // Create new attachment object
-      const newAttachment: ChatAttachment = {
-        id: `${timestamp}_${randomString}`,
-        name: attachment.name,
-        size: attachment.size,
-        type: attachment.type,
-        url: urlData.publicUrl,
-      };
-
-      newAttachments.push(newAttachment);
-    } catch (error) {
-      console.error('Error copying attachment:', error);
-    }
-  }
-
-  return newAttachments;
+export const forwardAttachments = (
+  attachments: ChatAttachment[]
+): ChatAttachment[] => {
+  // Simply return the same attachments - they can be shared across channels!
+  // No need to copy files, just reuse the same URLs
+  // This saves storage space and is much faster
+  return attachments;
 };
