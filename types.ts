@@ -231,6 +231,7 @@ export interface ChatMessage {
   edited?: boolean;
   editedAt?: string; // ISO timestamp
   readBy: string[]; // User IDs die die Nachricht gelesen haben
+  reactions?: { [emoji: string]: string[] }; // { "👍": ["user1", "user2"], "❤️": ["user3"] }
 }
 
 export enum ChatViewMode {

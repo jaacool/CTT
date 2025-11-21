@@ -19,6 +19,7 @@ interface ChatModalV2Props {
   onCreateChannel: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
   onSwitchChannel: (channelId: string) => void;
   onSwitchProject: (projectId: string) => void;
+  onReactToMessage: (messageId: string, emoji: string) => void;
   allUsers: User[];
   showAdminsInDMs?: boolean;
 }
@@ -38,6 +39,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   onCreateChannel,
   onSwitchChannel,
   onSwitchProject,
+  onReactToMessage,
   allUsers,
   showAdminsInDMs = true,
 }) => {
@@ -52,8 +54,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);
   const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Quick reaction emojis
+  const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -198,6 +204,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       setEditingMessageId(null);
       setEditingContent('');
     }
+  };
+
+  // Handle reaction
+  const handleReaction = (messageId: string, emoji: string) => {
+    onReactToMessage(messageId, emoji);
+    setHoveredMessageId(null);
   };
 
   if (!isOpen) return null;
@@ -667,7 +679,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         </div>
                       ) : (
                         /* Fremde Nachrichten: Avatar links oben bündig mit Bubble */
-                        <div className="flex flex-row items-start space-x-2 max-w-[75%]">
+                        <div 
+                          className="flex flex-row items-start space-x-2 max-w-[75%] relative"
+                          onMouseEnter={() => setHoveredMessageId(message.id)}
+                          onMouseLeave={() => setHoveredMessageId(null)}
+                        >
                           {/* Avatar - nur in Channels, nicht in DMs */}
                           {currentChannel?.type !== ChatChannelType.Direct && (
                             <div className="flex-shrink-0 w-7">
@@ -739,9 +755,41 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
                                   </div>
                                 )}
+
+                                {/* Reactions Display */}
+                                {message.reactions && Object.keys(message.reactions).length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReaction(message.id, emoji)}
+                                        className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-overlay/50 hover:bg-overlay text-xs transition-colors"
+                                      >
+                                        <span>{emoji}</span>
+                                        <span className="text-text-secondary">{(userIds as string[]).length}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>
+
+                          {/* Emoji Reaction Bar - nur bei Hover auf fremde Nachrichten */}
+                          {hoveredMessageId === message.id && !isOwnMessage && (
+                            <div className="absolute -top-8 left-0 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-10">
+                              {quickReactions.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReaction(message.id, emoji)}
+                                  className="text-lg hover:scale-125 transition-transform"
+                                  title={`Mit ${emoji} reagieren`}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       </div>

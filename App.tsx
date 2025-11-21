@@ -1191,6 +1191,29 @@ const App: React.FC = () => {
     console.log('Delete message:', messageId);
   };
 
+  const handleReactToMessage = (messageId: string, emoji: string) => {
+    setChatMessages(prev => prev.map(msg => {
+      if (msg.id !== messageId) return msg;
+      
+      const reactions = { ...msg.reactions };
+      const userIds = reactions[emoji] || [];
+      
+      // Toggle reaction: add if not present, remove if present
+      if (userIds.includes(currentUser!.id)) {
+        reactions[emoji] = userIds.filter(id => id !== currentUser!.id);
+        if (reactions[emoji].length === 0) {
+          delete reactions[emoji];
+        }
+      } else {
+        reactions[emoji] = [...userIds, currentUser!.id];
+      }
+      
+      return { ...msg, reactions };
+    }));
+    // TODO: Persist to Supabase
+    console.log('React to message:', messageId, emoji);
+  };
+
   // Initialize chat channel and project when opening chat
   useEffect(() => {
     if (showChat && !currentChatChannel && chatChannels.length > 0) {
@@ -2036,6 +2059,7 @@ const App: React.FC = () => {
           onCreateChannel={handleCreateChannel}
           onSwitchChannel={handleSwitchChatChannel}
           onSwitchProject={handleSwitchChatProject}
+          onReactToMessage={handleReactToMessage}
           allUsers={users}
           showAdminsInDMs={showAdminsInDMs}
         />
