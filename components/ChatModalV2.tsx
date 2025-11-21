@@ -247,24 +247,30 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
         )}
       </button>
 
-      {/* Waveform with Playhead */}
-      <div className="flex-1 flex flex-col space-y-2">
-        <div
-          className="flex items-center justify-between h-12 cursor-pointer relative"
+      {/* Waveform Container */}
+      <div className="flex-1 flex items-center space-x-2">
+        {/* Waveform Bars */}
+        <div 
+          className="flex items-center justify-between flex-1 min-w-0 overflow-hidden cursor-pointer relative"
+          style={{ height: '32px' }}
           onClick={handleSeek}
         >
-          {/* Waveform Bars - statisch mit variabler Höhe */}
           {waveformBars.map((level, index) => {
+            const progress = duration > 0 ? currentTime / duration : 0;
+            const barProgress = index / waveformBars.length;
+            const isPassed = barProgress <= progress;
+            
             const amplifiedLevel = Math.min(1, level * 2);
-            const height = Math.max(3, amplifiedLevel * 48); // Max height 48px for h-12 container
+            const height = Math.max(3, amplifiedLevel * 32);
             
             return (
               <div
                 key={index}
-                className="bg-glow-purple rounded-full"
+                className="rounded-full transition-colors duration-100"
                 style={{
                   height: `${height}px`,
-                  opacity: 0.5,
+                  backgroundColor: isPassed ? '#A855F7' : '#6B7280',
+                  opacity: isPassed ? 1 : 0.4,
                   width: '2px',
                   flex: '1 1 0',
                 }}
@@ -272,17 +278,20 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
             );
           })}
           
-          {/* Playhead Indicator - bewegt sich von links nach rechts */}
+          {/* Playhead - weißer Strich */}
           {duration > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-[2px] bg-white rounded-full pointer-events-none transition-all duration-100"
-              style={{ left: `${(currentTime / duration) * 100}%` }}
+              className="absolute top-0 bottom-0 w-[3px] bg-white rounded-full pointer-events-none"
+              style={{ 
+                left: `${(currentTime / duration) * 100}%`,
+                transform: 'translateX(-50%)'
+              }}
             />
           )}
         </div>
         
-        {/* Time Display - nur aktueller Timecode */}
-        <div className="text-xs text-text-secondary font-mono text-center">
+        {/* Time Display */}
+        <div className="text-xs text-text-secondary font-mono whitespace-nowrap">
           {duration > 0 ? formatTime(currentTime) : '0:00'}
         </div>
       </div>
