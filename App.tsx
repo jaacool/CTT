@@ -1682,6 +1682,11 @@ const App: React.FC = () => {
             absenceRequests={absenceRequests}
             currentUser={currentUser}
             targetAnomaly={targetAnomaly}
+            projects={projects}
+            onUpdateTimeEntry={handleUpdateTimeEntry}
+            onBillableChange={handleBillableChange}
+            onDeleteTimeEntry={handleDeleteTimeEntry}
+            onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
         ) : selectedProject ? (
           <TaskArea 
