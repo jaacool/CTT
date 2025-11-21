@@ -913,6 +913,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 >
                                 {(() => {
                                   const reply = parseReply(message.content);
+                                  
+                                  // Im Thread-Modus: Zeige nur actualContent ohne Reply-Referenz
+                                  if (showThreadView) {
+                                    const contentToShow = reply ? reply.actualContent : message.content;
+                                    return (
+                                      <>
+                                        <div className="whitespace-pre-wrap">{renderTextWithLinks(contentToShow)}</div>
+                                        {contentToShow.match(/https?:\/\/[^\s]+/) && (
+                                          <div className="mt-2">
+                                            <LinkPreview url={contentToShow.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                  
+                                  // Haupt-Chat: Zeige Reply-Referenz wie gewohnt
                                   if (reply) {
                                     return (
                                       <>
@@ -984,7 +1001,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               </div>
                               
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
-                              {hoveredMessageId === message.id && isOwnMessage && (
+                              {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
+                              {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
                                 <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
@@ -1200,6 +1218,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
                                     {(() => {
                                       const reply = parseReply(message.content);
+                                      
+                                      // Im Thread-Modus: Zeige nur actualContent ohne Reply-Referenz
+                                      if (showThreadView) {
+                                        const contentToShow = reply ? reply.actualContent : message.content;
+                                        return (
+                                          <>
+                                            <div className="whitespace-pre-wrap">{renderTextWithLinks(contentToShow)}</div>
+                                            {contentToShow.match(/https?:\/\/[^\s]+/) && (
+                                              <div className="mt-2">
+                                                <LinkPreview url={contentToShow.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                              </div>
+                                            )}
+                                          </>
+                                        );
+                                      }
+                                      
+                                      // Haupt-Chat: Zeige Reply-Referenz wie gewohnt
                                       if (reply) {
                                         return (
                                           <>
@@ -1272,7 +1307,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   </div>
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
-                                  {hoveredMessageId === message.id && !isOwnMessage && (
+                                  {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
+                                  {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
                                     <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
