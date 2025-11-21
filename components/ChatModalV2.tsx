@@ -263,6 +263,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
         let content = messageInput.trim();
         
+        // If no text but has attachments, use empty string
+        if (!content && attachments && attachments.length > 0) {
+          content = '';
+        }
+        
         // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
         if (messageToReplyTo) {
           // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
@@ -1759,15 +1764,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                   <button
                     onClick={handleSendMessage}
-                    disabled={!messageInput.trim() && selectedFiles.length === 0}
+                    disabled={messageInput.trim().length === 0 && selectedFiles.length === 0}
                     className="p-3 rounded-full transition-all relative overflow-hidden self-end mb-1"
                     style={{
-                      background: (messageInput.trim() || selectedFiles.length > 0)
+                      background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
                         ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
                         : 'var(--color-overlay)'
                     }}
                   >
-                    {(messageInput.trim() || selectedFiles.length > 0) ? (
+                    {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
                       <SendIcon className="w-5 h-5 text-white" />
                     ) : (
                       <MicIcon className="w-5 h-5 text-text-secondary" />
