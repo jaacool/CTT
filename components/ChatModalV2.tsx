@@ -880,24 +880,30 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
-                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg py-1 z-[20] min-w-[200px]">
+                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
                                               <button
-                                                onClick={() => handleMarkAsUnread(message.id)}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleMarkAsUnread(message.id);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
                                               >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                                 </svg>
-                                                <span>Als ungelesen markieren</span>
+                                                <span className="text-text-primary">Als ungelesen markieren</span>
                                               </button>
                                               <button
-                                                onClick={() => handleStarMessage(message.id)}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleStarMessage(message.id);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
                                               >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                                 </svg>
-                                                <span>Markieren</span>
+                                                <span className="text-text-primary">Markieren</span>
                                               </button>
                                             </div>
                                           )}
