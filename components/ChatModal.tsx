@@ -39,7 +39,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   onSwitchProject,
   allUsers,
 }) => {
-  const [viewMode, setViewMode] = useState<ChatViewMode>(ChatViewMode.ByProject);
+  // ViewMode entfernt - nur noch eine Ansicht
   const [messageInput, setMessageInput] = useState('');
   const [suggestedChannel, setSuggestedChannel] = useState<ChatChannel | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,17 +120,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Filter messages based on view mode
+  // Filter messages: Immer nach Channel, optional nach Projekt
   const filteredMessages = messages.filter(msg => {
-    if (viewMode === ChatViewMode.ByProject) {
-      // Wenn kein Projekt ausgewählt ist, zeige alle Nachrichten des Channels
-      if (!currentProject) {
-        return msg.channelId === currentChannel?.id;
-      }
-      return msg.projectId === currentProject?.id && msg.channelId === currentChannel?.id;
-    } else {
-      return msg.channelId === currentChannel?.id;
-    }
+    // Basis: Nachrichten des aktuellen Channels
+    if (msg.channelId !== currentChannel?.id) return false;
+    
+    // Optional: Filter nach Projekt (wenn Projekt ausgewählt)
+    if (currentProject && msg.projectId !== currentProject.id) return false;
+    
+    return true;
   });
 
   // Get DM partner name for Direct channels
@@ -212,6 +210,104 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-border">
           <div className="flex items-center space-x-2 md:space-x-4">
             {/* Mobile Menu Toggle */}
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="md:hidden text-text-secondary hover:text-text-primary p-1"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <h2 className="text-lg md:text-xl font-bold text-text-primary">Chat</h2>
+          </div>
+          
+          {/* Projekt-Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+              className="flex items-center space-x-2 px-3 py-1.5 bg-overlay rounded-lg text-sm text-text-primary hover:bg-overlay/80 transition-colors"
+            >
+              <FolderIcon className="w-4 h-4" />
+              <span className="hidden md:inline">{currentProject ? currentProject.name : 'Alle Projekte'}</span>
+              <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
+              <ChevronDownIcon className="w-4 h-4" />
+            </button>
+            
+            {showProjectDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-50 max-h-96 overflow-hidden flex flex-col">
+                {/* Suchleiste */}
+                <div className="p-3 border-b border-border">
+                  <input
+                    type="text"
+                    placeholder="Projekt suchen..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 bg-overlay rounded-lg text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                
+                {/* Projekt-Liste */}
+                <div className="overflow-y-auto">
+                  {/* Alle Projekte Option */}
+                  <button
+                    onClick={() => {
+                      onSwitchProject('');
+                      setShowProjectDropdown(false);
+                      setSearchQuery('');
+                    }}
+                    className={`w-full flex items-center space-x-2 p-3 text-left transition-colors ${
+                      !currentProject
+                        ? 'bg-glow-purple/20 text-text-primary'
+                        : 'hover:bg-overlay text-text-secondary'
+                    }`}
+                  >
+                    <span className="text-lg">📁</span>
+                    <span className="text-sm font-medium">Alle Projekte</span>
+                  </button>
+                  
+                  {/* Gefilterte Projekte */}
+                  {projects
+                    .filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .sort((a, b) => {
+                      // Favoriten/Aktuelle zuerst
+                      if (a.status === 'AKTIV' && b.status !== 'AKTIV') return -1;
+                      if (a.status !== 'AKTIV' && b.status === 'AKTIV') return 1;
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          onSwitchProject(project.id);
+                          setShowProjectDropdown(false);
+                          setSearchQuery('');
+                        }}
+                        className={`w-full flex items-center space-x-2 p-3 text-left transition-colors ${
+                          currentProject?.id === project.id
+                            ? 'bg-glow-purple/20 text-text-primary'
+                            : 'hover:bg-overlay text-text-secondary'
+                        }`}
+                      >
+                        <span className="text-lg">{project.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{project.name}</div>
+                          {project.status === 'AKTIV' && (
+                            <div className="text-xs text-glow-purple">Aktiv</div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary p-1">
+            <XIcon className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
             <button
               onClick={() => setShowSidebar(!showSidebar)}
               className="md:hidden text-text-secondary hover:text-text-primary p-1"
