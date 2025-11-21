@@ -732,10 +732,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
                         <div className="flex flex-col items-end max-w-[75%]">
-                          {/* Timestamp & Projekt-Tag */}
+                          {/* Projekt-Tag & Timestamp */}
                           {showAvatar && (
                             <div className="flex items-center space-x-2 mb-1 px-1">
-                              <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                               {/* Projekt-Tag */}
                               {message.projectId && (
                                 <button
@@ -746,6 +745,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {projects.find(p => p.id === message.projectId)?.name || 'Projekt'}
                                 </button>
                               )}
+                              <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
                           )}
 
