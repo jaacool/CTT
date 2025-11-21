@@ -999,15 +999,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                 )}
                 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-end space-x-3">
                   <div className="flex-1 relative">
-                    <input
-                      type="text"
+                    <textarea
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                       placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
-                      className="w-full px-4 py-3 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                      className="w-full px-4 py-3 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none overflow-y-auto"
+                      rows={1}
+                      style={{
+                        minHeight: '48px',
+                        maxHeight: '200px',
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = '48px';
+                        target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                      }}
                     />
                   </div>
                   <button
