@@ -130,6 +130,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [contextMenu]);
 
+  // Auto-focus textarea when replying to a message
+  useEffect(() => {
+    if (replyToMessage && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [replyToMessage]);
+
   // Get accessible channels
   const accessibleChannels = channels.filter(channel =>
     channel.members.some(member => member.id === currentUser.id)
