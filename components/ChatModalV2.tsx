@@ -571,7 +571,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   return (
                     <div 
                       key={message.id} 
-                      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group ${showAvatar ? 'mt-4' : 'mt-1'}`}
+                      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group ${showAvatar ? 'mt-6' : 'mt-2'}`}
                       onContextMenu={(e) => {
                         if (isOwnMessage && canEditMessage(message.timestamp)) {
                           e.preventDefault();
