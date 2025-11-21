@@ -38,6 +38,8 @@ interface TaskAreaProps {
     allUsers?: User[];
     onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
     onOpenChat?: () => void;
+    onOpenTimeTracking?: () => void;
+    unreadMessagesCount?: number;
 }
 
 const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
@@ -672,7 +674,8 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             
              <BottomBar
                 onOpenChat={props.onOpenChat}
-                unreadMessagesCount={0}
+                onOpenTimeTracking={props.onOpenTimeTracking}
+                unreadMessagesCount={props.unreadMessagesCount || 0}
              />
         </div>
     );

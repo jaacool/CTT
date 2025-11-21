@@ -1719,6 +1719,8 @@ const App: React.FC = () => {
                 setCurrentChatProject(selectedProject);
               }
             }}
+            onOpenTimeTracking={() => setShowStartTimeTrackingModal(true)}
+            unreadMessagesCount={unreadMessagesCount}
           />
         ) : (
           showSettings ? (
