@@ -210,10 +210,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const [audioLevels, setAudioLevels] = useState<number[]>(new Array(40).fill(0));
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlaybackRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
@@ -533,6 +537,28 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   };
 
+  // Audio visualization function
+  const analyzeAudio = () => {
+    if (!analyserRef.current) return;
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+
+    // Take 40 samples from the frequency data
+    const samples = 40;
+    const step = Math.floor(dataArray.length / samples);
+    const levels = [];
+    
+    for (let i = 0; i < samples; i++) {
+      const index = i * step;
+      const value = dataArray[index] / 255; // Normalize to 0-1
+      levels.push(value);
+    }
+
+    setAudioLevels(levels);
+    animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+  };
+
   // Voice recording functions
   const startRecording = async () => {
     try {
@@ -550,6 +576,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('✅ Got media stream');
+      
+      // Setup audio analysis for visualization
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      
+      // Start visualization
+      analyzeAudio();
       
       // Detect supported MIME type
       let mimeType = 'audio/webm';
@@ -581,6 +621,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         console.log('🎵 Audio blob created:', audioBlob.size, 'bytes');
         setAudioBlob(audioBlob);
         stream.getTracks().forEach(track => track.stop());
+        
+        // Stop visualization
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+        }
       };
 
       mediaRecorder.onerror = (event: Event) => {
@@ -637,9 +685,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
+      // Stop visualization
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     }
     setAudioBlob(null);
     setRecordingTime(0);
+    setAudioLevels(new Array(40).fill(0));
   };
 
   const playRecording = () => {
@@ -2284,27 +2340,40 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   
                   {/* Voice Recording UI or Send Button */}
                   {isRecording || audioBlob ? (
-                    <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-full">
+                    <div className="flex items-center space-x-3 bg-overlay px-4 py-3 rounded-full">
                       {isRecording ? (
                         <>
-                          {/* Recording indicator */}
-                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm font-mono text-text-primary">{formatRecordingTime(recordingTime)}</span>
+                          {/* Waveform Visualization */}
+                          <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
+                            {audioLevels.map((level, index) => {
+                              const height = Math.max(4, level * 48); // Min 4px, max 48px
+                              const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
+                              return (
+                                <div
+                                  key={index}
+                                  className="flex-1 bg-red-500 rounded-full transition-all duration-75"
+                                  style={{
+                                    height: `${height}px`,
+                                    opacity: opacity,
+                                    minWidth: '2px',
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                          
+                          {/* Time Display */}
+                          <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
+                          
+                          {/* Stop Button */}
                           <button
                             onClick={stopRecording}
-                            className="p-2 hover:bg-overlay/80 rounded-full transition-colors"
+                            className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors flex-shrink-0"
                             title="Aufnahme beenden"
                           >
-                            <svg className="w-5 h-5 text-text-primary" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <rect x="6" y="6" width="12" height="12" />
                             </svg>
-                          </button>
-                          <button
-                            onClick={cancelRecording}
-                            className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
-                            title="Abbrechen"
-                          >
-                            <XIcon className="w-5 h-5 text-red-500" />
                           </button>
                         </>
                       ) : (
