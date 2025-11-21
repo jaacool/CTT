@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { ChatChannel, ChatMessage, Project, User, ChatChannelType } from '../types';
+import { ChatChannel, ChatMessage, Project, User, ChatChannelType, ChatAttachment } from '../types';
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
 import { ConfirmModal } from './ConfirmModal';
+import { uploadChatFiles, getFileIcon, isImageFile, isVideoFile, isAudioFile } from '../utils/fileUpload';
 
 interface ChatModalV2Props {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface ChatModalV2Props {
   currentUser: User;
   currentProject: Project | null;
   currentChannel: ChatChannel | null;
-  onSendMessage: (content: string, channelId: string, projectId: string) => void;
+  onSendMessage: (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[]) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   onDeleteMessage: (messageId: string) => void;
   onCreateChannel: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
@@ -233,56 +234,66 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   };
 
   // Handle send message
-  const handleSendMessage = () => {
-    if (messageInput.trim() && currentChannel) {
-      // Im Thread-Modus: Automatisch auf die letzte Nachricht im Thread antworten
-      let messageToReplyTo = replyToMessage;
-      
-      if (showThreadView && !replyToMessage) {
-        // Hole die letzte Nachricht im Thread
-        const threadChain = buildThreadChain(showThreadView);
-        if (threadChain.length > 0) {
-          messageToReplyTo = threadChain[threadChain.length - 1];
+  const handleSendMessage = async () => {
+    if ((messageInput.trim() || selectedFiles.length > 0) && currentChannel) {
+      try {
+        // Upload files if any
+        let attachments: ChatAttachment[] | undefined;
+        if (selectedFiles.length > 0) {
+          attachments = await uploadChatFiles(selectedFiles, currentChannel.id, (fileIndex, progress) => {
+            setUploadProgress(prev => ({
+              ...prev,
+              [selectedFiles[fileIndex].name]: progress
+            }));
+          });
         }
-      }
-      
-      // Use project ID from reply message if replying, otherwise use current project
-      const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
-      let content = messageInput.trim();
-      
-      // Debug: Log project ID selection
-      console.log('Sending message with projectId:', projectId, {
-        replyToMessageProjectId: messageToReplyTo?.projectId,
-        currentProjectId: currentProject?.id,
-        isReplying: !!messageToReplyTo,
-        isThreadMode: !!showThreadView
-      });
-      
-      // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
-      if (messageToReplyTo) {
-        // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
-        let quotedContent = messageToReplyTo.content;
-        const reply = parseReply(messageToReplyTo.content);
-        if (reply) {
-          // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
-          quotedContent = reply.actualContent;
+
+        // Im Thread-Modus: Automatisch auf die letzte Nachricht im Thread antworten
+        let messageToReplyTo = replyToMessage;
+        
+        if (showThreadView && !replyToMessage) {
+          // Hole die letzte Nachricht im Thread
+          const threadChain = buildThreadChain(showThreadView);
+          if (threadChain.length > 0) {
+            messageToReplyTo = threadChain[threadChain.length - 1];
+          }
         }
-        content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
+        
+        // Use project ID from reply message if replying, otherwise use current project
+        const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
+        let content = messageInput.trim();
+        
+        // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
+        if (messageToReplyTo) {
+          // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
+          let quotedContent = messageToReplyTo.content;
+          const reply = parseReply(messageToReplyTo.content);
+          if (reply) {
+            // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
+            quotedContent = reply.actualContent;
+          }
+          content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
+        }
+        
+        onSendMessage(content, currentChannel.id, projectId, attachments);
+        setMessageInput('');
+        setReplyToMessage(null);
+        setSelectedFiles([]);
+        setUploadProgress({});
+        
+        // Reset textarea height
+        if (textareaRef.current) {
+          textareaRef.current.style.height = '48px';
+        }
+        
+        // Scroll to bottom after sending a message
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Fehler beim Senden der Nachricht. Bitte versuche es erneut.');
       }
-      
-      onSendMessage(content, currentChannel.id, projectId);
-      setMessageInput('');
-      setReplyToMessage(null);
-      
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = '48px';
-      }
-      
-      // Scroll to bottom after sending a message
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
     }
   };
 

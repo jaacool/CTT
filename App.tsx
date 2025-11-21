@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, ChatAttachment, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
 import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
@@ -1094,7 +1094,7 @@ const App: React.FC = () => {
   };
 
   // Chat Handlers
-  const handleSendMessage = (content: string, channelId: string, projectId: string) => {
+  const handleSendMessage = (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[]) => {
     if (!currentUser) return;
     
     const newMessage: ChatMessage = {
@@ -1105,6 +1105,7 @@ const App: React.FC = () => {
       sender: currentUser,
       timestamp: new Date().toISOString(),
       readBy: [currentUser.id],
+      attachments: attachments || undefined,
     };
     
     // Optimistic update
