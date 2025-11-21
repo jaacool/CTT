@@ -1010,7 +1010,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <textarea
                       ref={textareaRef}
                       value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
+                      onChange={(e) => {
+                        setMessageInput(e.target.value);
+                        // Dynamische Höhenanpassung
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = '48px';
+                        target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -1023,11 +1029,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       style={{
                         minHeight: '48px',
                         maxHeight: '200px',
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = '48px';
-                        target.style.height = Math.min(target.scrollHeight, 200) + 'px';
                       }}
                     />
                   </div>
