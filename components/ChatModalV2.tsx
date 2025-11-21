@@ -793,7 +793,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               onClick={() => setContextMenu(null)}
             >
               {/* Thread View Inline */}
-              {showThreadView && (
+              {showThreadView && (() => {
+                console.log('Thread-View wird angezeigt für:', showThreadView);
+                console.log('Thread-Chain:', buildThreadChain(showThreadView));
+                return true;
+              })() && (
                 <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
                   {/* Thread Header */}
                   <div className="flex items-center justify-between p-3 bg-glow-purple/10 border-b border-glow-purple/20">
@@ -1003,6 +1007,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
+                                                  e.preventDefault();
+                                                  console.log('Thread-Button geklickt für Nachricht:', message.id);
+                                                  console.log('Thread-Chain Länge:', buildThreadChain(message.id).length);
                                                   setShowThreadView(message.id);
                                                 }}
                                                 className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
@@ -1290,6 +1297,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   <button
                                                     onClick={(e) => {
                                                       e.stopPropagation();
+                                                      e.preventDefault();
+                                                      console.log('Thread-Button geklickt für Nachricht:', message.id);
+                                                      console.log('Thread-Chain Länge:', buildThreadChain(message.id).length);
                                                       setShowThreadView(message.id);
                                                     }}
                                                     className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
