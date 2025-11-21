@@ -376,13 +376,27 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   .filter(user => user.id !== currentUser.id)
                   .filter(user => user.status === 'Aktiv') // Nur aktive User anzeigen (UserStatus.Active)
                   .filter(user => {
-                    // Wenn showAdminsInDMs false ist, blende Admins aus (für alle User)
-                    // showAdminsInDMs = true -> Admins werden angezeigt
-                    // showAdminsInDMs = false -> Admins werden ausgeblendet
-                    // Admin Role ID ist 'role-1'
-                    if (showAdminsInDMs === false && user.role === 'role-1') {
-                      return false;
+                    // Wenn showAdminsInDMs false ist:
+                    // 1. Normale User sehen keine Admins
+                    // 2. Admins sehen keine normalen User (damit sie nicht schreiben können)
+                    // showAdminsInDMs = true -> Alle sehen alle
+                    // showAdminsInDMs = false -> Admins und normale User sind getrennt
+                    
+                    if (showAdminsInDMs === false) {
+                      const currentUserIsAdmin = currentUser.role === 'role-1';
+                      const otherUserIsAdmin = user.role === 'role-1';
+                      
+                      // Wenn currentUser Admin ist und der andere User KEIN Admin -> ausblenden
+                      if (currentUserIsAdmin && !otherUserIsAdmin) {
+                        return false;
+                      }
+                      
+                      // Wenn currentUser KEIN Admin ist und der andere User Admin -> ausblenden
+                      if (!currentUserIsAdmin && otherUserIsAdmin) {
+                        return false;
+                      }
                     }
+                    
                     return true;
                   })
                   .filter(user => !channelSearchQuery || user.name.toLowerCase().includes(channelSearchQuery.toLowerCase()))
