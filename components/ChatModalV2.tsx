@@ -482,7 +482,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         
         // Reset textarea height
         if (textareaRef.current) {
-          textareaRef.current.style.height = '48px';
+          textareaRef.current.style.height = '56px';
         }
         
         // Scroll to bottom immediately
@@ -2066,10 +2066,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       value={messageInput}
                       onChange={(e) => {
                         setMessageInput(e.target.value);
-                        // Dynamische Höhenanpassung
+                        // Dynamische Höhenanpassung - reset to auto to get correct scrollHeight
                         const target = e.target as HTMLTextAreaElement;
-                        target.style.height = '48px';
-                        target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                        target.style.height = 'auto';
+                        // Set height based on content, but respect min/max
+                        const newHeight = Math.max(56, Math.min(target.scrollHeight, 200));
+                        target.style.height = newHeight + 'px';
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -2081,7 +2083,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       className="w-full px-4 py-3 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none overflow-y-auto"
                       rows={1}
                       style={{
-                        minHeight: '48px',
+                        height: '56px',
+                        minHeight: '56px',
                         maxHeight: '200px',
                       }}
                     />
