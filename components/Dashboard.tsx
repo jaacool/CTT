@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Project, TimeEntry, Task, Subtask, User } from '../types';
 import { formatTime } from './utils';
 import { TimerMenu } from './TimerMenu';
@@ -18,6 +18,25 @@ interface DashboardProps {
   onBillableChange?: (taskId: string, billable: boolean) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
 }
+
+const formatDuration = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+};
+
+const renderProjectAvatar = (project: Project | undefined, sizeClasses: string, textSize: string = '') => {
+  const icon = project?.icon;
+  const isHex = typeof icon === 'string' && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(icon);
+  return (
+    <span
+      className={`rounded-full flex items-center justify-center flex-shrink-0 ${sizeClasses} ${textSize}`}
+      style={isHex ? { backgroundColor: icon as string } : undefined}
+    >
+      {!isHex ? (icon || '📋') : null}
+    </span>
+  );
+};
 
 export const Dashboard: React.FC<DashboardProps> = ({
   user,
@@ -40,50 +59,70 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number; y: number} | null>(null);
   const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<TimeEntry | null>(null);
 
-  // Finde alle gepinnten Tasks
-  const pinnedTasks: (Task | Subtask)[] = [];
-  projects.forEach(project => {
-    project.taskLists.forEach(list => {
-      list.tasks.forEach(task => {
-        if (pinnedTaskIds.includes(task.id)) {
-          pinnedTasks.push(task);
-        }
-        task.subtasks.forEach(subtask => {
-          if (pinnedTaskIds.includes(subtask.id)) {
-            pinnedTasks.push(subtask);
-          }
+  // Optimiere Datenzugriff: Erstelle eine Map für schnellen Zugriff auf Task-Details
+  const taskDetailsMap = useMemo(() => {
+    const map = new Map<string, { isBillable: boolean; projectName: string; listTitle: string; projectIcon?: string }>();
+    
+    projects.forEach(project => {
+      project.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          map.set(task.id, {
+            isBillable: task.billable ?? true,
+            projectName: project.name,
+            listTitle: list.title,
+            projectIcon: project.icon
+          });
+          
+          task.subtasks.forEach(subtask => {
+            map.set(subtask.id, {
+              isBillable: subtask.billable ?? task.billable ?? true,
+              projectName: project.name,
+              listTitle: list.title,
+              projectIcon: project.icon
+            });
+          });
         });
       });
     });
-  });
+    return map;
+  }, [projects]);
 
-  // Hole heute's TimeEntries - jeder User sieht nur seine eigenen
+  // Finde alle gepinnten Tasks - memoisiert
+  const pinnedTasks = useMemo(() => {
+    const tasks: (Task | Subtask)[] = [];
+    if (pinnedTaskIds.length === 0) return tasks;
+
+    projects.forEach(project => {
+      project.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          if (pinnedTaskIds.includes(task.id)) {
+            tasks.push(task);
+          }
+          task.subtasks.forEach(subtask => {
+            if (pinnedTaskIds.includes(subtask.id)) {
+              tasks.push(subtask);
+            }
+          });
+        });
+      });
+    });
+    return tasks;
+  }, [projects, pinnedTaskIds]);
+
+  // Hole heute's TimeEntries - memoisiert
+  const todayEntries = useMemo(() => {
+    const today = new Date().toLocaleDateString('de-DE');
+    return timeEntries.filter(entry => 
+      new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
+      entry.user.id === user.id
+    ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  }, [timeEntries, user.id]);
+
+  const totalTodaySeconds = useMemo(() => 
+    todayEntries.reduce((sum, entry) => sum + entry.duration, 0),
+  [todayEntries]);
+  
   const today = new Date().toLocaleDateString('de-DE');
-  const todayEntries = timeEntries.filter(entry => 
-    new Date(entry.startTime).toLocaleDateString('de-DE') === today &&
-    entry.user.id === user.id
-  ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-
-  const totalTodaySeconds = todayEntries.reduce((sum, entry) => sum + entry.duration, 0);
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  const renderProjectAvatar = (project: Project | undefined, sizeClasses: string, textSize: string = '') => {
-    const icon = project?.icon;
-    const isHex = typeof icon === 'string' && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(icon);
-    return (
-      <span
-        className={`rounded-full flex items-center justify-center flex-shrink-0 ${sizeClasses} ${textSize}`}
-        style={isHex ? { backgroundColor: icon as string } : undefined}
-      >
-        {!isHex ? (icon || '📋') : null}
-      </span>
-    );
-  };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
@@ -137,22 +176,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const currentSeconds = taskTimers[entry.taskId] || 0;
                 const project = projects.find(p => p.id === entry.projectId);
                 
-                // Finde Task/Subtask für Billable-Status
-                let isBillable = true;
-                projects.forEach(proj => {
-                  proj.taskLists.forEach(list => {
-                    list.tasks.forEach(task => {
-                      if (task.id === entry.taskId) {
-                        isBillable = task.billable ?? true;
-                      }
-                      task.subtasks.forEach(subtask => {
-                        if (subtask.id === entry.taskId) {
-                          isBillable = subtask.billable ?? task.billable ?? true;
-                        }
-                      });
-                    });
-                  });
-                });
+                // Hole Task-Details aus Map (O(1)) statt O(n*m) Suche
+                const taskDetails = taskDetailsMap.get(entry.taskId);
+                const isBillable = taskDetails?.isBillable ?? true;
                 
                 return (
                   <div
@@ -399,32 +425,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const isActive = activeTimerTaskId === task.id;
                 const elapsedSeconds = taskTimers[task.id] || 0;
                 
-                // Finde Projekt und Liste für diese Aufgabe
-                let projectName = '';
-                let listTitle = '';
-                projects.forEach(p => {
-                  p.taskLists.forEach(list => {
-                    list.tasks.forEach(t => {
-                      if (t.id === task.id) {
-                        projectName = p.name;
-                        listTitle = list.title;
-                      }
-                      t.subtasks.forEach(st => {
-                        if (st.id === task.id) {
-                          projectName = p.name;
-                          listTitle = list.title;
-                        }
-                      });
-                    });
-                  });
-                });
+                // Hole Details aus Map statt zu suchen
+                const details = taskDetailsMap.get(task.id);
+                const projectName = details?.projectName || '';
+                const listTitle = details?.listTitle || '';
                 
-                // Finde Projekt-Icon
-                const project = projects.find(p => p.id === task.id || 
-                  p.taskLists.some(list => 
-                    list.tasks.some(t => t.id === task.id || t.subtasks.some(st => st.id === task.id))
-                  )
-                );
+                // Finde Projekt-Icon (könnte auch in Map sein, aber Projects-Liste ist klein)
+                const project = projects.find(p => p.name === projectName);
                 
                 return (
                   <div 
