@@ -546,7 +546,6 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     });
     
     const hasAbsence = !!item?.absence;
-    const hasAnomaly = !!item?.anomaly;
     const color = hasAbsence ? ABSENCE_COLORS[item.absence.type] : 'transparent';
     const isRotated = isMobile && viewMode !== 'week';
 
@@ -563,17 +562,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         >
           {payload.value}
         </text>
-        {hasAnomaly ? (
-          <text 
-            x={isRotated ? -5 : 0} 
-            y={isRotated ? -10 : -20} 
-            textAnchor="middle" 
-            fontSize={10}
-            fill={COLORS.anomaly}
-          >
-            ⚠️
-          </text>
-        ) : hasAbsence && (
+        {hasAbsence && (
           <circle 
             cx={isRotated ? -5 : 0} 
             cy={isRotated ? 20 : 24} 
@@ -582,6 +571,29 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
           />
         )}
       </g>
+    );
+  };
+
+  // Custom Label Component for Anomaly Warnings (above bars)
+  const CustomAnomalyLabel = (props: any) => {
+    const { x, y, width, value, index } = props;
+    
+    // Finde Item basierend auf Index
+    const item = chartData[index];
+    const hasAnomaly = !!item?.anomaly;
+    
+    if (!hasAnomaly) return null;
+    
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y - 5} 
+        textAnchor="middle" 
+        fontSize={14}
+        fill={COLORS.anomaly}
+      >
+        ⚠️
+      </text>
     );
   };
 
@@ -594,7 +606,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col p-6 space-y-6 overflow-hidden">
+    <div className="h-full flex flex-col p-6 space-y-6 overflow-y-auto">
       {/* Header: Title & User Tabs */}
       <div className="flex flex-col space-y-4 flex-shrink-0">
         <h1 className="text-2xl font-bold text-text-primary">Zeitauswertungen</h1>
@@ -842,6 +854,10 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                   offset={10}
                   fontSize={isMobile ? 10 : 12} 
                   formatter={(value: number) => value > 0 ? `${Math.round(value * 10) / 10}h` : ''} 
+                />
+                <LabelList 
+                  dataKey="hours" 
+                  content={<CustomAnomalyLabel />}
                 />
               </Bar>
             </BarChart>

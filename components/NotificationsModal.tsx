@@ -94,6 +94,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const [chatMessage, setChatMessage] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'anomalies'>('requests');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectRequestId, setRejectRequestId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   
   const isAdmin = currentUser.role === 'role-1';
   
@@ -200,17 +203,32 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handleReject = (requestId: string) => {
-    const reason = prompt('Grund für Ablehnung:');
-    if (reason) {
-      onRejectRequest(requestId, reason);
-      if (selectedRequest?.id === requestId) {
+    setRejectRequestId(requestId);
+    setShowRejectModal(true);
+  };
+
+  const confirmReject = () => {
+    if (rejectRequestId && rejectReason.trim()) {
+      onRejectRequest(rejectRequestId, rejectReason);
+      if (selectedRequest?.id === rejectRequestId) {
         setSelectedRequest(null);
       }
+      setShowRejectModal(false);
+      setRejectRequestId(null);
+      setRejectReason('');
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Close modal when clicking on backdrop
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-surface rounded-xl max-w-4xl w-full max-h-[80vh] border border-border shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
@@ -661,6 +679,41 @@ Mit freundlichen Grüßen`;
         )}
         </div>
       </div>
+
+      {/* Reject Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg p-6 max-w-md w-full border border-border">
+            <h3 className="text-lg font-bold text-text-primary mb-4">Grund für Ablehnung</h3>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Bitte gib einen Grund für die Ablehnung an..."
+              className="w-full h-32 px-3 py-2 bg-background border border-border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-glow-purple resize-none"
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectRequestId(null);
+                  setRejectReason('');
+                }}
+                className="px-4 py-2 bg-overlay text-text-secondary rounded-lg hover:bg-border transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={!rejectReason.trim()}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Ablehnen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
