@@ -739,13 +739,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               </div>
                             ) : (
                               <>
-                                {/* Message Content Bubble */}
-                                <div className="px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
+                                {/* Message Content Bubble - mit relativer Position für Emoji-Bar */}
+                                <div className="relative px-4 py-2.5 rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md">
                                   {message.content}
                                   {message.edited && (
                                     <span className="text-xs ml-2 italic text-text-secondary">
                                       (bearbeitet)
                                     </span>
+                                  )}
+                                  
+                                  {/* Emoji Reaction Bar - rechts oben an der Bubble */}
+                                  {hoveredMessageId === message.id && !isOwnMessage && (
+                                    <div className="absolute -top-3 -right-2 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-10">
+                                      {quickReactions.map((emoji) => (
+                                        <button
+                                          key={emoji}
+                                          onClick={() => handleReaction(message.id, emoji)}
+                                          className="text-lg hover:scale-125 transition-transform"
+                                          title={`Mit ${emoji} reagieren`}
+                                        >
+                                          {emoji}
+                                        </button>
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
 
@@ -774,22 +790,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               </>
                             )}
                           </div>
-
-                          {/* Emoji Reaction Bar - rechts oben über der Nachricht */}
-                          {hoveredMessageId === message.id && !isOwnMessage && (
-                            <div className="absolute -top-8 right-2 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-10">
-                              {quickReactions.map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() => handleReaction(message.id, emoji)}
-                                  className="text-lg hover:scale-125 transition-transform"
-                                  title={`Mit ${emoji} reagieren`}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       )}
                       </div>
