@@ -158,11 +158,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [previewAttachment]);
 
-  // Scroll to bottom when project filter changes
-  useEffect(() => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }, 100);
+  // Scroll to bottom when project filter changes (instant, no animation)
+  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
+  useLayoutEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [currentProject?.id]);
 
   // Handle wheel zoom
