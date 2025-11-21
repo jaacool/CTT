@@ -305,6 +305,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
+    console.log('📎 File selection triggered, files:', files);
     if (!files) return;
 
     const validFiles: File[] = [];
@@ -312,6 +313,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      console.log(`📎 Checking file: ${file.name}, size: ${file.size} bytes`);
       if (file.size > maxSizeBytes) {
         alert(`Datei "${file.name}" ist zu groß! Maximum: ${maxUploadSize} MB`);
         continue;
@@ -319,7 +321,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       validFiles.push(file);
     }
 
-    setSelectedFiles(prev => [...prev, ...validFiles]);
+    console.log('📎 Valid files:', validFiles.length);
+    setSelectedFiles(prev => {
+      const newFiles = [...prev, ...validFiles];
+      console.log('📎 Updated selectedFiles:', newFiles.length);
+      return newFiles;
+    });
     
     // Reset input
     if (event.target) {
@@ -1763,7 +1770,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     />
                   </div>
                   <button
-                    onClick={handleSendMessage}
+                    onClick={() => {
+                      console.log('🚀 Send button clicked! Files:', selectedFiles.length, 'Text:', messageInput.trim().length);
+                      handleSendMessage();
+                    }}
                     disabled={messageInput.trim().length === 0 && selectedFiles.length === 0}
                     className="p-3 rounded-full transition-all relative overflow-hidden self-end mb-1"
                     style={{
