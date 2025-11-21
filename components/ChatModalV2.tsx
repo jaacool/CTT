@@ -298,11 +298,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
         let content = messageInput.trim();
         
-        // If no text but has attachments, use empty string
-        if (!content && selectedFiles.length > 0) {
-          content = '';
-        }
-        
         // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
         if (messageToReplyTo) {
           // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
@@ -315,20 +310,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
         }
         
-        // OPTIMISTIC UI: Send message immediately with local preview URLs
         const filesToUpload = [...selectedFiles];
-        const placeholderAttachments: ChatAttachment[] | undefined = filesToUpload.length > 0
-          ? filesToUpload.map((file, idx) => ({
+        
+        // Send text and files as SEPARATE messages
+        // 1. Send text message first (if there is text)
+        if (content.trim()) {
+          onSendMessage(content, currentChannel.id, projectId, undefined);
+        }
+        
+        // 2. Send each file as a separate message
+        if (filesToUpload.length > 0) {
+          filesToUpload.forEach((file, idx) => {
+            const placeholderAttachment: ChatAttachment = {
               id: `uploading-${Date.now()}-${idx}`,
               name: file.name,
               size: file.size,
               type: file.type,
               url: URL.createObjectURL(file), // Local blob URL for instant preview!
-            }))
-          : undefined;
-        
-        // Send message immediately (optimistic)
-        onSendMessage(content, currentChannel.id, projectId, placeholderAttachments);
+            };
+            
+            // Send empty message with single attachment
+            onSendMessage('', currentChannel.id, projectId, [placeholderAttachment]);
+          });
+        }
         
         // Clear input immediately for better UX
         setMessageInput('');
