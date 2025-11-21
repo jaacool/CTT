@@ -31,8 +31,6 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -72,20 +70,11 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const changePlaybackRate = (rate: number) => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = rate;
-      setPlaybackRate(rate);
-    }
-    setShowMenu(false);
-  };
-
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = url;
     link.download = name;
     link.click();
-    setShowMenu(false);
   };
 
   return (
@@ -144,47 +133,16 @@ const AudioPlayer: React.FC<{ url: string; name: string; hasText: boolean }> = (
           {formatTime(currentTime)}
         </div>
 
-        {/* 3-Dot Menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center hover:bg-glow-purple/20 rounded-full transition-colors"
-          >
-            <svg className="w-5 h-5 text-text-secondary" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-            </svg>
-          </button>
-
-          {/* Dropdown Menu */}
-          {showMenu && (
-            <div className="absolute right-0 bottom-full mb-2 w-48 bg-surface border border-border rounded-lg shadow-lg z-10">
-              <div className="p-2">
-                <div className="text-xs text-text-secondary px-2 py-1">Geschwindigkeit</div>
-                {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
-                  <button
-                    key={rate}
-                    onClick={() => changePlaybackRate(rate)}
-                    className={`w-full text-left px-3 py-2 rounded hover:bg-overlay transition-colors text-sm ${
-                      playbackRate === rate ? 'text-glow-purple font-semibold' : 'text-text-primary'
-                    }`}
-                  >
-                    {rate}x {playbackRate === rate && '✓'}
-                  </button>
-                ))}
-                <div className="border-t border-border my-1"></div>
-                <button
-                  onClick={handleDownload}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-overlay transition-colors text-sm text-text-primary flex items-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <span>Herunterladen</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Download Button */}
+        <button
+          onClick={handleDownload}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center hover:bg-transparent rounded-full transition-colors"
+          title="Herunterladen"
+        >
+          <svg className="w-5 h-5 text-text-secondary hover:text-glow-purple transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        </button>
       </div>
 
       {/* Filename */}
