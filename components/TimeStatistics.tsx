@@ -455,9 +455,9 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <div className="flex-1 min-h-[300px]">
+        <div className="flex-1 min-h-[300px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
               <XAxis 
                 dataKey={xAxisKey} 
@@ -473,6 +473,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 label={{ value: 'Stunden', angle: -90, position: 'insideLeft', fill: COLORS.textSecondary, style: { textAnchor: 'middle' } }}
                 tickLine={false}
                 axisLine={false}
+                width={40}
               />
               <Tooltip 
                 content={
@@ -487,7 +488,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 }
                 cursor={{ fill: COLORS.overlay, opacity: 0.2 }}
               />
-              <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              <Legend wrapperStyle={{ paddingTop: '30px' }} />
               <ReferenceLine 
                 y={averageHours} 
                 stroke={COLORS.average} 
@@ -505,7 +506,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 fill={COLORS.worked} 
                 name="Gearbeitete Stunden" 
                 radius={[6, 6, 0, 0]} 
-                barSize={viewMode === 'year' ? 20 : viewMode === 'month' ? 30 : 50}
+                maxBarSize={60}
               />
             </BarChart>
           </ResponsiveContainer>
