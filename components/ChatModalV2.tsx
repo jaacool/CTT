@@ -1231,8 +1231,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               }`}
                                             />
                                             {/* Play Button Overlay */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                              <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-black/80 transition-all">
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                              <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
                                                 <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                                                   <path d="M8 5v14l11-7z"/>
                                                 </svg>
@@ -1240,12 +1240,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </div>
                                           </div>
                                         ) : isAudioFile(attachment.type) ? (
-                                          // Audio Player
-                                          <audio 
-                                            src={attachment.url} 
-                                            controls
-                                            className="w-full max-w-xs"
-                                          />
+                                          // Audio Player - Custom Design
+                                          <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
+                                            message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
+                                          }`}>
+                                            <audio 
+                                              src={attachment.url} 
+                                              controls
+                                              className="flex-1"
+                                              style={{ height: '40px' }}
+                                            />
+                                            <div className="text-xs text-text-secondary whitespace-nowrap">
+                                              {attachment.name}
+                                            </div>
+                                          </div>
                                         ) : (
                                           // File Download Button
                                           <a
@@ -1664,8 +1672,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   }`}
                                                 />
                                                 {/* Play Button Overlay */}
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                  <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-black/80 transition-all">
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                  <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
                                                     <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                                                       <path d="M8 5v14l11-7z"/>
                                                     </svg>
@@ -1673,12 +1681,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </div>
                                               </div>
                                             ) : isAudioFile(attachment.type) ? (
-                                              // Audio Player
-                                              <audio 
-                                                src={attachment.url} 
-                                                controls
-                                                className="w-full max-w-xs"
-                                              />
+                                              // Audio Player - Custom Design
+                                              <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
+                                                message.content.trim() ? 'max-w-xs' : 'max-w-[320px]'
+                                              }`}>
+                                                <audio 
+                                                  src={attachment.url} 
+                                                  controls
+                                                  className="flex-1"
+                                                  style={{ height: '40px' }}
+                                                />
+                                                <div className="text-xs text-text-secondary whitespace-nowrap">
+                                                  {attachment.name}
+                                                </div>
+                                              </div>
                                             ) : (
                                               // File Download Button
                                               <a
