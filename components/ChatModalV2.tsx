@@ -2348,10 +2348,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             {/* Recorded Waveform Preview */}
                             <div className="flex items-center space-x-0.5 flex-1 min-w-0 h-12 overflow-hidden">
                               {(() => {
-                                // Show the entire recorded waveform, scaled to fit
+                                // Limit to max 100 bars and downsample if necessary
                                 const maxBars = 100;
-                                const step = Math.max(1, Math.floor(recordedWaveform.length / maxBars));
-                                const displayWaveform = recordedWaveform.filter((_, index) => index % step === 0);
+                                let displayWaveform: number[];
+                                
+                                if (recordedWaveform.length <= maxBars) {
+                                  // If we have fewer samples than max, show all
+                                  displayWaveform = recordedWaveform;
+                                } else {
+                                  // Downsample by taking every nth sample
+                                  const step = Math.ceil(recordedWaveform.length / maxBars);
+                                  displayWaveform = [];
+                                  for (let i = 0; i < recordedWaveform.length; i += step) {
+                                    displayWaveform.push(recordedWaveform[i]);
+                                  }
+                                  // Ensure we don't exceed maxBars
+                                  displayWaveform = displayWaveform.slice(0, maxBars);
+                                }
                                 
                                 return displayWaveform.map((level, index) => {
                                   const height = Math.max(4, level * 48);
