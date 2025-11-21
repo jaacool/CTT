@@ -807,9 +807,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   {showThreadView && (
                     <button
                       onClick={() => {
-                        const messageId = showThreadView;
-                        scrollToMessage(messageId);
                         setShowThreadView(null);
+                        // Scrolle zur neuesten Nachricht (ganz unten)
+                        requestAnimationFrame(() => {
+                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                        });
                       }}
                       className="p-2 hover:bg-overlay rounded-lg transition-colors"
                       title="Zurück zum Haupt-Chat"
