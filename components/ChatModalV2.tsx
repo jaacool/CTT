@@ -1616,16 +1616,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Wrapper für Bubble und Hover-Menü */}
                               <div 
-                                className={`relative transition-all duration-500 ${
-                                  highlightedMessageId === message.id ? 'glow-pulse' : ''
-                                }`}
+                                className="relative transition-all duration-500"
                                 onMouseEnter={() => setHoveredMessageId(message.id)}
                                 onMouseLeave={() => setHoveredMessageId(null)}
                               >
                                 {/* Message Content Bubble */}
                                 <div className={`rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent overflow-hidden ${
                                   message.content.trim() ? 'px-4 py-2.5' : 'p-0'
-                                }`}
+                                } ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}
                                   style={{
                                     background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
                                     border: '1px solid transparent'
@@ -1998,16 +1996,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <>
                                 {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
-                                  className={`relative transition-all duration-500 ${
-                                    highlightedMessageId === message.id ? 'glow-pulse' : ''
-                                  }`}
+                                  className="relative transition-all duration-500"
                                   onMouseEnter={() => setHoveredMessageId(message.id)}
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
                                   {/* Message Content Bubble */}
                                   <div className={`rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md overflow-hidden ${
                                     message.content.trim() ? 'px-4 py-2.5' : 'p-0'
-                                  }`}>
+                                  } ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}>
                                     {(() => {
                                       const reply = parseReply(message.content);
                                       
