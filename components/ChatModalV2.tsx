@@ -536,34 +536,87 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Voice recording functions
   const startRecording = async () => {
     try {
+      console.log('🎤 Starting recording...');
+      
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Dein Browser unterstützt keine Audio-Aufnahme. Bitte verwende einen modernen Browser wie Chrome, Firefox oder Safari.');
+      }
+
+      // Check if MediaRecorder is available
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('MediaRecorder API ist nicht verfügbar. Bitte verwende einen modernen Browser.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      console.log('✅ Got media stream');
+      
+      // Detect supported MIME type
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        mimeType = 'audio/ogg;codecs=opus';
+      }
+      console.log('🎵 Using MIME type:', mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('📦 Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        console.log('⏹️ Recording stopped, chunks:', audioChunksRef.current.length);
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log('🎵 Audio blob created:', audioBlob.size, 'bytes');
         setAudioBlob(audioBlob);
         stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.onerror = (event: Event) => {
+        console.error('❌ MediaRecorder error:', event);
+        alert('Fehler während der Aufnahme. Bitte versuche es erneut.');
       };
 
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      console.log('🎤 Recording started!');
 
       // Start timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } catch (error) {
-      console.error('Error starting recording:', error);
-      alert('Fehler beim Starten der Aufnahme. Bitte erlaube Mikrofon-Zugriff.');
+      console.error('❌ Error starting recording:', error);
+      
+      let errorMessage = 'Unbekannter Fehler';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'name' in error) {
+        const domError = error as DOMException;
+        if (domError.name === 'NotAllowedError') {
+          errorMessage = 'Mikrofon-Zugriff wurde verweigert. Bitte erlaube den Zugriff in deinen Browser-Einstellungen.';
+        } else if (domError.name === 'NotFoundError') {
+          errorMessage = 'Kein Mikrofon gefunden. Bitte schließe ein Mikrofon an.';
+        } else if (domError.name === 'NotReadableError') {
+          errorMessage = 'Mikrofon wird bereits von einer anderen Anwendung verwendet.';
+        } else {
+          errorMessage = `Fehler: ${domError.name} - ${domError.message}`;
+        }
+      }
+      
+      alert(`Fehler beim Starten der Aufnahme:\n${errorMessage}`);
     }
   };
 
