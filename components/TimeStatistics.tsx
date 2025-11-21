@@ -16,7 +16,7 @@ import {
   getWeekStart,
   formatDateRange
 } from '../utils/timeStatistics';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps, LabelList } from 'recharts';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 interface TimeStatisticsProps {
@@ -207,6 +207,76 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
   ];
+
+  const ABSENCE_LABELS: Record<string, string> = {
+    'VACATION': 'Urlaub',
+    'COMPENSATORY_DAY': 'Ausgleichstag',
+    'SICK': 'Krankheit',
+    'HOME_OFFICE': 'Home Office',
+    'BUSINESS_TRIP': 'Dienstreise',
+    'OTHER': 'Sonstiges'
+  };
+
+  const ABSENCE_COLORS: Record<string, string> = {
+    'VACATION': '#F59E0B', // Amber
+    'COMPENSATORY_DAY': '#3B82F6', // Blue
+    'SICK': '#EF4444', // Red
+    'HOME_OFFICE': '#10B981', // Emerald
+    'BUSINESS_TRIP': '#8B5CF6', // Violet
+    'OTHER': '#6B7280' // Gray
+  };
+
+  // Berechne Start- und Enddatum der aktuellen Ansicht
+  const { viewStartDate, viewEndDate } = useMemo(() => {
+    let start: Date, end: Date;
+    if (viewMode === 'year') {
+      start = new Date(selectedYear, 0, 1);
+      end = new Date(selectedYear, 11, 31, 23, 59, 59);
+    } else if (viewMode === 'month') {
+      start = new Date(selectedYear, selectedMonth, 1);
+      end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    } else {
+      start = new Date(selectedWeek);
+      end = new Date(selectedWeek);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59);
+    }
+    return { viewStartDate: start, viewEndDate: end };
+  }, [viewMode, selectedYear, selectedMonth, selectedWeek]);
+
+  // Berechne Abwesenheitsstatistik
+  const absenceStats = useMemo(() => {
+    if (!selectedUser) return {};
+    
+    const stats: Record<string, number> = {};
+    
+    absenceRequests.forEach(req => {
+      if (req.user.id !== selectedUser.id) return;
+      if (req.status !== AbsenceStatus.Approved) return;
+      
+      const reqStart = new Date(req.startDate);
+      const reqEnd = new Date(req.endDate);
+      
+      // Schnittmenge berechnen
+      const start = reqStart < viewStartDate ? viewStartDate : reqStart;
+      const end = reqEnd > viewEndDate ? viewEndDate : reqEnd;
+      
+      if (start <= end) {
+         // Berechne Arbeitstage (Mo-Fr) dazwischen
+         let days = 0;
+         let curr = new Date(start);
+         while (curr <= end) {
+           const day = curr.getDay();
+           if (day !== 0 && day !== 6) days++;
+           curr.setDate(curr.getDate() + 1);
+         }
+         if (days > 0) {
+           stats[req.type] = (stats[req.type] || 0) + days;
+         }
+      }
+    });
+    return stats;
+  }, [absenceRequests, selectedUser, viewStartDate, viewEndDate]);
 
   // Navigation Handlers
   const handlePrevious = () => {
@@ -473,7 +543,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Chart */}
-        <div className="flex-1 min-h-[300px] pb-8">
+        <div className="flex-1 min-h-[300px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={chartData} 
@@ -481,7 +551,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 top: 20, 
                 right: isMobile ? 10 : 30, 
                 left: isMobile ? -10 : 10, 
-                bottom: isMobile ? 80 : 50 
+                bottom: isMobile ? 40 : 30 
               }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
@@ -525,7 +595,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 }
                 cursor={{ fill: COLORS.overlay, opacity: 0.2 }}
               />
-              <Legend wrapperStyle={{ paddingTop: isMobile ? '20px' : '40px' }} />
+              <Legend wrapperStyle={{ paddingTop: isMobile ? '10px' : '30px' }} />
               <ReferenceLine 
                 y={averageHours} 
                 stroke={COLORS.average} 
@@ -554,10 +624,37 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 name="Gearbeitete Stunden" 
                 radius={[6, 6, 0, 0]} 
                 maxBarSize={isMobile ? 30 : 60}
-              />
+              >
+                <LabelList 
+                  dataKey="hours" 
+                  position="top" 
+                  fill={COLORS.text} 
+                  fontSize={isMobile ? 10 : 12} 
+                  formatter={(value: number) => value > 0 ? `${Math.round(value * 10) / 10}h` : ''} 
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Abwesenheitsstatistik */}
+        {Object.keys(absenceStats).length > 0 && (
+          <div className="pt-4 border-t border-border mt-auto flex-shrink-0">
+            <h3 className="text-sm font-semibold text-text-secondary mb-3">Abwesenheiten im Zeitraum</h3>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(absenceStats).map(([type, days]) => (
+                <div key={type} className="flex items-center space-x-2 bg-overlay rounded-lg px-3 py-2 border border-border/50">
+                  <div 
+                    className="w-3 h-3 rounded-full shadow-sm" 
+                    style={{ backgroundColor: ABSENCE_COLORS[type] || COLORS.textSecondary }}
+                  ></div>
+                  <span className="text-sm text-text-secondary">{ABSENCE_LABELS[type] || type}:</span>
+                  <span className="text-sm font-bold text-text-primary">{days} {days === 1 ? 'Tag' : 'Tage'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
