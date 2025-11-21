@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatChannel, ChatMessage, Project, User, ChatChannelType } from '../types';
-import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon } from './Icons';
+import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -579,13 +579,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         }
                       }}
                     >
-                      {/* Eigene Nachrichten: kein Avatar */}
+                      {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
                         <div className="flex flex-col items-end max-w-[75%]">
-                          {/* Name & Timestamp */}
+                          {/* Nur Timestamp, kein Name */}
                           {showAvatar && (
-                            <div className="flex items-center space-x-2 mb-1.5 px-1 flex-row-reverse space-x-reverse">
-                              <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                            <div className="flex items-center mb-1.5 px-1">
                               <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
                           )}
@@ -646,10 +645,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           )}
                         </div>
                       ) : (
-                        /* Fremde Nachrichten: Avatar links oben bündig */
+                        /* Fremde Nachrichten: Avatar links oben bündig mit Bubble */
                         <div className="flex flex-row items-start space-x-2 max-w-[75%]">
-                          {/* Avatar - nur bei erster Nachricht, sonst Platzhalter */}
-                          <div className="flex-shrink-0 w-7">
+                          {/* Avatar - oben bündig mit Bubble */}
+                          <div className="flex-shrink-0 w-7 mt-6">
                             {showAvatar ? (
                               <img
                                 src={message.sender.avatarUrl}
@@ -746,13 +745,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
-                    className={`p-3 rounded-full transition-all ${
-                      messageInput.trim()
-                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-overlay text-text-secondary cursor-not-allowed'
-                    }`}
+                    className="p-3 rounded-full transition-all relative overflow-hidden"
+                    style={{
+                      background: messageInput.trim() 
+                        ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
+                        : 'var(--color-overlay)'
+                    }}
                   >
-                    <SendIcon className="w-5 h-5" />
+                    {messageInput.trim() ? (
+                      <SendIcon className="w-5 h-5 text-white" />
+                    ) : (
+                      <MicIcon className="w-5 h-5 text-text-secondary" />
+                    )}
                   </button>
                 </div>
               </div>
