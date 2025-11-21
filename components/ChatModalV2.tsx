@@ -58,6 +58,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+  const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -240,9 +241,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         isReplying: !!replyToMessage
       });
       
-      // Add reply reference if replying to a message
+      // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
       if (replyToMessage) {
-        content = `@${replyToMessage.sender.name}: "${replyToMessage.content}"\n\n${content}`;
+        // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
+        let quotedContent = replyToMessage.content;
+        const reply = parseReply(replyToMessage.content);
+        if (reply) {
+          // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
+          quotedContent = reply.actualContent;
+        }
+        content = `@${replyToMessage.sender.name}: "${quotedContent}"\n\n${content}`;
       }
       
       onSendMessage(content, currentChannel.id, projectId);
@@ -299,22 +307,58 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     // TODO: Implement star message functionality
   };
   
-  // Parse reply from message content
+  // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
   const parseReply = (content: string) => {
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
     if (replyMatch) {
-      // Clean reply content: remove nested @mentions from quoted text
-      let cleanReplyContent = replyMatch[2];
-      // Remove pattern like "@Name: " from the beginning
-      cleanReplyContent = cleanReplyContent.replace(/^@.+?: "(.+)"$/, '$1');
+      let replyContent = replyMatch[2];
+      
+      // Wenn das Zitat selbst ein verschachteltes Zitat enthält, extrahiere nur den Text NACH dem verschachtelten Zitat
+      const nestedReplyMatch = replyContent.match(/^@.+?: ".+?"\n\n(.+)$/s);
+      if (nestedReplyMatch) {
+        replyContent = nestedReplyMatch[1];
+      }
       
       return {
         senderName: replyMatch[1],
-        replyContent: cleanReplyContent,
+        replyContent: replyContent,
         actualContent: replyMatch[3],
       };
     }
     return null;
+  };
+  
+  // Build thread chain - finde alle Nachrichten in einem Reply-Thread
+  const buildThreadChain = (messageId: string): ChatMessage[] => {
+    const chain: ChatMessage[] = [];
+    const message = messages.find(m => m.id === messageId);
+    
+    if (!message) return chain;
+    
+    // Füge die aktuelle Nachricht hinzu
+    chain.push(message);
+    
+    // Finde die ursprüngliche Nachricht durch Rückwärtsverfolgung
+    let currentMsg = message;
+    while (currentMsg) {
+      const reply = parseReply(currentMsg.content);
+      if (!reply) break;
+      
+      // Finde die Nachricht, auf die geantwortet wurde
+      const parentMsg = messages.find(m => 
+        m.sender.name === reply.senderName && 
+        m.content.includes(reply.replyContent)
+      );
+      
+      if (parentMsg && !chain.find(m => m.id === parentMsg.id)) {
+        chain.unshift(parentMsg);
+        currentMsg = parentMsg;
+      } else {
+        break;
+      }
+    }
+    
+    return chain;
   };
   
   // Convert URLs in text to clickable links
@@ -863,11 +907,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             if (originalMsg) scrollToMessage(originalMsg.id);
                                           }}
                                         >
-                                          <div className="flex items-center space-x-2 mb-1">
-                                            <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                            </svg>
-                                            <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center space-x-2">
+                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                              </svg>
+                                              <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                            </div>
+                                            {/* Thread View Button */}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowThreadView(message.id);
+                                              }}
+                                              className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                              title="Thread anzeigen"
+                                            >
+                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                              </svg>
+                                            </button>
                                           </div>
                                           <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                         </div>
@@ -1133,11 +1192,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 if (originalMsg) scrollToMessage(originalMsg.id);
                                               }}
                                             >
-                                              <div className="flex items-center space-x-2 mb-1">
-                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                                </svg>
-                                                <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                              <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center space-x-2">
+                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                  </svg>
+                                                  <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
+                                                </div>
+                                                {/* Thread View Button */}
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowThreadView(message.id);
+                                                  }}
+                                                  className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
+                                                  title="Thread anzeigen"
+                                                >
+                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                  </svg>
+                                                </button>
                                               </div>
                                               <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                             </div>
@@ -1457,6 +1531,102 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 className="px-4 py-2 glow-button rounded-lg"
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Thread View Modal */}
+      {showThreadView && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <svg className="w-5 h-5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 className="text-lg font-bold text-text-primary">Thread-Verlauf</h3>
+              </div>
+              <button
+                onClick={() => setShowThreadView(null)}
+                className="text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Thread Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {buildThreadChain(showThreadView).map((threadMsg, index) => {
+                const isOwnMessage = threadMsg.sender.id === currentUser.id;
+                const reply = parseReply(threadMsg.content);
+                
+                return (
+                  <div key={threadMsg.id} className="relative">
+                    {/* Connection Line */}
+                    {index > 0 && (
+                      <div className="absolute left-6 -top-3 w-0.5 h-3 bg-glow-purple/30"></div>
+                    )}
+                    
+                    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} items-start space-x-2`}>
+                      {/* Avatar für fremde Nachrichten */}
+                      {!isOwnMessage && (
+                        <img
+                          src={threadMsg.sender.avatarUrl}
+                          alt={threadMsg.sender.name}
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                        />
+                      )}
+                      
+                      <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                        {/* Sender Name & Timestamp */}
+                        <div className="flex items-center space-x-2 mb-1 px-1">
+                          <span className="text-xs font-semibold text-text-primary">{threadMsg.sender.name}</span>
+                          <span className="text-[10px] text-text-secondary">{formatTimestamp(threadMsg.timestamp)}</span>
+                        </div>
+                        
+                        {/* Message Bubble */}
+                        <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${
+                          isOwnMessage 
+                            ? 'bg-transparent text-text-primary rounded-br-md border border-transparent' 
+                            : 'bg-overlay text-text-primary rounded-bl-md'
+                        }`}
+                          style={isOwnMessage ? {
+                            background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
+                            border: '1px solid transparent'
+                          } : {}}
+                        >
+                          {reply ? (
+                            <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
+                          ) : (
+                            <div className="whitespace-pre-wrap">{renderTextWithLinks(threadMsg.content)}</div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Avatar für eigene Nachrichten */}
+                      {isOwnMessage && (
+                        <img
+                          src={threadMsg.sender.avatarUrl}
+                          alt={threadMsg.sender.name}
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border">
+              <button
+                onClick={() => setShowThreadView(null)}
+                className="w-full px-4 py-2 glow-button rounded-lg"
+              >
+                Schließen
               </button>
             </div>
           </div>
