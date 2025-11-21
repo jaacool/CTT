@@ -138,14 +138,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [replyToMessage]);
 
-  // Debug: Log showThreadView changes
-  useEffect(() => {
-    console.log('🔍 showThreadView State geändert:', showThreadView);
-    if (showThreadView) {
-      console.log('✅ Thread-View sollte jetzt sichtbar sein!');
-      console.log('📊 Thread-Chain für', showThreadView, ':', buildThreadChain(showThreadView));
-    }
-  }, [showThreadView]);
 
   // Get accessible channels
   const accessibleChannels = channels.filter(channel =>
@@ -761,6 +753,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {currentChannel && (
               <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
                 <div className="flex items-center space-x-3">
+                  {/* Zurück-Button im Thread-Modus */}
+                  {showThreadView && (
+                    <button
+                      onClick={() => setShowThreadView(null)}
+                      className="p-2 hover:bg-overlay rounded-lg transition-colors"
+                      title="Zurück zum Haupt-Chat"
+                    >
+                      <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  )}
                   {currentChannel.type === ChatChannelType.Direct ? (
                     <>
                       {(() => {
@@ -801,122 +805,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
-              {/* DEBUG: Zeige showThreadView Status */}
-              {showThreadView && (
-                <div className="mb-2 p-2 bg-red-500 text-white text-xs">
-                  🐛 DEBUG: showThreadView = {showThreadView} | Thread-Chain Länge: {buildThreadChain(showThreadView).length}
-                </div>
-              )}
-
-              {/* Thread View Inline */}
-              {showThreadView && (() => {
-                try {
-                  const threadChain = buildThreadChain(showThreadView);
-                  console.log('🎨 Rendering Thread-View mit', threadChain.length, 'Nachrichten');
-                  
+              {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
+              {(() => {
+                const messagesToShow = showThreadView ? buildThreadChain(showThreadView) : filteredMessages;
+                
+                if (messagesToShow.length === 0) {
                   return (
-                    <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
-                      {/* Thread Header */}
-                      <div className="flex items-center justify-between p-3 bg-glow-purple/10 border-b border-glow-purple/20">
-                        <div className="flex items-center space-x-2">
-                          <svg className="w-4 h-4 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                          </svg>
-                          <span className="text-sm font-bold text-glow-purple">Thread-Verlauf ({threadChain.length} Nachrichten)</span>
-                        </div>
-                        <button
-                          onClick={() => setShowThreadView(null)}
-                          className="text-text-secondary hover:text-text-primary transition-colors"
-                        >
-                          <XIcon className="w-5 h-5" />
-                        </button>
+                    <div className="flex items-center justify-center h-full text-text-secondary">
+                      <div className="text-center">
+                        <p className="text-lg mb-2">Noch keine Nachrichten</p>
+                        <p className="text-sm">Starte eine Unterhaltung!</p>
                       </div>
-
-                      {/* Thread Messages */}
-                      <div className="p-3 space-y-2 max-h-96 overflow-y-auto bg-overlay/30">
-                        {threadChain.map((threadMsg, index) => {
-                      const isOwnMessage = threadMsg.sender.id === currentUser.id;
-                      const reply = parseReply(threadMsg.content);
-                      
-                      return (
-                        <div key={threadMsg.id} className="relative">
-                          {/* Connection Line */}
-                          {index > 0 && (
-                            <div className="absolute left-6 -top-2 w-0.5 h-2 bg-glow-purple/30"></div>
-                          )}
-                          
-                          <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} items-start space-x-2`}>
-                            {/* Avatar für fremde Nachrichten */}
-                            {!isOwnMessage && (
-                              <img
-                                src={threadMsg.sender.avatarUrl}
-                                alt={threadMsg.sender.name}
-                                className="w-7 h-7 rounded-full flex-shrink-0"
-                              />
-                            )}
-                            
-                            <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                              {/* Sender Name & Timestamp */}
-                              <div className="flex items-center space-x-2 mb-0.5 px-1">
-                                <span className="text-[10px] font-semibold text-text-primary">{threadMsg.sender.name}</span>
-                                <span className="text-[9px] text-text-secondary">{formatTimestamp(threadMsg.timestamp)}</span>
-                              </div>
-                              
-                              {/* Message Bubble */}
-                              <div className={`px-3 py-2 rounded-xl text-xs break-words ${
-                                isOwnMessage 
-                                  ? 'bg-transparent text-text-primary rounded-br-md border border-transparent' 
-                                  : 'bg-overlay text-text-primary rounded-bl-md'
-                              }`}
-                                style={isOwnMessage ? {
-                                  background: 'linear-gradient(#141414, #141414) padding-box, linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3)) border-box',
-                                  border: '1px solid transparent'
-                                } : {}}
-                              >
-                                {reply ? (
-                                  <div className="whitespace-pre-wrap">{renderTextWithLinks(reply.actualContent)}</div>
-                                ) : (
-                                  <div className="whitespace-pre-wrap">{renderTextWithLinks(threadMsg.content)}</div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Avatar für eigene Nachrichten */}
-                            {isOwnMessage && (
-                              <img
-                                src={threadMsg.sender.avatarUrl}
-                                alt={threadMsg.sender.name}
-                                className="w-7 h-7 rounded-full flex-shrink-0"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                        })}
-                      </div>
-                    </div>
-                  );
-                } catch (error) {
-                  console.error('❌ Fehler beim Rendern des Thread-Views:', error);
-                  return (
-                    <div className="mb-4 p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-500">
-                      Fehler beim Laden des Threads: {String(error)}
                     </div>
                   );
                 }
-              })()}
-
-              {filteredMessages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-text-secondary">
-                  <div className="text-center">
-                    <p className="text-lg mb-2">Noch keine Nachrichten</p>
-                    <p className="text-sm">Starte eine Unterhaltung!</p>
-                  </div>
-                </div>
-              ) : (
-                filteredMessages.map((message, index) => {
+                
+                return messagesToShow.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
-                  const prevMessage = index > 0 ? filteredMessages[index - 1] : null;
+                  const prevMessage = index > 0 ? messagesToShow[index - 1] : null;
                   // Show avatar/timestamp if sender changed OR project changed
                   const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id || prevMessage.projectId !== message.projectId;
                   const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
@@ -1034,8 +940,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   e.preventDefault();
-                                                  console.log('Thread-Button geklickt für Nachricht:', message.id);
-                                                  console.log('Thread-Chain Länge:', buildThreadChain(message.id).length);
                                                   setShowThreadView(message.id);
                                                 }}
                                                 className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
@@ -1324,8 +1228,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                     onClick={(e) => {
                                                       e.stopPropagation();
                                                       e.preventDefault();
-                                                      console.log('Thread-Button geklickt für Nachricht:', message.id);
-                                                      console.log('Thread-Chain Länge:', buildThreadChain(message.id).length);
                                                       setShowThreadView(message.id);
                                                     }}
                                                     className="p-1 hover:bg-glow-purple/20 rounded transition-colors"
@@ -1512,8 +1414,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       </div>
                     </React.Fragment>
                   );
-                })
-              )}
+                });
+              })()}
               {/* Spacer for hover menu - ensures last message has room for the hover menu */}
               <div className="h-4" />
               <div ref={messagesEndRef} />
