@@ -138,6 +138,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [replyToMessage]);
 
+  // Debug: Log showThreadView changes
+  useEffect(() => {
+    console.log('🔍 showThreadView State geändert:', showThreadView);
+    if (showThreadView) {
+      console.log('✅ Thread-View sollte jetzt sichtbar sein!');
+      console.log('📊 Thread-Chain für', showThreadView, ':', buildThreadChain(showThreadView));
+    }
+  }, [showThreadView]);
+
   // Get accessible channels
   const accessibleChannels = channels.filter(channel =>
     channel.members.some(member => member.id === currentUser.id)
@@ -792,6 +801,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
+              {/* DEBUG: Zeige showThreadView Status */}
+              {showThreadView && (
+                <div className="mb-2 p-2 bg-red-500 text-white text-xs">
+                  🐛 DEBUG: showThreadView = {showThreadView} | Thread-Chain Länge: {buildThreadChain(showThreadView).length}
+                </div>
+              )}
+
               {/* Thread View Inline */}
               {showThreadView && (
                 <div className="mb-4 border-2 border-glow-purple/30 rounded-lg bg-surface/50 backdrop-blur-sm overflow-hidden">
