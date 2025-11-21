@@ -351,7 +351,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     // Füge die aktuelle Nachricht hinzu
     chain.push(message);
     
-    // Finde die ursprüngliche Nachricht durch Rückwärtsverfolgung
+    // 1. RÜCKWÄRTS: Finde die ursprüngliche Nachricht durch Rückwärtsverfolgung
     let currentMsg = message;
     while (currentMsg) {
       const reply = parseReply(currentMsg.content);
@@ -368,6 +368,47 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         currentMsg = parentMsg;
       } else {
         break;
+      }
+    }
+    
+    // 2. VORWÄRTS: Finde alle Nachrichten, die auf Thread-Nachrichten antworten
+    const findReplies = (threadMessages: ChatMessage[]) => {
+      const newReplies: ChatMessage[] = [];
+      
+      for (const threadMsg of threadMessages) {
+        // Extrahiere den Inhalt der Thread-Nachricht
+        const threadReply = parseReply(threadMsg.content);
+        const threadContent = threadReply ? threadReply.actualContent : threadMsg.content;
+        
+        // Finde alle Nachrichten, die auf diese Thread-Nachricht antworten
+        const replies = messages.filter(m => {
+          if (chain.find(cm => cm.id === m.id)) return false; // Bereits im Thread
+          if (newReplies.find(nr => nr.id === m.id)) return false; // Bereits gefunden
+          
+          const reply = parseReply(m.content);
+          if (!reply) return false;
+          
+          // Prüfe ob diese Nachricht auf die Thread-Nachricht antwortet
+          return reply.senderName === threadMsg.sender.name && 
+                 reply.replyContent === threadContent;
+        });
+        
+        newReplies.push(...replies);
+      }
+      
+      return newReplies;
+    };
+    
+    // Iterativ alle Antworten finden
+    let foundNewReplies = true;
+    while (foundNewReplies) {
+      const newReplies = findReplies(chain);
+      if (newReplies.length > 0) {
+        // Sortiere nach Timestamp und füge hinzu
+        newReplies.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        chain.push(...newReplies);
+      } else {
+        foundNewReplies = false;
       }
     }
     
