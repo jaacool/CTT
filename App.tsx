@@ -1114,16 +1114,27 @@ const App: React.FC = () => {
   useEffect(() => {
     if (showChat && currentChatChannel && currentUser) {
       // Markiere nur Nachrichten des aktuellen Channels als gelesen
-      setChatMessages(prev => prev.map(msg => {
-        if (msg.channelId === currentChatChannel.id && 
-            msg.sender.id !== currentUser.id && 
-            !msg.readBy.includes(currentUser.id)) {
-          return { ...msg, readBy: [...msg.readBy, currentUser.id] };
-        }
-        return msg;
-      }));
+      setChatMessages(prev => {
+        const hasUnread = prev.some(msg => 
+          msg.channelId === currentChatChannel.id && 
+          msg.sender.id !== currentUser.id && 
+          !msg.readBy.includes(currentUser.id)
+        );
+        
+        // Nur updaten wenn es tatsächlich ungelesene Nachrichten gibt
+        if (!hasUnread) return prev;
+        
+        return prev.map(msg => {
+          if (msg.channelId === currentChatChannel.id && 
+              msg.sender.id !== currentUser.id && 
+              !msg.readBy.includes(currentUser.id)) {
+            return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+          }
+          return msg;
+        });
+      });
     }
-  }, [showChat, currentChatChannel, currentUser]);
+  }, [showChat, currentChatChannel, currentUser, chatMessages]);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
