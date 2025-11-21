@@ -178,6 +178,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
   const [channelSearchQuery, setChannelSearchQuery] = useState('');
+  const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
@@ -356,7 +357,40 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const groupChannels = accessibleChannels.filter(c => c.type === ChatChannelType.Group);
   const directMessages = accessibleChannels.filter(c => c.type === ChatChannelType.Direct);
 
-  // Filter channels by search
+  // Search messages globally across all channels
+  const searchedMessages = React.useMemo(() => {
+    if (!channelSearchQuery.trim()) return [];
+    
+    const query = channelSearchQuery.toLowerCase();
+    const results: Array<{
+      message: ChatMessage;
+      channel: ChatChannel;
+      matchType: 'content' | 'sender';
+    }> = [];
+    
+    // Search through all accessible channels
+    accessibleChannels.forEach(channel => {
+      const channelMessages = messages.filter(msg => msg.channelId === channel.id);
+      
+      channelMessages.forEach(message => {
+        // Check if message content matches
+        if (message.content.toLowerCase().includes(query)) {
+          results.push({ message, channel, matchType: 'content' });
+        }
+        // Check if sender name matches
+        else if (message.sender.name.toLowerCase().includes(query)) {
+          results.push({ message, channel, matchType: 'sender' });
+        }
+      });
+    });
+    
+    // Sort by timestamp (newest first)
+    return results.sort((a, b) => 
+      new Date(b.message.timestamp).getTime() - new Date(a.message.timestamp).getTime()
+    );
+  }, [channelSearchQuery, messages, accessibleChannels]);
+
+  // Filter channels by search (only when not in message search mode)
   const filteredGroupChannels = groupChannels.filter(channel =>
     !channelSearchQuery || channel.name.toLowerCase().includes(channelSearchQuery.toLowerCase())
   );
@@ -1144,31 +1178,127 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div className="mb-4">
               <input
                 type="text"
-                placeholder="Channels durchsuchen..."
+                placeholder="Channels & Nachrichten durchsuchen..."
                 value={channelSearchQuery}
                 onChange={(e) => setChannelSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 bg-overlay rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
               />
             </div>
 
-            {/* Group Channels */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs text-text-secondary font-semibold uppercase">Channels</div>
-                {currentUser.role === 'admin' && (
+            {/* Message Search Results */}
+            {channelSearchQuery && searchedMessages.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs text-text-secondary font-semibold uppercase">
+                    Nachrichten ({searchedMessages.length})
+                  </div>
                   <button
-                    onClick={() => setShowAddChannelModal(true)}
-                    className="text-glow-purple hover:text-glow-purple/80 transition-colors"
-                    title="Neuen Channel erstellen"
+                    onClick={() => setChannelSearchQuery('')}
+                    className="text-xs text-glow-purple hover:text-glow-purple/80"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                    Zurücksetzen
                   </button>
-                )}
+                </div>
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                  {searchedMessages.map(({ message, channel }) => {
+                    const isOwnMessage = message.sender.id === currentUser.id;
+                    const channelName = channel.type === ChatChannelType.Direct 
+                      ? getDMPartnerName(channel)
+                      : channel.name;
+                    
+                    return (
+                      <button
+                        key={message.id}
+                        onClick={() => {
+                          onSwitchChannel(channel.id);
+                          setShowSidebar(false);
+                          setChannelSearchQuery('');
+                          // Highlight the message after switching
+                          setTimeout(() => {
+                            setHighlightedMessageId(message.id);
+                            const messageElement = document.getElementById(`message-${message.id}`);
+                            messageElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setTimeout(() => setHighlightedMessageId(null), 2000);
+                          }, 100);
+                        }}
+                        className="w-full text-left p-3 bg-overlay hover:bg-overlay/80 rounded-lg transition-colors"
+                      >
+                        {/* Channel Info */}
+                        <div className="flex items-center space-x-2 mb-2">
+                          {channel.type === ChatChannelType.Group ? (
+                            <HashIcon className="w-3 h-3 text-text-secondary flex-shrink-0" />
+                          ) : (
+                            <img 
+                              src={channel.members.find(m => m.id !== currentUser.id)?.avatarUrl} 
+                              alt="" 
+                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                            />
+                          )}
+                          <span className="text-xs text-text-secondary truncate">{channelName}</span>
+                          <span className="text-xs text-text-secondary">•</span>
+                          <span className="text-xs text-text-secondary">
+                            {formatTimestamp(message.timestamp)}
+                          </span>
+                        </div>
+                        
+                        {/* Message Bubble */}
+                        <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`
+                            max-w-[85%] rounded-2xl px-3 py-2
+                            ${isOwnMessage 
+                              ? 'bg-glow-purple text-white rounded-br-sm' 
+                              : 'bg-surface border border-border rounded-bl-sm'
+                            }
+                          `}>
+                            {/* Sender Name (only for group chats and not own messages) */}
+                            {!isOwnMessage && channel.type === ChatChannelType.Group && (
+                              <div className="text-xs font-semibold text-glow-purple mb-1">
+                                {message.sender.name}
+                              </div>
+                            )}
+                            
+                            {/* Message Content */}
+                            <div className="text-sm break-words">
+                              {message.content.length > 100 
+                                ? `${message.content.substring(0, 100)}...` 
+                                : message.content
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="space-y-1">
-                {filteredGroupChannels.map(channel => {
+            )}
+
+            {/* Show "No results" if searching but no messages found */}
+            {channelSearchQuery && searchedMessages.length === 0 && filteredGroupChannels.length === 0 && (
+              <div className="text-center py-8 text-text-secondary text-sm">
+                Keine Ergebnisse gefunden
+              </div>
+            )}
+
+            {/* Group Channels - only show when not searching messages */}
+            {(!channelSearchQuery || searchedMessages.length === 0) && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-text-secondary font-semibold uppercase">Channels</div>
+                  {currentUser.role === 'admin' && (
+                    <button
+                      onClick={() => setShowAddChannelModal(true)}
+                      className="text-glow-purple hover:text-glow-purple/80 transition-colors"
+                      title="Neuen Channel erstellen"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  {filteredGroupChannels.map(channel => {
                   const unreadCount = getUnreadCountForChannel(channel.id);
                   return (
                     <button
@@ -1203,9 +1333,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 })}
               </div>
-            </div>
+              </div>
+            )}
 
-            {/* Direct Messages */}
+            {/* Direct Messages - only show when not searching messages */}
+            {(!channelSearchQuery || searchedMessages.length === 0) && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs text-text-secondary font-semibold uppercase">Direktnachrichten</div>
@@ -1313,6 +1445,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   })}
               </div>
             </div>
+            )}
           </div>
 
           {/* Mobile Overlay */}
