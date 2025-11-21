@@ -237,17 +237,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleSendMessage = async () => {
     if ((messageInput.trim() || selectedFiles.length > 0) && currentChannel) {
       try {
-        // Upload files if any
-        let attachments: ChatAttachment[] | undefined;
-        if (selectedFiles.length > 0) {
-          attachments = await uploadChatFiles(selectedFiles, currentChannel.id, (fileIndex, progress) => {
-            setUploadProgress(prev => ({
-              ...prev,
-              [selectedFiles[fileIndex].name]: progress
-            }));
-          });
-        }
-
         // Im Thread-Modus: Automatisch auf die letzte Nachricht im Thread antworten
         let messageToReplyTo = replyToMessage;
         
@@ -264,7 +253,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         let content = messageInput.trim();
         
         // If no text but has attachments, use empty string
-        if (!content && attachments && attachments.length > 0) {
+        if (!content && selectedFiles.length > 0) {
           content = '';
         }
         
@@ -280,21 +269,54 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
         }
         
-        onSendMessage(content, currentChannel.id, projectId, attachments);
+        // OPTIMISTIC UI: Send message immediately with placeholder attachments
+        const filesToUpload = [...selectedFiles];
+        const placeholderAttachments: ChatAttachment[] | undefined = filesToUpload.length > 0
+          ? filesToUpload.map((file, idx) => ({
+              id: `uploading-${Date.now()}-${idx}`,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              url: '', // Empty URL indicates uploading
+            }))
+          : undefined;
+        
+        // Send message immediately (optimistic)
+        onSendMessage(content, currentChannel.id, projectId, placeholderAttachments);
+        
+        // Clear input immediately for better UX
         setMessageInput('');
         setReplyToMessage(null);
         setSelectedFiles([]);
-        setUploadProgress({});
         
         // Reset textarea height
         if (textareaRef.current) {
           textareaRef.current.style.height = '48px';
         }
         
-        // Scroll to bottom after sending a message
+        // Scroll to bottom immediately
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
+        
+        // Upload files in background if any
+        if (filesToUpload.length > 0) {
+          uploadChatFiles(filesToUpload, currentChannel.id, (fileIndex, progress) => {
+            setUploadProgress(prev => ({
+              ...prev,
+              [filesToUpload[fileIndex].name]: progress
+            }));
+          }).then(uploadedAttachments => {
+            // Update message with real attachments
+            // TODO: Implement update mechanism
+            console.log('Files uploaded:', uploadedAttachments);
+            setUploadProgress({});
+          }).catch(error => {
+            console.error('Error uploading files:', error);
+            alert('Fehler beim Hochladen der Dateien.');
+            setUploadProgress({});
+          });
+        }
       } catch (error) {
         console.error('Error sending message:', error);
         alert('Fehler beim Senden der Nachricht. Bitte versuche es erneut.');
@@ -1122,7 +1144,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   <div className="mt-2 space-y-2">
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx}>
-                                        {isImageFile(attachment.type) ? (
+                                        {!attachment.url ? (
+                                          // Uploading - Show progress
+                                          <div className="flex items-center space-x-3 p-3 bg-overlay/50 rounded-lg max-w-xs">
+                                            <span className="text-2xl">{getFileIcon(attachment.type)}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm text-text-primary truncate">{attachment.name}</div>
+                                              <div className="text-xs text-text-secondary mb-1">{formatFileSize(attachment.size)}</div>
+                                              {/* Progress Bar */}
+                                              <div className="w-full bg-surface rounded-full h-1.5">
+                                                <div 
+                                                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
+                                                  style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-text-secondary mt-1">
+                                                Wird hochgeladen... {Math.round(uploadProgress[attachment.name] || 0)}%
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : isImageFile(attachment.type) ? (
                                           // Image Preview
                                           <a href={attachment.url} target="_blank" rel="noopener noreferrer">
                                             <img 
@@ -1481,7 +1522,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <div className="mt-2 space-y-2">
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx}>
-                                            {isImageFile(attachment.type) ? (
+                                            {!attachment.url ? (
+                                              // Uploading - Show progress
+                                              <div className="flex items-center space-x-3 p-3 bg-surface/50 rounded-lg max-w-xs">
+                                                <span className="text-2xl">{getFileIcon(attachment.type)}</span>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-sm text-text-primary truncate">{attachment.name}</div>
+                                                  <div className="text-xs text-text-secondary mb-1">{formatFileSize(attachment.size)}</div>
+                                                  {/* Progress Bar */}
+                                                  <div className="w-full bg-overlay rounded-full h-1.5">
+                                                    <div 
+                                                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
+                                                      style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                    />
+                                                  </div>
+                                                  <div className="text-xs text-text-secondary mt-1">
+                                                    Wird hochgeladen... {Math.round(uploadProgress[attachment.name] || 0)}%
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ) : isImageFile(attachment.type) ? (
                                               // Image Preview
                                               <a href={attachment.url} target="_blank" rel="noopener noreferrer">
                                                 <img 
