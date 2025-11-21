@@ -256,7 +256,12 @@ const App: React.FC = () => {
           if (chatData) {
             console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
             setChatChannels(chatData.channels);
-            setChatMessages(chatData.messages);
+            // Markiere alle geladenen Nachrichten als gelesen (sind alte Nachrichten beim App-Start)
+            const messagesWithReadStatus = chatData.messages.map(msg => ({
+              ...msg,
+              readBy: msg.readBy && msg.readBy.length > 0 ? msg.readBy : [currentUser?.id || '']
+            }));
+            setChatMessages(messagesWithReadStatus);
           }
         }
         
@@ -297,7 +302,12 @@ const App: React.FC = () => {
           if (chatData) {
             console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
             setChatChannels(chatData.channels);
-            setChatMessages(chatData.messages);
+            // Markiere alle geladenen Nachrichten als gelesen (sind alte Nachrichten beim App-Start)
+            const messagesWithReadStatus = chatData.messages.map(msg => ({
+              ...msg,
+              readBy: msg.readBy && msg.readBy.length > 0 ? msg.readBy : [currentUser?.id || '']
+            }));
+            setChatMessages(messagesWithReadStatus);
           }
         }
         
