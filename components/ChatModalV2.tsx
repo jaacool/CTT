@@ -175,7 +175,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </button>
 
             {showProjectDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-50 max-h-96 overflow-hidden flex flex-col">
+              <>
+                {/* Overlay zum Schließen */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => {
+                    setShowProjectDropdown(false);
+                    setProjectSearchQuery('');
+                  }}
+                />
+                <div className="absolute right-0 mt-2 w-72 bg-surface border border-border rounded-lg shadow-xl z-50 max-h-96 overflow-hidden flex flex-col">
                 <div className="p-3 border-b border-border">
                   <input
                     type="text"
@@ -193,11 +202,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       setShowProjectDropdown(false);
                       setProjectSearchQuery('');
                     }}
-                    className={`w-full flex items-center space-x-2 p-3 text-left transition-colors ${
+                    className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
                       !currentProject ? 'bg-glow-purple/20' : 'hover:bg-overlay'
                     }`}
                   >
-                    <span className="text-lg">📁</span>
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
                     <span className="text-sm font-medium">Alle Projekte</span>
                   </button>
                   
@@ -209,21 +220,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         setShowProjectDropdown(false);
                         setProjectSearchQuery('');
                       }}
-                      className={`w-full flex items-center space-x-2 p-3 text-left transition-colors ${
+                      className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
                         currentProject?.id === project.id ? 'bg-glow-purple/20' : 'hover:bg-overlay'
                       }`}
                     >
-                      <span className="text-lg">{project.icon}</span>
+                      <span className="text-xl flex-shrink-0">{project.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{project.name}</div>
+                        <div className="text-sm font-medium">{project.name}</div>
                         {project.status === 'AKTIV' && (
-                          <div className="text-xs text-glow-purple">Aktiv</div>
+                          <div className="text-xs text-glow-purple mt-0.5">Aktiv</div>
                         )}
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
+              </>
             )}
           </div>
 
