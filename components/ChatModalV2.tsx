@@ -2334,6 +2334,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   ) : audioBlob ? (
                     // Wiedergabe-Modus
                     <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
+                      {/* Play/Pause Button - Links */}
+                      <button
+                        onClick={isPlayingRecording ? pausePlayback : playRecording}
+                        className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors flex-shrink-0"
+                        title={isPlayingRecording ? "Pause" : "Abspielen"}
+                      >
+                        {isPlayingRecording ? (
+                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        )}
+                      </button>
+                      
                       {/* Recorded Waveform */}
                       <div className="flex items-center justify-between flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
                         {(() => {
@@ -2381,23 +2398,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       
                       {/* Time Display */}
                       <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
-                      
-                      {/* Play/Pause Button */}
-                      <button
-                        onClick={isPlayingRecording ? pausePlayback : playRecording}
-                        className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors flex-shrink-0"
-                        title={isPlayingRecording ? "Pause" : "Abspielen"}
-                      >
-                        {isPlayingRecording ? (
-                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        )}
-                      </button>
                       
                       {/* Delete Button */}
                       <button
@@ -2471,7 +2471,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       }
                     }}
                     disabled={false}
-                    className="p-3 rounded-full transition-all relative overflow-hidden flex-shrink-0"
+                    className="p-2.5 rounded-full transition-all relative overflow-hidden flex-shrink-0"
                     style={{
                       background: isRecording 
                         ? '#EF4444'
