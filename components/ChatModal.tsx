@@ -395,6 +395,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     ) : (
                       filteredDirectMessages.map(channel => {
                         const partner = channel.members.find(m => m.id !== currentUser.id);
+                        const unreadCount = getUnreadCountForChannel(channel.id);
                         return (
                           <button
                             key={channel.id}
@@ -402,20 +403,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                               onSwitchChannel(channel.id);
                               setShowSidebar(false);
                             }}
-                            className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                               currentChannel?.id === channel.id
                                 ? 'glow-button text-text-primary'
                                 : 'hover-glow text-text-secondary'
                             }`}
                           >
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
                             {partner && (
                               <img
                                 src={partner.avatarUrl}
                                 alt={partner.name}
-                                className="w-5 h-5 rounded-full"
+                                className="w-5 h-5 rounded-full flex-shrink-0"
                               />
                             )}
                             <span className="text-sm truncate">{getDMPartnerName(channel)}</span>
+                          </div>
+                          {unreadCount > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
                           </button>
                         );
                       })
@@ -451,7 +459,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                               onSwitchProject('');
                               setSearchQuery('');
                             }}
-                            className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                               !currentProject
                                 ? 'glow-button text-text-primary'
                                 : 'hover-glow text-text-secondary'
@@ -474,7 +482,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                                   onSwitchProject(project.id);
                                   setSearchQuery('');
                                 }}
-                                className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                                className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                                   currentProject?.id === project.id
                                     ? 'glow-button text-text-primary'
                                     : 'hover-glow text-text-secondary'
@@ -546,6 +554,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     ) : (
                       filteredDirectMessages.map(channel => {
                         const partner = channel.members.find(m => m.id !== currentUser.id);
+                        const unreadCount = getUnreadCountForChannel(channel.id);
                         return (
                           <button
                             key={channel.id}
@@ -553,20 +562,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                               onSwitchChannel(channel.id);
                               setShowSidebar(false);
                             }}
-                            className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                               currentChannel?.id === channel.id
                                 ? 'glow-button text-text-primary'
                                 : 'hover-glow text-text-secondary'
                             }`}
                           >
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
                             {partner && (
                               <img
                                 src={partner.avatarUrl}
                                 alt={partner.name}
-                                className="w-5 h-5 rounded-full"
+                                className="w-5 h-5 rounded-full flex-shrink-0"
                               />
                             )}
                             <span className="text-sm truncate">{getDMPartnerName(channel)}</span>
+                          </div>
+                          {unreadCount > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
                           </button>
                         );
                       })
@@ -582,7 +598,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       <button
                         key={project.id}
                         onClick={() => onSwitchProject(project.id)}
-                        className={`w-full flex items-center space-x-2 p-2 rounded-lg text-left transition-colors ${
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                           currentProject?.id === project.id
                             ? 'glow-button text-text-primary'
                             : 'hover-glow text-text-secondary'
@@ -717,7 +733,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         onSwitchProject('');
                         setShowProjectDropdown(false);
                       }}
-                      className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left border-b border-border"
+                      className="w-full flex items-center justify-between p-2 hover:bg-surface text-left border-b border-border"
                     >
                       <span className="text-text-secondary text-sm italic">Ohne Projekt</span>
                     </button>
@@ -729,7 +745,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           onSwitchProject(project.id);
                           setShowProjectDropdown(false);
                         }}
-                        className="w-full flex items-center space-x-2 p-2 hover:bg-surface text-left"
+                        className="w-full flex items-center justify-between p-2 hover:bg-surface text-left"
                       >
                         <FolderIcon className="w-4 h-4 text-text-secondary" />
                         <span className="text-text-primary text-sm truncate">{project.name}</span>
