@@ -515,26 +515,32 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         </div>
 
         {/* Statistik Summary */}
-        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-sm mb-6 flex-shrink-0 bg-overlay/30 p-3 rounded-xl border border-border/50">
-          <div className="flex items-center space-x-2">
+        <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-between lg:justify-center gap-y-3 gap-x-2 md:gap-6 text-sm mb-6 flex-shrink-0 bg-overlay/30 p-2 md:p-3 rounded-xl border border-border/50">
+          <div className="flex items-center justify-center md:justify-start space-x-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.worked }}></div>
             <span className="text-text-secondary">Gesamt:</span>
             <span className="text-text-primary font-bold text-lg">{Math.round(totalHours * 10) / 10}h</span>
           </div>
+          
           <div className="h-8 w-px bg-border/50 hidden md:block"></div>
-          <div className="flex items-center space-x-2">
+          
+          <div className="flex items-center justify-center md:justify-start space-x-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.average }}></div>
             <span className="text-text-secondary">Durchschnitt:</span>
             <span className="text-text-primary font-semibold">{Math.round(averageHours * 10) / 10}h</span>
           </div>
+          
           <div className="h-8 w-px bg-border/50 hidden md:block"></div>
-          <div className="flex items-center space-x-2">
+          
+          <div className="flex items-center justify-center md:justify-start space-x-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.target }}></div>
             <span className="text-text-secondary">Soll:</span>
             <span className="text-text-primary font-semibold">{Math.round(averageTarget * 10) / 10}h</span>
           </div>
+          
           <div className="h-8 w-px bg-border/50 hidden md:block"></div>
-          <div className="flex items-center space-x-2">
+          
+          <div className="flex items-center justify-center md:justify-start space-x-2">
             <span className="text-text-secondary">Einträge:</span>
             <span className="text-text-primary font-semibold">
               {chartData.reduce((sum, item) => sum + (item.entryCount || 0), 0)}
@@ -627,8 +633,10 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               >
                 <LabelList 
                   dataKey="hours" 
-                  position="top" 
-                  fill={COLORS.text} 
+                  position="insideTop" 
+                  fill="#4c1d95" 
+                  className="font-bold"
+                  offset={10}
                   fontSize={isMobile ? 10 : 12} 
                   formatter={(value: number) => value > 0 ? `${Math.round(value * 10) / 10}h` : ''} 
                 />
