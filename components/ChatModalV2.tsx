@@ -763,17 +763,63 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {hoveredMessageId === message.id && !isOwnMessage && (
-                                    <div className="absolute -bottom-6 -right-2 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-[5]">
-                                      {quickReactions.map((emoji) => (
+                                    <div className="absolute -bottom-8 -right-2 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[5] overflow-hidden">
+                                      {/* Quick Reactions */}
+                                      <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
+                                        {quickReactions.map((emoji) => (
+                                          <button
+                                            key={emoji}
+                                            onClick={() => handleReaction(message.id, emoji)}
+                                            className="text-lg hover:scale-125 transition-transform"
+                                            title={`Mit ${emoji} reagieren`}
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                      
+                                      {/* Action Buttons */}
+                                      <div className="flex items-center space-x-1 px-2 py-1">
+                                        {/* Emoji Picker Button */}
                                         <button
-                                          key={emoji}
-                                          onClick={() => handleReaction(message.id, emoji)}
-                                          className="text-lg hover:scale-125 transition-transform"
-                                          title={`Mit ${emoji} reagieren`}
+                                          className="p-1 hover:bg-overlay rounded transition-colors"
+                                          title="Weitere Reaktionen"
                                         >
-                                          {emoji}
+                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
                                         </button>
-                                      ))}
+                                        
+                                        {/* Reply Button */}
+                                        <button
+                                          className="p-1 hover:bg-overlay rounded transition-colors"
+                                          title="Antworten"
+                                        >
+                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                          </svg>
+                                        </button>
+                                        
+                                        {/* Undo/Reply Button */}
+                                        <button
+                                          className="p-1 hover:bg-overlay rounded transition-colors"
+                                          title="Rückgängig"
+                                        >
+                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                          </svg>
+                                        </button>
+                                        
+                                        {/* More Options (3 dots) */}
+                                        <button
+                                          className="p-1 hover:bg-overlay rounded transition-colors"
+                                          title="Mehr Optionen"
+                                        >
+                                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                          </svg>
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
