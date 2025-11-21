@@ -793,7 +793,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <>
                                         {/* Reply Reference */}
                                         <div 
-                                          className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 border-l-2 border-glow-purple/60 bg-glow-purple/10 cursor-pointer hover:bg-glow-purple/15 transition-all"
+                                          className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                           onClick={() => {
                                             const originalMsg = messages.find(m => 
                                               m.sender.name === reply.senderName && 
@@ -919,7 +919,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <>
                                             {/* Reply Reference */}
                                             <div 
-                                              className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 border-l-2 border-glow-purple/60 bg-glow-purple/10 cursor-pointer hover:bg-glow-purple/15 transition-all"
+                                              className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                               onClick={() => {
                                                 // Find original message and scroll to it
                                                 const originalMsg = messages.find(m => 
