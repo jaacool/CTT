@@ -1316,5 +1316,5 @@ textarea:focus {
 }
 
 .highlight-message .px-4 {
-  animation: highlightGlow 2s ease-in-out;
+  animation: highlightGlow 3s cubic-bezier(0.4, 0, 0.2, 1);
 }
