@@ -158,6 +158,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [previewAttachment]);
 
+  // Scroll to bottom when project filter changes
+  useEffect(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, [currentProject?.id]);
+
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     if (!previewAttachment || !isImageFile(previewAttachment.type)) return;
