@@ -272,10 +272,14 @@ const App: React.FC = () => {
             console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
             setChatChannels(chatData.channels);
             // Markiere alle geladenen Nachrichten als gelesen (sind alte Nachrichten beim App-Start)
-            const messagesWithReadStatus = chatData.messages.map(msg => ({
-              ...msg,
-              readBy: msg.readBy && msg.readBy.length > 0 ? msg.readBy : [currentUser?.id || '']
-            }));
+            const messagesWithReadStatus = chatData.messages.map(msg => {
+              const readBy = msg.readBy || [];
+              // Füge currentUser hinzu wenn nicht bereits vorhanden (alte Nachrichten sind immer gelesen)
+              if (currentUser && !readBy.includes(currentUser.id)) {
+                return { ...msg, readBy: [...readBy, currentUser.id] };
+              }
+              return { ...msg, readBy };
+            });
             setChatMessages(messagesWithReadStatus);
           }
         }
@@ -318,10 +322,14 @@ const App: React.FC = () => {
             console.log(`✅ Chat geladen: ${chatData.channels.length} Channels, ${chatData.messages.length} Messages`);
             setChatChannels(chatData.channels);
             // Markiere alle geladenen Nachrichten als gelesen (sind alte Nachrichten beim App-Start)
-            const messagesWithReadStatus = chatData.messages.map(msg => ({
-              ...msg,
-              readBy: msg.readBy && msg.readBy.length > 0 ? msg.readBy : [currentUser?.id || '']
-            }));
+            const messagesWithReadStatus = chatData.messages.map(msg => {
+              const readBy = msg.readBy || [];
+              // Füge currentUser hinzu wenn nicht bereits vorhanden (alte Nachrichten sind immer gelesen)
+              if (currentUser && !readBy.includes(currentUser.id)) {
+                return { ...msg, readBy: [...readBy, currentUser.id] };
+              }
+              return { ...msg, readBy };
+            });
             setChatMessages(messagesWithReadStatus);
           }
         }
