@@ -1199,7 +1199,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             alt={attachment.name}
                                             onClick={() => setPreviewAttachment(attachment)}
                                             className={`cursor-pointer ${
-                                              message.content.trim() ? 'max-w-xs rounded-lg' : 'w-full rounded-2xl rounded-br-md'
+                                              message.content.trim() ? 'max-w-[192px] rounded-lg' : 'w-full rounded-2xl rounded-br-md'
                                             }`}
                                           />
                                         ) : isVideoFile(attachment.type) ? (
@@ -1208,7 +1208,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             src={attachment.url} 
                                             onClick={() => setPreviewAttachment(attachment)}
                                             className={`cursor-pointer ${
-                                              message.content.trim() ? 'max-w-xs rounded-lg w-full' : 'w-full rounded-2xl rounded-br-md'
+                                              message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'w-full rounded-2xl rounded-br-md'
                                             }`}
                                           />
                                         ) : isAudioFile(attachment.type) ? (
@@ -1618,7 +1618,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 alt={attachment.name}
                                                 onClick={() => setPreviewAttachment(attachment)}
                                                 className={`cursor-pointer ${
-                                                  message.content.trim() ? 'max-w-xs rounded-lg' : 'w-full rounded-2xl rounded-bl-md'
+                                                  message.content.trim() ? 'max-w-[192px] rounded-lg' : 'w-full rounded-2xl rounded-bl-md'
                                                 }`}
                                               />
                                             ) : isVideoFile(attachment.type) ? (
@@ -1627,7 +1627,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 src={attachment.url} 
                                                 onClick={() => setPreviewAttachment(attachment)}
                                                 className={`cursor-pointer ${
-                                                  message.content.trim() ? 'max-w-xs rounded-lg w-full' : 'w-full rounded-2xl rounded-bl-md'
+                                                  message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'w-full rounded-2xl rounded-bl-md'
                                                 }`}
                                               />
                                             ) : isAudioFile(attachment.type) ? (
