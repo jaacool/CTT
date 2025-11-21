@@ -210,7 +210,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
-  const [audioLevels, setAudioLevels] = useState<number[]>(new Array(40).fill(0));
+  const [recordedWaveform, setRecordedWaveform] = useState<number[]>([]); // Aufgezeichnete Waveform-Historie
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -537,25 +537,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   };
 
-  // Audio visualization function
+  // Audio visualization function - scrolling waveform
   const analyzeAudio = () => {
     if (!analyserRef.current) return;
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
 
-    // Take 40 samples from the frequency data
-    const samples = 40;
-    const step = Math.floor(dataArray.length / samples);
-    const levels = [];
-    
-    for (let i = 0; i < samples; i++) {
-      const index = i * step;
-      const value = dataArray[index] / 255; // Normalize to 0-1
-      levels.push(value);
+    // Calculate average level from frequency data
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i];
     }
+    const average = sum / dataArray.length;
+    const normalizedLevel = average / 255; // Normalize to 0-1
 
-    setAudioLevels(levels);
+    // Add new level to the end of the waveform history
+    setRecordedWaveform(prev => [...prev, normalizedLevel]);
+
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
 
@@ -639,6 +638,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setRecordedWaveform([]); // Reset waveform history
       console.log('🎤 Recording started!');
 
       // Start timer
@@ -695,7 +695,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
     setAudioBlob(null);
     setRecordingTime(0);
-    setAudioLevels(new Array(40).fill(0));
+    setRecordedWaveform([]);
   };
 
   const playRecording = () => {
@@ -2298,23 +2298,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 py-3 rounded-full">
                         {isRecording ? (
                           <>
-                            {/* Waveform Visualization */}
-                            <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
-                              {audioLevels.map((level, index) => {
-                                const height = Math.max(4, level * 48); // Min 4px, max 48px
-                                const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
-                                return (
-                                  <div
-                                    key={index}
-                                    className="flex-1 bg-red-500 rounded-full transition-all duration-75"
-                                    style={{
-                                      height: `${height}px`,
-                                      opacity: opacity,
-                                      minWidth: '2px',
-                                    }}
-                                  />
-                                );
-                              })}
+                            {/* Scrolling Waveform Visualization */}
+                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 h-12 overflow-hidden">
+                              {(() => {
+                                // Show last ~100 bars that fit in the container
+                                const maxBars = 100;
+                                const displayWaveform = recordedWaveform.slice(-maxBars);
+                                
+                                return displayWaveform.map((level, index) => {
+                                  const height = Math.max(4, level * 48); // Min 4px, max 48px
+                                  const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
+                                  return (
+                                    <div
+                                      key={recordedWaveform.length - displayWaveform.length + index}
+                                      className="bg-red-500 rounded-full flex-shrink-0"
+                                      style={{
+                                        height: `${height}px`,
+                                        opacity: opacity,
+                                        width: '3px',
+                                      }}
+                                    />
+                                  );
+                                });
+                              })()}
                             </div>
                             
                             {/* Time Display */}
@@ -2333,22 +2339,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           </>
                         ) : (
                           <>
-                            {/* Waveform Placeholder for Preview */}
-                            <div className="flex items-center space-x-1 flex-1 min-w-0 h-12">
-                              {audioLevels.map((level, index) => {
-                                const height = Math.max(4, level * 48);
-                                return (
-                                  <div
-                                    key={index}
-                                    className="flex-1 bg-glow-purple rounded-full"
-                                    style={{
-                                      height: `${height}px`,
-                                      opacity: 0.5,
-                                      minWidth: '2px',
-                                    }}
-                                  />
-                                );
-                              })}
+                            {/* Recorded Waveform Preview */}
+                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 h-12 overflow-hidden">
+                              {(() => {
+                                // Show the entire recorded waveform, scaled to fit
+                                const maxBars = 100;
+                                const step = Math.max(1, Math.floor(recordedWaveform.length / maxBars));
+                                const displayWaveform = recordedWaveform.filter((_, index) => index % step === 0);
+                                
+                                return displayWaveform.map((level, index) => {
+                                  const height = Math.max(4, level * 48);
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="bg-glow-purple rounded-full flex-shrink-0"
+                                      style={{
+                                        height: `${height}px`,
+                                        opacity: 0.5,
+                                        width: '3px',
+                                      }}
+                                    />
+                                  );
+                                });
+                              })()}
                             </div>
                             
                             {/* Time Display */}
