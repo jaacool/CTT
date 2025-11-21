@@ -489,17 +489,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             
             {/* Chat Header */}
             {currentChannel && (
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center space-x-2">
+              <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
+                <div className="flex items-center space-x-3">
                   {currentChannel.type === ChatChannelType.Direct ? (
                     <>
                       {(() => {
                         const partner = currentChannel.members.find(m => m.id !== currentUser.id);
                         return partner ? (
                           <>
-                            <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full" />
+                            <div className="relative">
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-10 h-10 rounded-full ring-2 ring-border" />
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full ring-2 ring-surface"></div>
+                            </div>
                             <div>
-                              <div className="font-semibold">{partner.name}</div>
+                              <div className="font-semibold text-base text-text-primary">{partner.name}</div>
                               <div className="text-xs text-text-secondary">{partner.role}</div>
                             </div>
                           </>
@@ -508,9 +511,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     </>
                   ) : (
                     <>
-                      <HashIcon className="w-6 h-6" />
+                      <div className="w-10 h-10 rounded-full bg-overlay flex items-center justify-center">
+                        <HashIcon className="w-5 h-5 text-glow-purple" />
+                      </div>
                       <div>
-                        <div className="font-semibold">{currentChannel.name}</div>
+                        <div className="font-semibold text-base text-text-primary">{currentChannel.name}</div>
                         {currentChannel.description && (
                           <div className="text-xs text-text-secondary">{currentChannel.description}</div>
                         )}
@@ -522,7 +527,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {filteredMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-secondary">
                   <div className="text-center">
@@ -531,103 +536,145 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                 </div>
               ) : (
-                filteredMessages.map(message => (
-                  <div key={message.id} className="flex space-x-3 group">
-                    <img
-                      src={message.sender.avatarUrl}
-                      alt={message.sender.name}
-                      className="w-8 h-8 rounded-full flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline space-x-2">
-                        <span className="font-semibold text-sm">{message.sender.name}</span>
-                        <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
-                        {message.edited && (
-                          <span className="text-xs text-text-secondary italic">(bearbeitet)</span>
-                        )}
-                      </div>
-                      
-                      {editingMessageId === message.id ? (
-                        <div className="mt-1">
-                          <input
-                            type="text"
-                            value={editingContent}
-                            onChange={(e) => setEditingContent(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleEditMessage(message.id)}
-                            className="w-full px-3 py-2 bg-overlay rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
-                            autoFocus
-                          />
-                          <div className="flex space-x-2 mt-2">
-                            <button
-                              onClick={() => handleEditMessage(message.id)}
-                              className="px-3 py-1 bg-glow-purple rounded text-xs"
-                            >
-                              Speichern
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingMessageId(null);
-                                setEditingContent('');
-                              }}
-                              className="px-3 py-1 bg-overlay rounded text-xs"
-                            >
-                              Abbrechen
-                            </button>
-                          </div>
+                filteredMessages.map((message, index) => {
+                  const isOwnMessage = message.sender.id === currentUser.id;
+                  const prevMessage = index > 0 ? filteredMessages[index - 1] : null;
+                  const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id;
+                  
+                  return (
+                    <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
+                      <div className={`flex ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 max-w-[70%]`}>
+                        {/* Avatar */}
+                        <div className={`flex-shrink-0 ${isOwnMessage ? 'ml-2' : 'mr-2'}`}>
+                          {showAvatar ? (
+                            <img
+                              src={message.sender.avatarUrl}
+                              alt={message.sender.name}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-8 h-8" />
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <div className="mt-1 text-sm break-words">
-                            {message.content}
-                            {message.content.match(/https?:\/\/[^\s]+/) && (
-                              <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
-                            )}
-                          </div>
-                          
-                          {message.sender.id === currentUser.id && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  setEditingMessageId(message.id);
-                                  setEditingContent(message.content);
-                                }}
-                                className="text-xs text-text-secondary hover:text-text-primary"
-                              >
-                                <EditIcon className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmMessageId(message.id)}
-                                className="text-xs text-text-secondary hover:text-red-500"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
+
+                        {/* Message Bubble */}
+                        <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                          {/* Name & Timestamp */}
+                          {showAvatar && (
+                            <div className={`flex items-center space-x-2 mb-1 px-1 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                              <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                              <span className="text-xs text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                             </div>
                           )}
-                        </>
-                      )}
+
+                          {editingMessageId === message.id ? (
+                            <div className="w-full">
+                              <input
+                                type="text"
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleEditMessage(message.id)}
+                                className="w-full px-4 py-2 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                                autoFocus
+                              />
+                              <div className="flex space-x-2 mt-2">
+                                <button
+                                  onClick={() => handleEditMessage(message.id)}
+                                  className="px-3 py-1 bg-glow-purple rounded-lg text-xs"
+                                >
+                                  Speichern
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMessageId(null);
+                                    setEditingContent('');
+                                  }}
+                                  className="px-3 py-1 bg-overlay rounded-lg text-xs"
+                                >
+                                  Abbrechen
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Message Content Bubble */}
+                              <div
+                                className={`px-4 py-2 rounded-2xl text-sm break-words ${
+                                  isOwnMessage
+                                    ? 'bg-blue-500/90 text-white rounded-br-md'
+                                    : 'bg-overlay text-text-primary rounded-bl-md'
+                                }`}
+                              >
+                                {message.content}
+                                {message.edited && (
+                                  <span className={`text-xs ml-2 italic ${isOwnMessage ? 'text-blue-100' : 'text-text-secondary'}`}>
+                                    (bearbeitet)
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Link Preview */}
+                              {message.content.match(/https?:\/\/[^\s]+/) && (
+                                <div className="mt-2">
+                                  <LinkPreview url={message.content.match(/https?:\/\/[^\s]+/)?.[0] || ''} />
+                                </div>
+                              )}
+
+                              {/* Edit/Delete Buttons */}
+                              {isOwnMessage && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 flex space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingMessageId(message.id);
+                                      setEditingContent(message.content);
+                                    }}
+                                    className="text-xs text-text-secondary hover:text-text-primary p-1 rounded hover:bg-overlay"
+                                    title="Bearbeiten"
+                                  >
+                                    <EditIcon className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirmMessageId(message.id)}
+                                    className="text-xs text-text-secondary hover:text-red-500 p-1 rounded hover:bg-overlay"
+                                    title="Löschen"
+                                  >
+                                    <TrashIcon className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
             {currentChannel && (
-              <div className="p-4 border-t border-border">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={`Nachricht in ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : currentChannel.name}...`}
-                    className="flex-1 px-4 py-2 bg-overlay rounded-lg focus:outline-none focus:ring-2 focus:ring-glow-purple"
-                  />
+              <div className="p-4 border-t border-border bg-surface/50">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
+                      className="w-full px-4 py-3 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
-                    className="px-4 py-2 glow-button rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`p-3 rounded-full transition-all ${
+                      messageInput.trim()
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                        : 'bg-overlay text-text-secondary cursor-not-allowed'
+                    }`}
                   >
                     <SendIcon className="w-5 h-5" />
                   </button>
