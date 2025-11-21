@@ -61,30 +61,31 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
 
   return (
     <div className="w-full h-14 bg-surface border-b border-border flex items-center justify-between px-4 md:px-6">
-      {/* Left Side: Hamburger on mobile, User Info on desktop */}
+      {/* Left Side: Hamburger on mobile, User Info */}
       <div className="flex items-center space-x-3">
-        <button onClick={onToggleSidebar} className="md:hidden p-2 rounded-md hover:bg-overlay">
+        <button onClick={onToggleSidebar} className="md:hidden p-2 rounded-md hover:bg-overlay text-text-primary">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
-        <div className="hidden md:flex items-center space-x-3 relative" ref={userMenuRef}>
+        
+        <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center space-x-3 hover:bg-overlay rounded-lg p-1 pr-3 transition-colors"
+            className="flex items-center space-x-2 md:space-x-3 hover:bg-overlay rounded-lg p-1 pr-2 md:pr-3 transition-colors"
           >
             <img 
               src={user.avatarUrl} 
               alt={user.name}
-              className="w-9 h-9 rounded-full border-2 border-border cursor-pointer"
+              className="w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-border cursor-pointer"
             />
-            <div className="flex flex-col">
+            <div className="hidden md:flex flex-col text-left">
               <span className="text-sm font-semibold text-text-primary">{user.name}</span>
               <span className="text-xs text-text-secondary">{user.email}</span>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary hidden md:block">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </button>
