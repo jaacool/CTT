@@ -231,27 +231,39 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle send message
   const handleSendMessage = () => {
     if (messageInput.trim() && currentChannel) {
+      // Im Thread-Modus: Automatisch auf die letzte Nachricht im Thread antworten
+      let messageToReplyTo = replyToMessage;
+      
+      if (showThreadView && !replyToMessage) {
+        // Hole die letzte Nachricht im Thread
+        const threadChain = buildThreadChain(showThreadView);
+        if (threadChain.length > 0) {
+          messageToReplyTo = threadChain[threadChain.length - 1];
+        }
+      }
+      
       // Use project ID from reply message if replying, otherwise use current project
-      const projectId = replyToMessage?.projectId || currentProject?.id || '';
+      const projectId = messageToReplyTo?.projectId || currentProject?.id || '';
       let content = messageInput.trim();
       
       // Debug: Log project ID selection
       console.log('Sending message with projectId:', projectId, {
-        replyToMessageProjectId: replyToMessage?.projectId,
+        replyToMessageProjectId: messageToReplyTo?.projectId,
         currentProjectId: currentProject?.id,
-        isReplying: !!replyToMessage
+        isReplying: !!messageToReplyTo,
+        isThreadMode: !!showThreadView
       });
       
       // Add reply reference if replying to a message - nur die DIREKTE Nachricht zitieren
-      if (replyToMessage) {
+      if (messageToReplyTo) {
         // Extrahiere nur den eigentlichen Inhalt, ohne verschachtelte Zitate
-        let quotedContent = replyToMessage.content;
-        const reply = parseReply(replyToMessage.content);
+        let quotedContent = messageToReplyTo.content;
+        const reply = parseReply(messageToReplyTo.content);
         if (reply) {
           // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
           quotedContent = reply.actualContent;
         }
-        content = `@${replyToMessage.sender.name}: "${quotedContent}"\n\n${content}`;
+        content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
       }
       
       onSendMessage(content, currentChannel.id, projectId);
