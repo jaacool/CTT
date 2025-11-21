@@ -1982,10 +1982,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </div>
 
             {/* Preview Content */}
-            <div 
-              className="flex items-center justify-center w-full h-full"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="flex items-center justify-center w-full h-full">
               {isImageFile(previewAttachment.type) ? (
                 <img 
                   src={previewAttachment.url} 
