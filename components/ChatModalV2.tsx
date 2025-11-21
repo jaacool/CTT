@@ -844,7 +844,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         {/* Emoji Picker Button */}
                                         <div className="relative">
                                           <button
-                                            onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              console.log('Emoji Picker clicked, current:', showEmojiPicker, 'message:', message.id);
+                                              setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                            }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
                                             title="Weitere Reaktionen"
                                           >
@@ -855,7 +859,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
-                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
+                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
                                               <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
                                               <div className="grid grid-cols-5 gap-2">
                                                 {allEmojis.map((emoji) => (
@@ -890,7 +894,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         {/* More Options (3 dots) */}
                                         <div className="relative">
                                           <button
-                                            onClick={() => setShowMoreMenu(showMoreMenu === message.id ? null : message.id)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              console.log('More Menu clicked, current:', showMoreMenu, 'message:', message.id);
+                                              setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
+                                            }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
                                             title="Mehr Optionen"
                                           >
@@ -901,7 +909,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
-                                            <div className="absolute bottom-full right-0 mb-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
+                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
