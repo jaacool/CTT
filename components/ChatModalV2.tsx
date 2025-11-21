@@ -47,8 +47,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
-  const [showAddDMModal, setShowAddDMModal] = useState(false);
-  const [dmUserSearch, setDmUserSearch] = useState('');
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);
   const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -370,45 +368,97 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs text-text-secondary font-semibold uppercase">Direktnachrichten</div>
-                <button
-                  onClick={() => setShowAddDMModal(true)}
-                  className="text-glow-purple hover:text-glow-purple/80 transition-colors"
-                  title="Neue Direktnachricht starten"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
               </div>
               <div className="space-y-1">
-                {filteredDirectMessages.map(channel => {
-                  const partner = channel.members.find(m => m.id !== currentUser.id);
-                  const unreadCount = getUnreadCountForChannel(channel.id);
-                  return (
-                    <button
-                      key={channel.id}
-                      onClick={() => {
-                        onSwitchChannel(channel.id);
-                        setShowSidebar(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
-                        currentChannel?.id === channel.id ? 'glow-button' : 'hover-glow'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        {partner && (
-                          <img src={partner.avatarUrl} alt={partner.name} className="w-5 h-5 rounded-full" />
+                {allUsers
+                  .filter(user => user.id !== currentUser.id)
+                  .filter(user => !channelSearchQuery || user.name.toLowerCase().includes(channelSearchQuery.toLowerCase()))
+                  .sort((a, b) => {
+                    // Finde DM-Channels für beide User
+                    const channelA = directMessages.find(channel => 
+                      channel.members.some(m => m.id === a.id)
+                    );
+                    const channelB = directMessages.find(channel => 
+                      channel.members.some(m => m.id === b.id)
+                    );
+                    
+                    // Finde neueste Nachricht für jeden User
+                    const lastMessageA = channelA 
+                      ? messages
+                          .filter(msg => msg.channelId === channelA.id)
+                          .sort((m1, m2) => new Date(m2.timestamp).getTime() - new Date(m1.timestamp).getTime())[0]
+                      : null;
+                    const lastMessageB = channelB 
+                      ? messages
+                          .filter(msg => msg.channelId === channelB.id)
+                          .sort((m1, m2) => new Date(m2.timestamp).getTime() - new Date(m1.timestamp).getTime())[0]
+                      : null;
+                    
+                    // Sortiere nach neuester Nachricht
+                    if (lastMessageA && lastMessageB) {
+                      return new Date(lastMessageB.timestamp).getTime() - new Date(lastMessageA.timestamp).getTime();
+                    }
+                    if (lastMessageA) return -1;
+                    if (lastMessageB) return 1;
+                    
+                    // Wenn keine Nachrichten, alphabetisch sortieren
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map(user => {
+                    // Finde existierenden DM-Channel
+                    const existingDM = directMessages.find(channel => 
+                      channel.members.some(m => m.id === user.id)
+                    );
+                    const unreadCount = existingDM ? getUnreadCountForChannel(existingDM.id) : 0;
+                    
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={() => {
+                          if (existingDM) {
+                            // Wechsle zu existierendem Channel
+                            onSwitchChannel(existingDM.id);
+                          } else {
+                            // Erstelle neuen DM-Channel
+                            const channelName = `${currentUser.name} & ${user.name}`;
+                            onCreateChannel(
+                              channelName,
+                              '',
+                              [currentUser.id, user.id],
+                              false
+                            );
+                            
+                            // Warte kurz und wechsle zum neuen Channel
+                            setTimeout(() => {
+                              const newDM = channels.find(c => 
+                                c.type === ChatChannelType.Direct &&
+                                c.members.length === 2 &&
+                                c.members.some(m => m.id === user.id) &&
+                                c.members.some(m => m.id === currentUser.id)
+                              );
+                              if (newDM) {
+                                onSwitchChannel(newDM.id);
+                              }
+                            }, 100);
+                          }
+                          setShowSidebar(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
+                          currentChannel?.id === existingDM?.id ? 'glow-button' : 'hover-glow'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <img src={user.avatarUrl} alt={user.name} className="w-5 h-5 rounded-full" />
+                          <span className="text-sm truncate">{user.name}</span>
+                        </div>
+                        {unreadCount > 0 && (
+                          <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
                         )}
-                        <span className="text-sm truncate">{getDMPartnerName(channel)}</span>
-                      </div>
-                      {unreadCount > 0 && (
-                        <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -587,94 +637,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           }}
           onCancel={() => setDeleteConfirmMessageId(null)}
         />
-      )}
-
-      {/* Add Direct Message Modal */}
-      {showAddDMModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4">Neue Direktnachricht</h3>
-            
-            <input
-              type="text"
-              placeholder="Mitarbeiter suchen..."
-              value={dmUserSearch}
-              onChange={(e) => setDmUserSearch(e.target.value)}
-              className="w-full px-4 py-2 bg-overlay rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-glow-purple"
-              autoFocus
-            />
-
-            <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
-              {allUsers
-                .filter(user => 
-                  user.id !== currentUser.id &&
-                  (!dmUserSearch || user.name.toLowerCase().includes(dmUserSearch.toLowerCase()))
-                )
-                .map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => {
-                      // Finde existierenden DM-Channel
-                      const existingDM = directMessages.find(channel => 
-                        channel.members.some(m => m.id === user.id)
-                      );
-                      
-                      if (existingDM) {
-                        // Wechsle zu existierendem Channel
-                        onSwitchChannel(existingDM.id);
-                      } else {
-                        // Erstelle neuen DM-Channel
-                        const channelName = `${currentUser.name} & ${user.name}`;
-                        onCreateChannel(
-                          channelName,
-                          '',
-                          [currentUser.id, user.id],
-                          false
-                        );
-                        
-                        // Der neue Channel wird automatisch in App.tsx erstellt
-                        // und sollte sofort in der Liste erscheinen
-                        // Warte kurz und wechsle zum neuen Channel
-                        setTimeout(() => {
-                          const newDM = channels.find(c => 
-                            c.type === ChatChannelType.Direct &&
-                            c.members.length === 2 &&
-                            c.members.some(m => m.id === user.id) &&
-                            c.members.some(m => m.id === currentUser.id)
-                          );
-                          if (newDM) {
-                            onSwitchChannel(newDM.id);
-                          }
-                        }, 100);
-                      }
-                      
-                      setShowAddDMModal(false);
-                      setDmUserSearch('');
-                    }}
-                    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-overlay transition-colors"
-                  >
-                    <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full" />
-                    <div className="text-left">
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-text-secondary">{user.role}</div>
-                    </div>
-                  </button>
-                ))}
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => {
-                  setShowAddDMModal(false);
-                  setDmUserSearch('');
-                }}
-                className="px-4 py-2 bg-overlay rounded-lg hover:bg-overlay/80"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Add Channel Modal */}
