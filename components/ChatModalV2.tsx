@@ -310,7 +310,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return null;
   };
   
-  // Convert URLs in text to clickable links with nice preview cards
+  // Convert URLs in text to clickable links
   const renderTextWithLinks = (text: string) => {
     // Match URLs with or without protocol
     const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/g;
@@ -320,8 +320,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       if (part.match(urlRegex)) {
         // Add https:// if no protocol is present
         const href = part.match(/^https?:\/\//) ? part : `https://${part}`;
-        // Extract domain for display
-        const domain = part.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
         
         return (
           <a
@@ -329,16 +327,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center space-x-2 px-3 py-2 my-1 bg-overlay/50 hover:bg-overlay border border-border rounded-lg transition-colors group"
+            className="text-glow-purple hover:text-glow-pink underline transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            <svg className="w-4 h-4 text-text-secondary group-hover:text-glow-purple transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-            <span className="text-sm text-text-primary group-hover:text-glow-purple transition-colors font-medium">{domain}</span>
-            <svg className="w-3 h-3 text-text-secondary group-hover:text-glow-purple transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            {part}
           </a>
         );
       }
