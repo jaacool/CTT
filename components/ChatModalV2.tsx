@@ -60,6 +60,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
   const [maxUploadSize, setMaxUploadSize] = useState<number>(100); // MB, Standard 100 MB
@@ -594,11 +595,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     });
   };
   
-  // Scroll to message
+  // Scroll to message with glow effect
   const scrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+      // Add glow effect
+      setHighlightedMessageId(messageId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
     }
   };
 
@@ -1101,7 +1105,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Wrapper für Bubble und Hover-Menü */}
                               <div 
-                                className="relative"
+                                className={`relative transition-all duration-500 ${
+                                  highlightedMessageId === message.id ? 'glow-pulse' : ''
+                                }`}
                                 onMouseEnter={() => setHoveredMessageId(message.id)}
                                 onMouseLeave={() => setHoveredMessageId(null)}
                               >
@@ -1469,7 +1475,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <>
                                 {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
-                                  className="relative"
+                                  className={`relative transition-all duration-500 ${
+                                    highlightedMessageId === message.id ? 'glow-pulse' : ''
+                                  }`}
                                   onMouseEnter={() => setHoveredMessageId(message.id)}
                                   onMouseLeave={() => setHoveredMessageId(null)}
                                 >
