@@ -5,6 +5,7 @@ import { formatTime, formatTimeCompact } from './utils';
 import { TimeView } from './TimeView';
 import { TaskContextMenu } from './TaskContextMenu';
 import { AssigneeSelector } from './AssigneeSelector';
+import { BottomBar } from './BottomBar';
 
 type RenameFn = (id: string, newName: string, type: 'project' | 'list' | 'task' | 'subtask') => void;
 
@@ -669,21 +670,10 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                 />
             )}
             
-             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 transition-all duration-300 ease-in-out">
-                <button
-                    onClick={props.onOpenChat}
-                    className="glow-button-highlight p-3 rounded-full shadow-lg relative"
-                >
-                    <MessageCircleIcon className="w-6 h-6 text-text-primary" />
-                    {/* Unread Badge - TODO: unreadCount von App.tsx übergeben */}
-                </button>
-                <button
-                    onClick={props.onOpenSearchProjects}
-                    className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
-                >
-                    <SearchIcon className="w-6 h-6 text-text-primary" />
-                </button>
-            </div>
+             <BottomBar
+                onOpenChat={props.onOpenChat}
+                unreadMessagesCount={0}
+             />
         </div>
     );
 };
