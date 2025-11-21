@@ -16,6 +16,7 @@ interface ChatModalV2Props {
   onSendMessage: (content: string, channelId: string, projectId: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   onDeleteMessage: (messageId: string) => void;
+  onCreateChannel: (name: string, description: string, memberIds: string[], isPrivate: boolean) => void;
   onSwitchChannel: (channelId: string) => void;
   onSwitchProject: (projectId: string) => void;
   allUsers: User[];
@@ -33,6 +34,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   onSendMessage,
   onEditMessage,
   onDeleteMessage,
+  onCreateChannel,
   onSwitchChannel,
   onSwitchProject,
   allUsers,
@@ -185,8 +187,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <h2 className="text-xl font-bold text-text-primary">Chat</h2>
           </div>
 
-          {/* Project Filter Dropdown - NEU GEBAUT */}
-          <div className="relative mr-2" ref={dropdownRef}>
+          <div className="flex items-center space-x-3">
+            {/* Project Filter Dropdown - NEU GEBAUT */}
+            <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
               className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
@@ -282,11 +285,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 </div>
               </div>
             )}
-          </div>
+            </div>
 
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
-            <XIcon className="w-6 h-6" />
-          </button>
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
+              <XIcon className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -612,8 +616,40 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   <button
                     key={user.id}
                     onClick={() => {
-                      // TODO: Create or switch to DM channel with this user
-                      console.log('Start DM with', user.name);
+                      // Finde existierenden DM-Channel
+                      const existingDM = directMessages.find(channel => 
+                        channel.members.some(m => m.id === user.id)
+                      );
+                      
+                      if (existingDM) {
+                        // Wechsle zu existierendem Channel
+                        onSwitchChannel(existingDM.id);
+                      } else {
+                        // Erstelle neuen DM-Channel
+                        const channelName = `${currentUser.name} & ${user.name}`;
+                        onCreateChannel(
+                          channelName,
+                          '',
+                          [currentUser.id, user.id],
+                          false
+                        );
+                        
+                        // Der neue Channel wird automatisch in App.tsx erstellt
+                        // und sollte sofort in der Liste erscheinen
+                        // Warte kurz und wechsle zum neuen Channel
+                        setTimeout(() => {
+                          const newDM = channels.find(c => 
+                            c.type === ChatChannelType.Direct &&
+                            c.members.length === 2 &&
+                            c.members.some(m => m.id === user.id) &&
+                            c.members.some(m => m.id === currentUser.id)
+                          );
+                          if (newDM) {
+                            onSwitchChannel(newDM.id);
+                          }
+                        }, 100);
+                      }
+                      
                       setShowAddDMModal(false);
                       setDmUserSearch('');
                     }}
