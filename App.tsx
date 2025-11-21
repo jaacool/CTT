@@ -125,13 +125,15 @@ const App: React.FC = () => {
     
     // Debug: Zeige welche Nachrichten als ungelesen gezählt werden
     if (unreadMessages.length > 0) {
-      console.log('🔴 Ungelesene Nachrichten:', unreadMessages.length);
-      console.log('Details:', unreadMessages.map(m => ({
-        channel: m.channelId,
-        sender: m.sender.name,
-        content: m.content.substring(0, 30),
-        readBy: m.readBy
+      console.warn('🔴 UNGELESENE NACHRICHTEN:', unreadMessages.length);
+      console.table(unreadMessages.map(m => ({
+        Channel: m.channelId,
+        Sender: m.sender.name,
+        Inhalt: m.content.substring(0, 30),
+        ReadBy: JSON.stringify(m.readBy)
       })));
+    } else {
+      console.info('✅ Keine ungelesenen Nachrichten');
     }
     
     return unreadMessages.length;
