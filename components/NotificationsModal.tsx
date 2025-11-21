@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment } from '../types';
-import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XIcon, CheckCircleIcon, ClockIcon } from './Icons';
+import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment, Anomaly, AnomalyType } from '../types';
+import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XIcon, CheckCircleIcon, ClockIcon, AlertTriangleIcon } from './Icons';
 
 interface NotificationsModalProps {
   onClose: () => void;
   absenceRequests: AbsenceRequest[];
+  anomalies?: Anomaly[];
+  onSelectAnomaly?: (anomaly: Anomaly) => void;
   onApproveRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string, reason: string) => void;
   onAddComment: (requestId: string, message: string) => void;
@@ -12,8 +14,16 @@ interface NotificationsModalProps {
   onDeleteRequest: (requestId: string) => void;
   onMarkSickLeaveReported: (requestId: string) => void;
   currentUser: User;
+  users?: User[];
   initialSelectedRequestId?: string;
 }
+
+const ANOMALY_LABELS: Record<string, string> = {
+  [AnomalyType.MISSING_ENTRY]: 'Keine Zeit erfasst',
+  [AnomalyType.EXCESS_WORK_SHOOT]: 'Überlast (Dreh > 15h)',
+  [AnomalyType.EXCESS_WORK_REGULAR]: 'Überlast (> 9h)',
+  [AnomalyType.UNDER_PERFORMANCE]: 'Unterperformance (< 50%)',
+};
 
 const getAbsenceTypeIcon = (type: AbsenceType) => {
   switch (type) {
@@ -63,6 +73,8 @@ const getAbsenceTypeColor = (type: AbsenceType) => {
 export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onClose,
   absenceRequests,
+  anomalies = [],
+  onSelectAnomaly,
   onApproveRequest,
   onRejectRequest,
   onAddComment,
@@ -70,6 +82,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onDeleteRequest,
   onMarkSickLeaveReported,
   currentUser,
+  users = [],
   initialSelectedRequestId,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<AbsenceRequest | null>(() => {
@@ -80,9 +93,24 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   });
   const [chatMessage, setChatMessage] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
+  const [activeTab, setActiveTab] = useState<'requests' | 'anomalies'>('requests');
   
   const isAdmin = currentUser.role === 'role-1';
   
+  // Wenn keine Requests da sind aber Anomalien, wechsle Tab
+  useEffect(() => {
+    const hasRequests = absenceRequests.some(req => 
+      isAdmin || req.user.id === currentUser.id
+    );
+    const hasAnomalies = anomalies && anomalies.some(a => 
+      isAdmin || a.userId === currentUser.id
+    );
+    
+    if (!hasRequests && hasAnomalies) {
+      setActiveTab('anomalies');
+    }
+  }, [absenceRequests, anomalies, isAdmin, currentUser.id]);
+
   // Aktualisiere selectedRequest wenn sich absenceRequests ändern
   React.useEffect(() => {
     if (selectedRequest) {
@@ -117,6 +145,10 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     (req.status === AbsenceStatus.Approved && !(req.type === AbsenceType.Sick && !req.sickLeaveReported)) || 
     req.status === AbsenceStatus.Rejected
   );
+
+  const relevantAnomalies = anomalies ? anomalies.filter(a => 
+    isAdmin || a.userId === currentUser.id
+  ) : [];
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('de-DE', {
@@ -183,10 +215,41 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-text-primary">Benachrichtigungen</h2>
-            <p className="text-sm text-text-secondary mt-1">
-              {pendingRequests.length} ausstehend • {completedRequests.length} erledigt
-            </p>
+            {(relevantRequests.length > 0 || relevantAnomalies.length > 0) ? (
+              <div className="flex space-x-4">
+                <button 
+                  onClick={() => setActiveTab('requests')}
+                  className={`text-lg font-bold transition-colors flex items-center ${activeTab === 'requests' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Anträge
+                  {pendingRequests.length > 0 && (
+                    <span className="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{pendingRequests.length}</span>
+                  )}
+                </button>
+                <button 
+                  onClick={() => setActiveTab('anomalies')}
+                  className={`text-lg font-bold transition-colors flex items-center ${activeTab === 'anomalies' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Auffälligkeiten
+                  {relevantAnomalies.length > 0 && (
+                    <span className="ml-2 text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">{relevantAnomalies.length}</span>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <h2 className="text-xl font-bold text-text-primary">Benachrichtigungen</h2>
+            )}
+            
+            {activeTab === 'requests' && relevantRequests.length > 0 && (
+               <p className="text-sm text-text-secondary mt-1">
+                 {pendingRequests.length} ausstehend • {completedRequests.length} erledigt
+               </p>
+            )}
+            {activeTab === 'anomalies' && relevantAnomalies.length > 0 && (
+               <p className="text-sm text-text-secondary mt-1">
+                 {relevantAnomalies.length} erkannt
+               </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -198,8 +261,57 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-hidden flex">
-          {/* Request List */}
-          <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-4">
+          {activeTab === 'anomalies' ? (
+             <div className="flex-1 overflow-y-auto p-4">
+               {relevantAnomalies.length === 0 ? (
+                 <div className="text-center py-12">
+                   <AlertTriangleIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
+                   <p className="text-text-secondary">Keine Auffälligkeiten</p>
+                 </div>
+               ) : (
+                 <div className="space-y-2">
+                   {relevantAnomalies.map(anomaly => {
+                      const anomalyUser = users.find(u => u.id === anomaly.userId);
+                      return (
+                        <div key={`${anomaly.userId}-${anomaly.date}-${anomaly.type}`} 
+                             className="p-4 rounded-lg border border-border bg-overlay hover:border-yellow-500/50 cursor-pointer flex items-center space-x-4 transition-all"
+                             onClick={() => onSelectAnomaly && onSelectAnomaly(anomaly)}
+                        >
+                           <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
+                             <AlertTriangleIcon className="w-5 h-5" />
+                           </div>
+                           <div className="flex-1">
+                             <div className="flex justify-between items-start">
+                               <div>
+                                 {isAdmin && anomalyUser && (
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-5 h-5 rounded-full" />
+                                      <span className="text-sm font-bold text-text-primary">{anomalyUser.name}</span>
+                                    </div>
+                                 )}
+                                 <div className="font-semibold text-text-primary">
+                                   {ANOMALY_LABELS[anomaly.type]}
+                                 </div>
+                                 <div className="text-sm text-text-secondary">
+                                   {formatDate(anomaly.date)} • {anomaly.details.trackedHours}h gearbeitet
+                                   {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
+                                 </div>
+                               </div>
+                               <div className="text-xs text-glow-purple font-semibold bg-glow-purple/10 px-2 py-1 rounded">
+                                 Anzeigen →
+                               </div>
+                             </div>
+                           </div>
+                        </div>
+                      );
+                   })}
+                 </div>
+               )}
+             </div>
+          ) : (
+            <div className="w-full h-full flex">
+              {/* Request List */}
+              <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-4">
             {relevantRequests.length === 0 ? (
               <div className="text-center py-12">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
@@ -545,6 +657,8 @@ Mit freundlichen Grüßen`;
               </div>
             )}
           </div>
+          </div>
+        )}
         </div>
       </div>
     </div>

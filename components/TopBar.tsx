@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Role, AbsenceRequest, UserStatus } from '../types';
+import { User, Role, AbsenceRequest, UserStatus, Anomaly } from '../types';
 
 interface TopBarProps {
   user: User;
@@ -13,10 +13,11 @@ interface TopBarProps {
   onChangeUser: (userId: string) => void;
   onToggleSidebar: () => void;
   absenceRequests?: AbsenceRequest[];
+  anomalies?: Anomaly[];
   onOpenNotifications?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, absenceRequests = [], onOpenNotifications }) => {
+export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, absenceRequests = [], anomalies = [], onOpenNotifications }) => {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const roleMenuRef = useRef<HTMLDivElement>(null);
@@ -25,7 +26,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
   const isAdmin = user.role === 'role-1';
   
   // Berechne Benachrichtigungen für aktuellen User
-  const notificationCount = absenceRequests.filter(req => {
+  const absenceNotificationCount = absenceRequests.filter(req => {
     // Admins: Ausstehende Anträge
     if (isAdmin && req.status === 'PENDING') return true;
     
@@ -37,6 +38,11 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
     
     return false;
   }).length;
+
+  // Anomalien zählen (nur eigene oder alle für Admin)
+  const anomalyCount = anomalies.filter(a => isAdmin || a.userId === user.id).length;
+  
+  const totalNotificationCount = absenceNotificationCount + anomalyCount;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -189,9 +195,9 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            {notificationCount > 0 && (
+            {totalNotificationCount > 0 && (
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-surface">
-                {notificationCount}
+                {totalNotificationCount}
               </span>
             )}
           </button>

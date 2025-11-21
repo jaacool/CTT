@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus } from '../types';
+import { User, TimeEntry, AbsenceRequest, AbsenceStatus, UserStatus, AnomalyType, Anomaly } from '../types';
 import { 
   aggregateByYear, 
   aggregateByMonth, 
@@ -16,6 +16,7 @@ import {
   getWeekStart,
   formatDateRange
 } from '../utils/timeStatistics';
+import { detectAnomalies } from '../utils/anomalyDetection';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, TooltipProps, LabelList } from 'recharts';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
@@ -24,6 +25,7 @@ interface TimeStatisticsProps {
   timeEntries: TimeEntry[];
   absenceRequests: AbsenceRequest[];
   currentUser: User | null;
+  targetAnomaly?: Anomaly | null; // Prop für Navigation zu einer Anomalie
 }
 
 type ViewMode = 'year' | 'month' | 'week';
@@ -36,6 +38,13 @@ const ABSENCE_LABELS: Record<string, string> = {
   'HOME_OFFICE': 'Home Office',
   'BUSINESS_TRIP': 'Dienstreise',
   'OTHER': 'Sonstiges'
+};
+
+const ANOMALY_LABELS: Record<string, string> = {
+  [AnomalyType.MISSING_ENTRY]: 'Keine Zeit erfasst',
+  [AnomalyType.EXCESS_WORK_SHOOT]: 'Überlast (Dreh > 15h)',
+  [AnomalyType.EXCESS_WORK_REGULAR]: 'Überlast (> 9h)',
+  [AnomalyType.UNDER_PERFORMANCE]: 'Unterperformance (< 50%)',
 };
 
 const ABSENCE_COLORS: Record<string, string> = {
@@ -57,6 +66,7 @@ const COLORS = {
   textSecondary: '#9ca3af',
   border: '#3f3351',
   overlay: '#322a3d',
+  anomaly: '#EAB308', // Yellow for anomalies
 };
 
 // Helper: Datum zu YYYY-MM-DD String konvertieren (lokal)
@@ -98,8 +108,10 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 }) => {
   if (!active || !payload || !payload.length) return null;
 
+  const dataItem = payload[0].payload; // Zugriff auf angereicherte Daten
   const hours = payload[0].value as number;
-  const targetHours = payload[0].payload.targetHours as number;
+  const targetHours = dataItem.targetHours as number;
+  const anomaly = dataItem.anomaly as Anomaly | undefined;
 
   // Bestimme Datumsbereich basierend auf ViewMode und Label
   let startDate: Date;
@@ -161,6 +173,17 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           <span className="font-semibold" style={{ color: COLORS.target }}>{targetHours}h</span>
         </div>
         
+        {anomaly && (
+          <>
+            <div className="border-t border-border my-2"></div>
+            <p className="text-text-secondary text-xs mb-1">Auffälligkeiten:</p>
+            <div className="flex items-center gap-2 text-xs">
+               <span className="text-yellow-500 font-bold">⚠️</span>
+               <span style={{ color: COLORS.anomaly }}>{ANOMALY_LABELS[anomaly.type]}</span>
+            </div>
+          </>
+        )}
+
         {relevantAbsences.length > 0 && (
           <>
             <div className="border-t border-border my-2"></div>
@@ -198,6 +221,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   timeEntries,
   absenceRequests,
   currentUser,
+  targetAnomaly,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(currentUser);
   const [viewMode, setViewMode] = useState<ViewMode>('week');
@@ -210,6 +234,29 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   
   // Woche Navigation
   const [selectedWeek, setSelectedWeek] = useState(getWeekStart(new Date()));
+
+  // Navigation Effect für targetAnomaly
+  useEffect(() => {
+    if (targetAnomaly) {
+      // 1. Setze ViewMode auf 'week'
+      setViewMode('week');
+      
+      // 2. Parse Datum und setze Woche
+      const anomalyDate = new Date(targetAnomaly.date);
+      const newWeekStart = getWeekStart(anomalyDate);
+      setSelectedWeek(newWeekStart);
+      
+      // 3. Setze Jahr/Monat
+      setSelectedYear(anomalyDate.getFullYear());
+      setSelectedMonth(anomalyDate.getMonth());
+      
+      // 4. Setze User
+      const targetUser = users.find(u => u.id === targetAnomaly.userId);
+      if (targetUser) {
+        setSelectedUser(targetUser);
+      }
+    }
+  }, [targetAnomaly, users]);
 
   // Format für Monatsnamen
   const monthNames = [
@@ -236,6 +283,12 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     }
     return { viewStartDate: start, viewEndDate: end };
   }, [viewMode, selectedYear, selectedMonth, selectedWeek]);
+
+  // Berechne Anomalien für aktuellen View
+  const viewAnomalies = useMemo(() => {
+    if (!selectedUser) return [];
+    return detectAnomalies(selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate);
+  }, [selectedUser, timeEntries, absenceRequests, viewStartDate, viewEndDate]);
 
   // Berechne Abwesenheitsstatistik
   const absenceStats = useMemo(() => {
@@ -359,12 +412,20 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         return isDateOverlap(startDate, endDate, req.startDate, req.endDate);
       });
 
+      const anomaly = viewAnomalies.find(a => {
+        const aDate = a.date; // YYYY-MM-DD
+        const sDate = toLocalISOString(startDate);
+        const eDate = toLocalISOString(endDate);
+        return aDate >= sDate && aDate <= eDate;
+      });
+
       return {
         ...item,
-        absence
+        absence,
+        anomaly
       };
     });
-  }, [rawChartData, absenceRequests, selectedUser, viewMode, selectedYear, selectedMonth, selectedWeek]);
+  }, [rawChartData, absenceRequests, selectedUser, viewMode, selectedYear, selectedMonth, selectedWeek, viewAnomalies]);
 
   // Berechne Durchschnitt und Soll basierend auf ViewMode
   const averageHours = useMemo(() => {
@@ -469,6 +530,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     });
     
     const hasAbsence = !!item?.absence;
+    const hasAnomaly = !!item?.anomaly;
     const color = hasAbsence ? ABSENCE_COLORS[item.absence.type] : 'transparent';
     const isRotated = isMobile && viewMode !== 'week';
 
@@ -485,7 +547,17 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
         >
           {payload.value}
         </text>
-        {hasAbsence && (
+        {hasAnomaly ? (
+          <text 
+            x={isRotated ? -5 : 0} 
+            y={isRotated ? 20 : 24} 
+            textAnchor="middle" 
+            fontSize={10}
+            fill={COLORS.anomaly}
+          >
+            ⚠️
+          </text>
+        ) : hasAbsence && (
           <circle 
             cx={isRotated ? -5 : 0} 
             cy={isRotated ? 20 : 24} 
