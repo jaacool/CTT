@@ -672,21 +672,16 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
              <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 transition-all duration-300 ease-in-out">
                 <button
                     onClick={props.onOpenChat}
-                    className="glow-button-highlight p-3 rounded-full shadow-lg"
+                    className="glow-button-highlight p-3 rounded-full shadow-lg relative"
                 >
                     <MessageCircleIcon className="w-6 h-6 text-text-primary" />
+                    {/* Unread Badge - TODO: unreadCount von App.tsx übergeben */}
                 </button>
                 <button
                     onClick={props.onOpenSearchProjects}
-                    className="bg-surface/80 backdrop-blur-md p-3 rounded-full shadow-lg hover-glow border border-overlay/50"
-                >
-                    <SearchIcon className="w-6 h-6 text-text-primary" />
-                </button>
-                <button
-                    onClick={props.onOpenCreateProject}
                     className="glow-button backdrop-blur-md p-3 rounded-full shadow-lg hover:opacity-80 transition-all border border-glow-purple/30"
                 >
-                    <PlusIcon className="w-6 h-6 text-text-primary" />
+                    <SearchIcon className="w-6 h-6 text-text-primary" />
                 </button>
             </div>
         </div>
