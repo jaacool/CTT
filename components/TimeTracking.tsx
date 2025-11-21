@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { TimeEntry, User, AbsenceRequest, UserStatus } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { TimeEntry, User, AbsenceRequest, UserStatus, Anomaly, AnomalyType, AnomalyStatus, Project } from '../types';
 import { formatTime } from './utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, LabelList } from 'recharts';
+import { CircleAlertIcon } from './Icons';
+import { TimeView } from './TimeView';
 import { 
   aggregateByWeek,
   calculateAverageForWorkDays,
@@ -10,18 +12,40 @@ import {
   getWeekStart
 } from '../utils/timeStatistics';
 
+// Helper: Datum zu YYYY-MM-DD String konvertieren (lokal)
+const toLocalISOString = (date: Date) => {
+  const offset = date.getTimezoneOffset();
+  const adjusted = new Date(date.getTime() - (offset * 60 * 1000));
+  return adjusted.toISOString().split('T')[0];
+};
+
 interface TimeTrackingProps {
   timeEntries: TimeEntry[];
   currentUser: User;
   absenceRequests: AbsenceRequest[];
   users: User[];
+  anomalies?: Anomaly[];
+  targetAnomaly?: Anomaly | null;
+  onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string) => void;
+  onBillableChange?: (taskId: string, billable: boolean) => void;
+  onDeleteTimeEntry?: (entryId: string) => void;
+  onDuplicateTimeEntry?: (entry: TimeEntry) => void;
 }
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onDeleteTimeEntry, onDuplicateTimeEntry }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [selectedUser, setSelectedUser] = useState<User>(currentUser);
+  
+  // Navigation Effect für targetAnomaly
+  useEffect(() => {
+    if (targetAnomaly) {
+      setCurrentDate(new Date(targetAnomaly.date));
+      setViewMode('overview');
+    }
+  }, [targetAnomaly]);
+
   const isAdmin = currentUser?.role === 'role-1';
   // Setze auf heute, damit wir die aktuelle Woche sehen
   const [currentDate, setCurrentDate] = useState(() => {
@@ -206,8 +230,33 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
   }, [weekTimeEntries, weekDays]);
 
   // weekData enthält bereits die aggregierten Daten von aggregateByWeek
-  // Verwende diese direkt als Chart-Daten
-  const weekChartData = weekData;
+  // Erweitere um Anomalien
+  const weekChartData = useMemo(() => {
+    return weekData.map(dayData => {
+      const dayIndex = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].indexOf(dayData.day);
+      const date = new Date(selectedWeek);
+      date.setDate(date.getDate() + dayIndex);
+      const dateStr = toLocalISOString(date);
+      
+      const anomaly = anomalies?.find(a => 
+        a.userId === selectedUser.id && 
+        a.date === dateStr
+      );
+      
+      // Visual Hours für "Missing Entry"
+      const isTarget = targetAnomaly && targetAnomaly.date === dateStr;
+      const isMissing = anomaly?.type === AnomalyType.MISSING_ENTRY;
+      // Wenn Ziel-Anomalie UND Missing Entry: Zeige Balken mit Soll-Höhe (oder 8h fallback)
+      const visualHours = (isTarget && isMissing) ? (dayData.targetHours || 8) : dayData.hours;
+
+      return {
+        ...dayData,
+        date: dateStr,
+        anomaly,
+        visualHours
+      };
+    });
+  }, [weekData, anomalies, selectedUser, selectedWeek, targetAnomaly]);
 
   // Colors matching TimeStatistics
   const COLORS = {
@@ -298,6 +347,72 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     const { start, end } = getTimeRange;
     const range = end - start;
     return ((absoluteTime - start) / range) * 100;
+  };
+
+  // Custom Labels für Chart
+  const CustomBarLabel = (props: any) => {
+    const { x, y, width, value, index } = props;
+    const item = weekChartData[index];
+    const isTarget = item.date === targetAnomaly?.date;
+    const isMissing = item.anomaly?.type === AnomalyType.MISSING_ENTRY;
+
+    if (isTarget && isMissing) {
+      return (
+        <text x={x + width / 2} y={y + 20} textAnchor="middle" fill="#EAB308" fontSize={12} className="font-bold italic">
+          leer
+        </text>
+      );
+    }
+    return null; 
+  };
+
+  const CustomAnomalyLabel = (props: any) => {
+    const { x, y, width, value, index } = props;
+    const item = weekChartData[index];
+    const anomaly = item?.anomaly;
+    
+    if (!anomaly) return null;
+    
+    const isResolved = anomaly.status === AnomalyStatus.Resolved;
+    const color = isResolved ? '#9CA3AF' : '#EAB308';
+    
+    const centerX = x + width / 2;
+    const centerY = y - 15;
+    
+    return (
+      <g>
+        <title>{anomaly.type}</title>
+        <circle 
+          cx={centerX} 
+          cy={centerY} 
+          r="10" 
+          fill="none"
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+        />
+        <line 
+          x1={centerX} 
+          y1={centerY - 4} 
+          x2={centerX} 
+          y2={centerY + 1}
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
+        <line 
+          x1={centerX} 
+          y1={centerY + 5} 
+          x2={centerX + 0.01} 
+          y2={centerY + 5}
+          stroke={color}
+          opacity={isResolved ? 0.5 : 1}
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
+      </g>
+    );
   };
 
   return (
@@ -637,7 +752,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               </div>
               
               {/* Wochenansicht */}
-              <div className="bg-surface rounded-lg p-6 border border-border">
+              <div id="week-chart-section" className="bg-surface rounded-lg p-6 border border-border">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-text-primary">Wochenansicht</h2>
                   <div className="flex items-center space-x-2">
@@ -736,7 +851,35 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       strokeDasharray="5 5" 
                       label={{ value: 'Soll', fill: COLORS.target, fontSize: 12 }}
                     />
-                    <Bar dataKey="hours" fill={COLORS.worked} name="Gearbeitete Stunden" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="visualHours" fill={COLORS.worked} name="Gearbeitete Stunden" radius={[8, 8, 0, 0]}>
+                      {weekChartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={
+                            entry.date === targetAnomaly?.date 
+                              ? (entry.anomaly?.status === AnomalyStatus.Resolved
+                                  ? 'rgb(156, 163, 175)'
+                                  : (entry.anomaly?.type === AnomalyType.MISSING_ENTRY ? 'transparent' : COLORS.average))
+                              : COLORS.worked
+                          }
+                          stroke={
+                            entry.date === targetAnomaly?.date 
+                              ? (entry.anomaly?.status === AnomalyStatus.Resolved
+                                  ? 'rgb(156, 163, 175)'
+                                  : COLORS.average)
+                              : 'none'
+                          }
+                          strokeWidth={entry.date === targetAnomaly?.date ? 2 : 0}
+                          strokeDasharray={
+                            (entry.date === targetAnomaly?.date && entry.anomaly?.type === AnomalyType.MISSING_ENTRY && entry.anomaly?.status !== AnomalyStatus.Resolved)
+                              ? "5 5"
+                              : undefined
+                          }
+                        />
+                      ))}
+                      <LabelList dataKey="visualHours" content={<CustomBarLabel />} />
+                      <LabelList dataKey="visualHours" content={<CustomAnomalyLabel />} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -808,64 +951,17 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                       </div>
                       
                       {/* Einträge Liste */}
-                      <div className="divide-y divide-border">
-                        {entries.map((entry) => {
-                          const startTime = new Date(entry.startTime);
-                          const endTime = entry.endTime ? new Date(entry.endTime) : null;
-                          
-                          const getProjectColor = (projectName: string) => {
-                            const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
-                            const colors = [
-                              { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
-                              { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
-                              { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
-                              { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
-                              { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
-                            ];
-                            return colors[hash % colors.length];
-                          };
-                          
-                          const colors = getProjectColor(entry.projectName);
-                          
-                          return (
-                            <div key={entry.id} className="px-4 py-3 hover:bg-overlay/50 transition-colors cursor-pointer">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0 mr-4">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <span className={`px-2 py-0.5 text-xs font-bold rounded ${colors.bg} ${colors.text} ${colors.border} border`}>
-                                      {entry.projectName}
-                                    </span>
-                                    {entry.billable && (
-                                      <span className="px-2 py-0.5 text-xs font-bold bg-green-500/20 text-green-500 border border-green-500 rounded">
-                                        BILLABLE
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-text-primary font-medium truncate">
-                                    {entry.taskTitle}
-                                  </div>
-                                  {entry.description && (
-                                    <div className="text-xs text-text-secondary mt-1 truncate">
-                                      {entry.description}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex items-center space-x-4 flex-shrink-0">
-                                  <div className="text-right">
-                                    <div className="text-xs text-text-secondary">
-                                      {startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                                      {endTime && ` - ${endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`}
-                                    </div>
-                                    <div className="text-sm font-bold text-primary mt-0.5">
-                                      {formatTime(entry.duration)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {onUpdateTimeEntry && onBillableChange && (
+                        <TimeView
+                          project={{ id: 'time-tracking-overview', name: 'Übersicht', taskLists: [] } as Project}
+                          timeEntries={entries}
+                          currentUser={currentUser}
+                          onUpdateEntry={onUpdateTimeEntry}
+                          onBillableChange={onBillableChange}
+                          onDeleteEntry={onDeleteTimeEntry}
+                          onDuplicateEntry={onDuplicateTimeEntry}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -1149,58 +1245,21 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                 </div>
               </div>
 
-              {/* Entry List */}
-              {todayEntries.length > 0 && (
+              {/* Entry List using TimeView */}
+              {todayEntries.length > 0 && onUpdateTimeEntry && onBillableChange && (
                 <div className="bg-surface rounded-xl border border-border overflow-hidden">
                   <div className="px-6 py-4 border-b border-border">
                     <h3 className="text-lg font-bold text-text-primary">Alle Einträge</h3>
                   </div>
-                  <div className="divide-y divide-border">
-                    {todayEntries.map((entry) => {
-                      const startTime = new Date(entry.startTime);
-                      const endTime = entry.endTime ? new Date(entry.endTime) : new Date(entry.startTime);
-                      
-                      const getProjectColor = (projectName: string) => {
-                        const hash = projectName.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
-                        const colors = [
-                          { bg: 'bg-glow-purple/20', border: 'border-glow-purple', text: 'text-glow-purple' },
-                          { bg: 'bg-glow-cyan/20', border: 'border-glow-cyan', text: 'text-glow-cyan' },
-                          { bg: 'bg-glow-magenta/20', border: 'border-glow-magenta', text: 'text-glow-magenta' },
-                          { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-500' },
-                          { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-500' },
-                        ];
-                        return colors[hash % colors.length];
-                      };
-                      
-                      const colors = getProjectColor(entry.projectName);
-                      
-                      return (
-                        <div key={entry.id} className="px-6 py-4 hover:bg-overlay/50 transition-colors cursor-pointer">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 flex-1 min-w-0">
-                              <div className={`w-1 h-12 rounded-full ${colors.border.replace('border-', 'bg-')}`}></div>
-                              <div className="flex-1 min-w-0">
-                                <div className={`text-sm font-bold ${colors.text}`}>
-                                  {entry.projectName}
-                                </div>
-                                <div className="text-sm text-text-secondary truncate">
-                                  {entry.taskTitle}
-                                </div>
-                                <div className="text-xs text-text-secondary mt-1">
-                                  {startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - {endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right ml-4">
-                              <div className={`text-xl font-bold ${colors.text}`}>
-                                {formatTime(entry.duration)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <TimeView
+                    project={{ id: 'time-tracking-day', name: 'Tagesansicht', taskLists: [] } as Project}
+                    timeEntries={todayEntries}
+                    currentUser={currentUser}
+                    onUpdateEntry={onUpdateTimeEntry}
+                    onBillableChange={onBillableChange}
+                    onDeleteEntry={onDeleteTimeEntry}
+                    onDuplicateEntry={onDuplicateTimeEntry}
+                  />
                 </div>
               )}
             </div>

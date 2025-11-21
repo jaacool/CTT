@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment, Anomaly, AnomalyType } from '../types';
-import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XIcon, CheckCircleIcon, ClockIcon, AlertTriangleIcon } from './Icons';
+import { AbsenceRequest, AbsenceStatus, AbsenceType, User, AbsenceRequestComment, Anomaly, AnomalyType, AnomalyStatus } from '../types';
+import { UmbrellaIcon, HeartPulseIcon, HomeIcon, PlaneIcon, CalendarIcon, XIcon, CheckCircleIcon, ClockIcon, AlertTriangleIcon, CircleAlertIcon, MessageSquareIcon } from './Icons';
 
 interface NotificationsModalProps {
   onClose: () => void;
   absenceRequests: AbsenceRequest[];
   anomalies?: Anomaly[];
   onSelectAnomaly?: (anomaly: Anomaly) => void;
+  onResolveAnomaly?: (anomaly: Anomaly) => void;
+  onAddAnomalyComment?: (anomaly: Anomaly, message: string) => void;
   onApproveRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string, reason: string) => void;
   onAddComment: (requestId: string, message: string) => void;
@@ -75,6 +77,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   absenceRequests,
   anomalies = [],
   onSelectAnomaly,
+  onResolveAnomaly,
+  onAddAnomalyComment,
   onApproveRequest,
   onRejectRequest,
   onAddComment,
@@ -93,12 +97,22 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   });
   const [chatMessage, setChatMessage] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'anomalies'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'anomalies'>(() => {
+    const saved = localStorage.getItem('ctt_notification_tab');
+    return (saved === 'requests' || saved === 'anomalies') ? saved : 'requests';
+  });
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectRequestId, setRejectRequestId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [investigationMode, setInvestigationMode] = useState<string | null>(null);
+  const [investigationMessage, setInvestigationMessage] = useState('');
   
   const isAdmin = currentUser.role === 'role-1';
+
+  // Save activeTab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ctt_notification_tab', activeTab);
+  }, [activeTab]);
   
   // Wenn keine Requests da sind aber Anomalien, wechsle Tab
   useEffect(() => {
@@ -106,7 +120,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       isAdmin || req.user.id === currentUser.id
     );
     const hasAnomalies = anomalies && anomalies.some(a => 
-      isAdmin || a.userId === currentUser.id
+      (isAdmin || a.userId === currentUser.id) && a.status !== AnomalyStatus.Resolved
     );
     
     if (!hasRequests && hasAnomalies) {
@@ -150,7 +164,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   );
 
   const relevantAnomalies = anomalies ? anomalies.filter(a => 
-    isAdmin || a.userId === currentUser.id
+    (isAdmin || a.userId === currentUser.id) &&
+    a.status !== AnomalyStatus.Resolved
   ) : [];
 
   const formatDate = (isoString: string) => {
@@ -291,36 +306,126 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                  <div className="space-y-2">
                    {relevantAnomalies.map(anomaly => {
                       const anomalyUser = users.find(u => u.id === anomaly.userId);
+                      const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
                       return (
-                        <div key={`${anomaly.userId}-${anomaly.date}-${anomaly.type}`} 
-                             className="p-4 rounded-lg border border-border bg-overlay hover:border-yellow-500/50 cursor-pointer flex items-center space-x-4 transition-all"
+                        <div key={key} 
+                             className="p-4 rounded-lg border border-border bg-overlay hover:border-yellow-500/50 cursor-pointer flex flex-col transition-all"
                              onClick={() => onSelectAnomaly && onSelectAnomaly(anomaly)}
                         >
-                           <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
-                             <AlertTriangleIcon className="w-5 h-5" />
-                           </div>
-                           <div className="flex-1">
-                             <div className="flex justify-between items-start">
-                               <div>
-                                 {isAdmin && anomalyUser && (
-                                    <div className="flex items-center space-x-2 mb-1">
-                                      <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-5 h-5 rounded-full" />
-                                      <span className="text-sm font-bold text-text-primary">{anomalyUser.name}</span>
-                                    </div>
-                                 )}
-                                 <div className="font-semibold text-text-primary">
-                                   {ANOMALY_LABELS[anomaly.type]}
+                           <div className="flex items-center space-x-4">
+                             <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
+                               <CircleAlertIcon className="w-5 h-5" />
+                             </div>
+                             <div className="flex-1">
+                               <div className="flex justify-between items-start">
+                                 <div>
+                                   {isAdmin && anomalyUser && (
+                                      <div className="flex items-center space-x-2 mb-1">
+                                        <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-5 h-5 rounded-full" />
+                                        <span className="text-sm font-bold text-text-primary">{anomalyUser.name}</span>
+                                      </div>
+                                   )}
+                                   <div className="font-semibold text-text-primary">
+                                     {ANOMALY_LABELS[anomaly.type]}
+                                   </div>
+                                   <div className="text-sm text-text-secondary">
+                                     {formatDate(anomaly.date)} • {anomaly.details.trackedHours}h gearbeitet
+                                     {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
+                                   </div>
                                  </div>
-                                 <div className="text-sm text-text-secondary">
-                                   {formatDate(anomaly.date)} • {anomaly.details.trackedHours}h gearbeitet
-                                   {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
+                                 <div className="text-xs text-glow-purple font-semibold bg-glow-purple/10 px-2 py-1 rounded">
+                                   Anzeigen →
                                  </div>
-                               </div>
-                               <div className="text-xs text-glow-purple font-semibold bg-glow-purple/10 px-2 py-1 rounded">
-                                 Anzeigen →
                                </div>
                              </div>
                            </div>
+
+                           {/* Comments List */}
+                           {anomaly.comments && anomaly.comments.length > 0 && (
+                             <div className="mt-3 pl-16 space-y-2 cursor-default" onClick={e => e.stopPropagation()}>
+                               {anomaly.comments.map(comment => {
+                                 const author = users.find(u => u.id === comment.userId);
+                                 return (
+                                   <div key={comment.id} className="bg-surface/50 p-2 rounded border border-border text-xs">
+                                     <div className="flex justify-between text-text-secondary mb-1">
+                                        <span className="font-bold">{author?.name || 'Unbekannt'}</span>
+                                        <span>{new Date(comment.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} {new Date(comment.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
+                                     </div>
+                                     <div className="text-text-primary">{comment.message}</div>
+                                   </div>
+                                 );
+                               })}
+                             </div>
+                           )}
+
+                           {/* Actions (Admin & User) */}
+                           <div className="flex items-center space-x-2 mt-3 pl-16">
+                              {/* Admin: Erledigt Button */}
+                              {isAdmin && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onResolveAnomaly && onResolveAnomaly(anomaly); }}
+                                  className="flex items-center space-x-1 text-xs bg-green-500/20 text-green-500 px-3 py-1.5 rounded hover:bg-green-500/30 transition-colors"
+                                >
+                                  <CheckCircleIcon className="w-3 h-3" />
+                                  <span>Erledigt</span>
+                                </button>
+                              )}
+                              
+                              {/* Admin & User: Chat Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setInvestigationMode(investigationMode === key ? null : key);
+                                  setInvestigationMessage('');
+                                }}
+                                className="flex items-center space-x-1 text-xs bg-blue-500/20 text-blue-500 px-3 py-1.5 rounded hover:bg-blue-500/30 transition-colors"
+                              >
+                                <MessageSquareIcon className="w-3 h-3" />
+                                <span>{isAdmin ? 'Untersuchen' : 'Besprechen'}</span>
+                              </button>
+                           </div>
+
+                           {/* Chat Input */}
+                           {investigationMode === key && (
+                             <div className="mt-3 pl-16" onClick={e => e.stopPropagation()}>
+                               <div className="bg-surface border border-border rounded-lg p-2">
+                                 <input
+                                   value={investigationMessage}
+                                   onChange={e => setInvestigationMessage(e.target.value)}
+                                   placeholder={isAdmin ? "Nachfrage an Mitarbeiter..." : "Nachricht schreiben..."}
+                                   className="w-full text-sm bg-overlay border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:border-glow-purple text-text-primary"
+                                   autoFocus
+                                   onKeyDown={(e) => {
+                                     if (e.key === 'Enter' && investigationMessage.trim()) {
+                                       onAddAnomalyComment && onAddAnomalyComment(anomaly, investigationMessage);
+                                       setInvestigationMode(null);
+                                       setInvestigationMessage('');
+                                     }
+                                   }}
+                                 />
+                                 <div className="flex justify-end space-x-2">
+                                   <button
+                                     onClick={() => { setInvestigationMode(null); setInvestigationMessage(''); }}
+                                     className="text-xs text-text-secondary hover:text-text-primary px-2 py-1"
+                                   >
+                                     Abbrechen
+                                   </button>
+                                   <button
+                                     onClick={() => {
+                                       if (investigationMessage.trim()) {
+                                         onAddAnomalyComment && onAddAnomalyComment(anomaly, investigationMessage);
+                                         setInvestigationMode(null);
+                                         setInvestigationMessage('');
+                                       }
+                                     }}
+                                     className="text-xs bg-glow-purple text-white px-3 py-1 rounded hover:bg-glow-purple/80"
+                                   >
+                                     Senden
+                                   </button>
+                                 </div>
+                               </div>
+                             </div>
+                           )}
                         </div>
                       );
                    })}

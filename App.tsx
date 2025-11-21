@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, Anomaly, AnomalyType } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
 import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
@@ -16,7 +16,8 @@ import { TimeStatistics } from './components/TimeStatistics';
 import { NotificationsModal } from './components/NotificationsModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { SearchProjectModal } from './components/SearchProjectModal';
-import { ChatModalV2 as ChatModal } from './components/ChatModalV2'; // Neue, saubere Version
+import { ChatModal } from './components/ChatModal';
+// import { ChatModalV2 as ChatModal } from './components/ChatModalV2'; // Neue, saubere Version
 // import { ChatModal as ChatModalLegacy } from './components/ChatModalLegacy'; // Backup (alte Version)
 import { StartTimeTrackingModal } from './components/StartTimeTrackingModal';
 import { LoginScreen } from './components/LoginScreen';
@@ -125,10 +126,26 @@ const App: React.FC = () => {
   // Anomaly Detection State
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [targetAnomaly, setTargetAnomaly] = useState<Anomaly | null>(null);
+  const [anomalyRecords, setAnomalyRecords] = useState<Record<string, AnomalyRecord>>({});
+
+  // Load Anomaly Records
+  useEffect(() => {
+    const saved = localStorage.getItem('ctt_anomaly_records');
+    if (saved) {
+      try {
+        setAnomalyRecords(JSON.parse(saved));
+      } catch (e) { console.error('Failed to load anomaly records', e); }
+    }
+  }, []);
+
+  // Save Anomaly Records
+  useEffect(() => {
+    localStorage.setItem('ctt_anomaly_records', JSON.stringify(anomalyRecords));
+  }, [anomalyRecords]);
 
   // Calculate Anomalies Effect
   useEffect(() => {
-    if (users.length === 0) return;
+    if (users.length === 0 || !currentUser) return;
 
     const endDate = new Date();
     const startDate = new Date();
@@ -136,18 +153,34 @@ const App: React.FC = () => {
 
     let allAnomalies: Anomaly[] = [];
     
-    // Admin checks all active users, User checks only themselves
-    const usersToCheck = currentUser?.role === 'role-1' 
-      ? users.filter(u => u.status === UserStatus.Active) 
-      : (currentUser ? [currentUser] : []);
+    const isAdmin = currentUser.role === 'role-1' || currentUser.role === 'admin';
+    
+    // Bestimme welche User geprüft werden:
+    // - Admin: Alle aktiven User AUSSER Admins
+    // - Normaler User: Nur sich selbst
+    const usersToCheck = isAdmin
+      ? users.filter(u => u.status === UserStatus.Active && u.role !== 'role-1' && u.role !== 'admin')
+      : [currentUser];
     
     usersToCheck.forEach(user => {
        const userAnomalies = detectAnomalies(user, timeEntries, absenceRequests, startDate, endDate);
-       allAnomalies = [...allAnomalies, ...userAnomalies];
+       
+       // Merge with records
+       const merged = userAnomalies.map(a => {
+         const key = `${a.userId}-${a.date}-${a.type}`;
+         const record = anomalyRecords[key];
+         return {
+           ...a,
+           status: record?.status || AnomalyStatus.Open,
+           comments: record?.comments || []
+         };
+       });
+       
+       allAnomalies = [...allAnomalies, ...merged];
     });
     
     setAnomalies(allAnomalies);
-  }, [timeEntries, absenceRequests, users, currentUser]);
+  }, [timeEntries, absenceRequests, users, currentUser, anomalyRecords]);
 
   // Berechne ungelesene Nachrichten
   const unreadMessagesCount = useMemo(() => {
@@ -1629,16 +1662,68 @@ const App: React.FC = () => {
     return null;
   };
 
+  const handleResolveAnomaly = useCallback((anomaly: Anomaly) => {
+    const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+    const currentRecord = anomalyRecords[key] || { id: key, status: AnomalyStatus.Open, comments: [] };
+    // Toggle Status: OPEN <-> RESOLVED
+    const nextStatus = currentRecord.status === AnomalyStatus.Resolved
+      ? AnomalyStatus.Open
+      : AnomalyStatus.Resolved;
+    const newRecord: AnomalyRecord = {
+      ...currentRecord,
+      status: nextStatus
+    };
+    setAnomalyRecords(prev => ({ ...prev, [key]: newRecord }));
+  }, [anomalyRecords]);
+
+  const handleAddAnomalyComment = useCallback((anomaly: Anomaly, message: string) => {
+    if (!currentUser) return;
+    const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+    const currentRecord = anomalyRecords[key] || { id: key, status: AnomalyStatus.Open, comments: [] };
+    const newComment: AnomalyComment = {
+      id: `comment-${Date.now()}`,
+      userId: currentUser.id,
+      message,
+      timestamp: new Date().toISOString()
+    };
+    const newRecord = {
+      ...currentRecord,
+      comments: [...currentRecord.comments, newComment]
+    };
+    setAnomalyRecords(prev => ({ ...prev, [key]: newRecord }));
+  }, [anomalyRecords, currentUser]);
+
   const handleSelectAnomaly = useCallback((anomaly: Anomaly) => {
     setTargetAnomaly(anomaly);
     setShowNotifications(false);
-    setShowTimeStatistics(true);
-    setShowDashboard(false);
-    setShowProjectsOverview(false);
-    setShowVacationAbsence(false);
-    setShowTimeTracking(false);
-    setShowSettings(false);
-  }, []);
+    
+    const isAdmin = currentUser?.role === 'role-1';
+    
+    if (isAdmin) {
+      setShowTimeStatistics(true);
+      setShowDashboard(false);
+      setShowProjectsOverview(false);
+      setShowVacationAbsence(false);
+      setShowTimeTracking(false);
+      setShowSettings(false);
+    } else {
+      // User -> TimeTracking (Meine Zeiten) in Übersicht mit Scroll zu Wochenansicht
+      setShowTimeTracking(true);
+      setShowTimeStatistics(false);
+      setShowDashboard(false);
+      setShowProjectsOverview(false);
+      setShowVacationAbsence(false);
+      setShowSettings(false);
+      
+      // Scroll zur Wochenansicht nach kurzer Verzögerung (damit Component gemountet ist)
+      setTimeout(() => {
+        const weekChartElement = document.getElementById('week-chart-section');
+        if (weekChartElement) {
+          weekChartElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [currentUser]);
 
   if (!currentUser) {
     return <LoginScreen users={users} onLogin={setCurrentUser} />;
@@ -1815,6 +1900,12 @@ const App: React.FC = () => {
             currentUser={currentUser}
             absenceRequests={absenceRequests}
             users={users}
+            anomalies={anomalies}
+            targetAnomaly={targetAnomaly}
+            onUpdateTimeEntry={handleUpdateTimeEntry}
+            onBillableChange={handleBillableChange}
+            onDeleteTimeEntry={handleDeleteTimeEntry}
+            onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
         ) : showTimeStatistics ? (
           <TimeStatistics
@@ -1824,10 +1915,13 @@ const App: React.FC = () => {
             currentUser={currentUser}
             targetAnomaly={targetAnomaly}
             projects={projects}
+            anomalies={anomalies}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            onResolveAnomaly={handleResolveAnomaly}
+            onAddAnomalyComment={handleAddAnomalyComment}
           />
         ) : selectedProject ? (
           <TaskArea 
@@ -2100,6 +2194,8 @@ const App: React.FC = () => {
           absenceRequests={absenceRequests}
           anomalies={anomalies}
           onSelectAnomaly={handleSelectAnomaly}
+          onResolveAnomaly={handleResolveAnomaly}
+          onAddAnomalyComment={handleAddAnomalyComment}
           users={users}
           onApproveRequest={(requestId) => {
             const request = absenceRequests.find(r => r.id === requestId);
@@ -2158,6 +2254,7 @@ const App: React.FC = () => {
               setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
             }
           }}
+          currentUser={currentUser!}
           initialSelectedRequestId={selectedNotificationRequestId}
         />
       )}
