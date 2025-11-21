@@ -1220,13 +1220,25 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           />
                                         ) : isVideoFile(attachment.type) ? (
                                           // Video Preview - Click to enlarge
-                                          <video 
-                                            src={attachment.url} 
+                                          <div 
+                                            className="relative cursor-pointer group"
                                             onClick={() => setPreviewAttachment(attachment)}
-                                            className={`cursor-pointer ${
-                                              message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'max-w-[320px] rounded-2xl rounded-br-md'
-                                            }`}
-                                          />
+                                          >
+                                            <video 
+                                              src={attachment.url} 
+                                              className={`${
+                                                message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'max-w-[320px] rounded-2xl rounded-br-md'
+                                              }`}
+                                            />
+                                            {/* Play Button Overlay */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                              <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-black/80 transition-all">
+                                                <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M8 5v14l11-7z"/>
+                                                </svg>
+                                              </div>
+                                            </div>
+                                          </div>
                                         ) : isAudioFile(attachment.type) ? (
                                           // Audio Player
                                           <audio 
@@ -1641,13 +1653,25 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               />
                                             ) : isVideoFile(attachment.type) ? (
                                               // Video Preview - Click to enlarge
-                                              <video 
-                                                src={attachment.url} 
+                                              <div 
+                                                className="relative cursor-pointer group"
                                                 onClick={() => setPreviewAttachment(attachment)}
-                                                className={`cursor-pointer ${
-                                                  message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'max-w-[320px] rounded-2xl rounded-bl-md'
-                                                }`}
-                                              />
+                                              >
+                                                <video 
+                                                  src={attachment.url} 
+                                                  className={`${
+                                                    message.content.trim() ? 'max-w-[192px] rounded-lg w-full' : 'max-w-[320px] rounded-2xl rounded-bl-md'
+                                                  }`}
+                                                />
+                                                {/* Play Button Overlay */}
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                  <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-black/80 transition-all">
+                                                    <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                      <path d="M8 5v14l11-7z"/>
+                                                    </svg>
+                                                  </div>
+                                                </div>
+                                              </div>
                                             ) : isAudioFile(attachment.type) ? (
                                               // Audio Player
                                               <audio 
