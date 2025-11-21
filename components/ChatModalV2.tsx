@@ -288,9 +288,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const parseReply = (content: string) => {
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
     if (replyMatch) {
+      // Clean reply content: remove nested @mentions from quoted text
+      let cleanReplyContent = replyMatch[2];
+      // Remove pattern like "@Name: " from the beginning
+      cleanReplyContent = cleanReplyContent.replace(/^@.+?: "(.+)"$/, '$1');
+      
       return {
         senderName: replyMatch[1],
-        replyContent: replyMatch[2],
+        replyContent: cleanReplyContent,
         actualContent: replyMatch[3],
       };
     }
