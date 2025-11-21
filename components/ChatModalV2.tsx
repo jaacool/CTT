@@ -95,6 +95,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showProjectDropdown]);
+  
+  // Close emoji picker and more menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowEmojiPicker(null);
+      setShowMoreMenu(null);
+    };
+
+    if (showEmojiPicker || showMoreMenu) {
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker, showMoreMenu]);
 
   // Close context menu on escape or scroll
   useEffect(() => {
