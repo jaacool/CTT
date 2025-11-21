@@ -1145,23 +1145,59 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx}>
                                         {!attachment.url ? (
-                                          // Uploading - Show progress
-                                          <div className="flex items-center space-x-3 p-3 bg-overlay/50 rounded-lg max-w-xs">
-                                            <span className="text-2xl">{getFileIcon(attachment.type)}</span>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-sm text-text-primary truncate">{attachment.name}</div>
-                                              <div className="text-xs text-text-secondary mb-1">{formatFileSize(attachment.size)}</div>
-                                              {/* Progress Bar */}
-                                              <div className="w-full bg-surface rounded-full h-1.5">
-                                                <div 
-                                                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
-                                                  style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
-                                                />
+                                          // Uploading - Show progress with preview
+                                          <div className="relative max-w-xs rounded-lg overflow-hidden">
+                                            {isImageFile(attachment.type) ? (
+                                              // Image preview while uploading
+                                              <div className="relative">
+                                                <div className="w-full h-48 bg-overlay/30 backdrop-blur-sm flex items-center justify-center">
+                                                  <div className="text-center">
+                                                    <div className="text-4xl mb-2">🖼️</div>
+                                                    <div className="text-sm text-text-primary font-medium">{attachment.name}</div>
+                                                    <div className="text-xs text-text-secondary">{formatFileSize(attachment.size)}</div>
+                                                  </div>
+                                                </div>
+                                                {/* Overlay with progress */}
+                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                  <div className="text-center">
+                                                    <div className="w-16 h-16 mb-3 mx-auto">
+                                                      <svg className="w-16 h-16 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                      </svg>
+                                                    </div>
+                                                    <div className="text-white font-semibold text-lg mb-2">
+                                                      {Math.round(uploadProgress[attachment.name] || 0)}%
+                                                    </div>
+                                                    <div className="w-48 bg-white/20 rounded-full h-2 mb-2">
+                                                      <div 
+                                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                                        style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                      />
+                                                    </div>
+                                                    <div className="text-white/80 text-sm">Wird hochgeladen...</div>
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <div className="text-xs text-text-secondary mt-1">
-                                                Wird hochgeladen... {Math.round(uploadProgress[attachment.name] || 0)}%
+                                            ) : (
+                                              // File upload progress
+                                              <div className="flex items-center space-x-3 p-4 bg-overlay/50 rounded-lg">
+                                                <span className="text-3xl">{getFileIcon(attachment.type)}</span>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-sm text-text-primary font-medium truncate">{attachment.name}</div>
+                                                  <div className="text-xs text-text-secondary mb-2">{formatFileSize(attachment.size)}</div>
+                                                  <div className="w-full bg-surface rounded-full h-2 mb-1">
+                                                    <div 
+                                                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                                      style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                    />
+                                                  </div>
+                                                  <div className="text-xs text-text-secondary">
+                                                    {Math.round(uploadProgress[attachment.name] || 0)}% hochgeladen
+                                                  </div>
+                                                </div>
                                               </div>
-                                            </div>
+                                            )}
                                           </div>
                                         ) : isImageFile(attachment.type) ? (
                                           // Image Preview
@@ -1523,23 +1559,59 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx}>
                                             {!attachment.url ? (
-                                              // Uploading - Show progress
-                                              <div className="flex items-center space-x-3 p-3 bg-surface/50 rounded-lg max-w-xs">
-                                                <span className="text-2xl">{getFileIcon(attachment.type)}</span>
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="text-sm text-text-primary truncate">{attachment.name}</div>
-                                                  <div className="text-xs text-text-secondary mb-1">{formatFileSize(attachment.size)}</div>
-                                                  {/* Progress Bar */}
-                                                  <div className="w-full bg-overlay rounded-full h-1.5">
-                                                    <div 
-                                                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
-                                                      style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
-                                                    />
+                                              // Uploading - Show progress with preview
+                                              <div className="relative max-w-xs rounded-lg overflow-hidden">
+                                                {isImageFile(attachment.type) ? (
+                                                  // Image preview while uploading
+                                                  <div className="relative">
+                                                    <div className="w-full h-48 bg-surface/30 backdrop-blur-sm flex items-center justify-center">
+                                                      <div className="text-center">
+                                                        <div className="text-4xl mb-2">🖼️</div>
+                                                        <div className="text-sm text-text-primary font-medium">{attachment.name}</div>
+                                                        <div className="text-xs text-text-secondary">{formatFileSize(attachment.size)}</div>
+                                                      </div>
+                                                    </div>
+                                                    {/* Overlay with progress */}
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                      <div className="text-center">
+                                                        <div className="w-16 h-16 mb-3 mx-auto">
+                                                          <svg className="w-16 h-16 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                          </svg>
+                                                        </div>
+                                                        <div className="text-white font-semibold text-lg mb-2">
+                                                          {Math.round(uploadProgress[attachment.name] || 0)}%
+                                                        </div>
+                                                        <div className="w-48 bg-white/20 rounded-full h-2 mb-2">
+                                                          <div 
+                                                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                                            style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                          />
+                                                        </div>
+                                                        <div className="text-white/80 text-sm">Wird hochgeladen...</div>
+                                                      </div>
+                                                    </div>
                                                   </div>
-                                                  <div className="text-xs text-text-secondary mt-1">
-                                                    Wird hochgeladen... {Math.round(uploadProgress[attachment.name] || 0)}%
+                                                ) : (
+                                                  // File upload progress
+                                                  <div className="flex items-center space-x-3 p-4 bg-surface/50 rounded-lg">
+                                                    <span className="text-3xl">{getFileIcon(attachment.type)}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                      <div className="text-sm text-text-primary font-medium truncate">{attachment.name}</div>
+                                                      <div className="text-xs text-text-secondary mb-2">{formatFileSize(attachment.size)}</div>
+                                                      <div className="w-full bg-overlay rounded-full h-2 mb-1">
+                                                        <div 
+                                                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                                          style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
+                                                        />
+                                                      </div>
+                                                      <div className="text-xs text-text-secondary">
+                                                        {Math.round(uploadProgress[attachment.name] || 0)}% hochgeladen
+                                                      </div>
+                                                    </div>
                                                   </div>
-                                                </div>
+                                                )}
                                               </div>
                                             ) : isImageFile(attachment.type) ? (
                                               // Image Preview

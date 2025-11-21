@@ -20,6 +20,15 @@ export const uploadChatFile = async (
     const fileName = `${timestamp}_${randomString}.${fileExtension}`;
     const filePath = `chat-files/${channelId}/${fileName}`;
 
+    // Simulate progress for better UX (Supabase doesn't support native progress)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 10;
+      if (progress <= 90 && onProgress) {
+        onProgress(progress);
+      }
+    }, 100);
+
     // Upload file to Supabase Storage
     const { data, error } = await supabase.storage
       .from('chat-attachments')
@@ -28,9 +37,16 @@ export const uploadChatFile = async (
         upsert: false,
       });
 
+    clearInterval(progressInterval);
+
     if (error) {
       console.error('Upload error:', error);
       throw new Error(`Upload fehlgeschlagen: ${error.message}`);
+    }
+
+    // Complete progress
+    if (onProgress) {
+      onProgress(100);
     }
 
     // Get public URL
