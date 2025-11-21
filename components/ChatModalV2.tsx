@@ -2288,242 +2288,209 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     className="hidden"
                   />
                   
-                  {/* Voice Recording UI - Full Width */}
-                  {isRecording || audioBlob ? (
-                    <>
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors flex-shrink-0"
-                        title="Datei anhängen"
-                      >
-                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                      </button>
-                      
-                      <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
-                        {isRecording ? (
-                          <>
-                            {/* Scrolling Waveform Visualization */}
-                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
-                              {(() => {
-                                // Show last ~100 bars that fit in the container
-                                const maxBars = 100;
-                                const displayWaveform = recordedWaveform.slice(-maxBars);
-                                
-                                return displayWaveform.map((level, index) => {
-                                  // Erhöhter Pegelausschlag: 2x Multiplikator
-                                  const amplifiedLevel = Math.min(1, level * 2);
-                                  const height = Math.max(3, amplifiedLevel * 28); // Min 3px, max 28px
-                                  const opacity = 0.3 + (amplifiedLevel * 0.7); // Min 0.3, max 1.0
-                                  return (
-                                    <div
-                                      key={recordedWaveform.length - displayWaveform.length + index}
-                                      className="bg-red-500 rounded-full flex-shrink-0"
-                                      style={{
-                                        height: `${height}px`,
-                                        opacity: opacity,
-                                        width: '2px',
-                                      }}
-                                    />
-                                  );
-                                });
-                              })()}
-                            </div>
-                            
-                            {/* Time Display */}
-                            <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
-                            
-                            {/* Stop Button */}
-                            <button
-                              onClick={stopRecording}
-                              className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors flex-shrink-0"
-                              title="Aufnahme beenden"
-                            >
-                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <rect x="6" y="6" width="12" height="12" />
-                              </svg>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {/* Recorded Waveform Preview */}
-                            <div className="flex items-center justify-between flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
-                              {(() => {
-                                // Always show exactly 100 bars, stretched to full width
-                                const targetBars = 100;
-                                let displayWaveform: number[];
-                                
-                                if (recordedWaveform.length === 0) {
-                                  // No data yet
-                                  displayWaveform = new Array(targetBars).fill(0);
-                                } else if (recordedWaveform.length <= targetBars) {
-                                  // Stretch by repeating samples
-                                  displayWaveform = [];
-                                  const repeatFactor = targetBars / recordedWaveform.length;
-                                  for (let i = 0; i < recordedWaveform.length; i++) {
-                                    const repeats = Math.ceil(repeatFactor);
-                                    for (let j = 0; j < repeats && displayWaveform.length < targetBars; j++) {
-                                      displayWaveform.push(recordedWaveform[i]);
-                                    }
-                                  }
-                                } else {
-                                  // Downsample by taking every nth sample
-                                  const step = recordedWaveform.length / targetBars;
-                                  displayWaveform = [];
-                                  for (let i = 0; i < targetBars; i++) {
-                                    const index = Math.floor(i * step);
-                                    displayWaveform.push(recordedWaveform[index]);
-                                  }
-                                }
-                                
-                                return displayWaveform.map((level, index) => {
-                                  // Erhöhter Pegelausschlag: 2x Multiplikator
-                                  const amplifiedLevel = Math.min(1, level * 2);
-                                  const height = Math.max(3, amplifiedLevel * 28);
-                                  return (
-                                    <div
-                                      key={index}
-                                      className="bg-glow-purple rounded-full"
-                                      style={{
-                                        height: `${height}px`,
-                                        opacity: 0.5,
-                                        width: '2px',
-                                        flex: '1 1 0',
-                                      }}
-                                    />
-                                  );
-                                });
-                              })()}
-                            </div>
-                            
-                            {/* Time Display */}
-                            <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
-                            
-                            {/* Play/Pause Button */}
-                            <button
-                              onClick={isPlayingRecording ? pausePlayback : playRecording}
-                              className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors flex-shrink-0"
-                              title={isPlayingRecording ? "Pause" : "Abspielen"}
-                            >
-                              {isPlayingRecording ? (
-                                <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z"/>
-                                </svg>
-                              )}
-                            </button>
-                            
-                            {/* Delete Button */}
-                            <button
-                              onClick={cancelRecording}
-                              className="p-2 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0"
-                              title="Löschen"
-                            >
-                              <TrashIcon className="w-5 h-5 text-red-500" />
-                            </button>
-                            
-                            {/* Send Button */}
-                            <button
-                              onClick={sendVoiceMessage}
-                              className="p-2 rounded-full transition-all flex-shrink-0"
-                              style={{ background: 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)' }}
-                              title="Senden"
-                            >
-                              <SendIcon className="w-5 h-5 text-white" />
-                            </button>
-                          </>
-                        )}
+                  {/* Datei-Button - bleibt immer gleich */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors flex-shrink-0"
+                    title="Datei anhängen"
+                  >
+                    <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
+                  
+                  {/* Mittlerer Bereich - Text oder Audio-Tool */}
+                  {isRecording ? (
+                    // Aufnahme-Modus
+                    <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
+                      {/* Scrolling Waveform */}
+                      <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
+                        {(() => {
+                          const maxBars = 100;
+                          const displayWaveform = recordedWaveform.slice(-maxBars);
+                          
+                          return displayWaveform.map((level, index) => {
+                            const amplifiedLevel = Math.min(1, level * 2);
+                            const height = Math.max(3, amplifiedLevel * 28);
+                            const opacity = 0.3 + (amplifiedLevel * 0.7);
+                            return (
+                              <div
+                                key={recordedWaveform.length - displayWaveform.length + index}
+                                className="bg-red-500 rounded-full flex-shrink-0"
+                                style={{
+                                  height: `${height}px`,
+                                  opacity: opacity,
+                                  width: '2px',
+                                }}
+                              />
+                            );
+                          });
+                        })()}
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Normal Input Mode */}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors"
-                        title="Datei anhängen"
-                      >
-                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                      </button>
                       
-                      <div 
-                        className="flex-1 relative"
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const files = Array.from(e.dataTransfer.files);
-                          if (files.length > 0) {
-                            setSelectedFiles(prev => [...prev, ...files]);
-                          }
-                        }}
-                      >
-                        <textarea
-                          ref={textareaRef}
-                          value={messageInput}
-                          onChange={(e) => {
-                            setMessageInput(e.target.value);
-                            // Dynamische Höhenanpassung - reset to auto to get correct scrollHeight
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = 'auto';
-                            // Set height based on content, but respect min/max
-                            const newHeight = Math.max(44, Math.min(target.scrollHeight, 200));
-                            target.style.height = newHeight + 'px';
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
+                      {/* Time Display */}
+                      <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
+                    </div>
+                  ) : audioBlob ? (
+                    // Wiedergabe-Modus
+                    <div className="flex-1 flex items-center space-x-3 bg-overlay px-4 rounded-full" style={{ height: '44px' }}>
+                      {/* Recorded Waveform */}
+                      <div className="flex items-center justify-between flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
+                        {(() => {
+                          const targetBars = 100;
+                          let displayWaveform: number[];
+                          
+                          if (recordedWaveform.length === 0) {
+                            displayWaveform = new Array(targetBars).fill(0);
+                          } else if (recordedWaveform.length <= targetBars) {
+                            displayWaveform = [];
+                            const repeatFactor = targetBars / recordedWaveform.length;
+                            for (let i = 0; i < recordedWaveform.length; i++) {
+                              const repeats = Math.ceil(repeatFactor);
+                              for (let j = 0; j < repeats && displayWaveform.length < targetBars; j++) {
+                                displayWaveform.push(recordedWaveform[i]);
+                              }
                             }
-                          }}
-                          placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
-                          className="w-full px-4 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none transition-all resize-none overflow-y-auto flex items-center caret-glow-purple placeholder:opacity-40"
-                          rows={1}
-                          style={{
-                            height: '44px',
-                            minHeight: '44px',
-                            maxHeight: '200px',
-                            paddingTop: '11px',
-                            paddingBottom: '11px',
-                            lineHeight: '22px',
-                            boxShadow: 'none',
-                          }}
-                        />
+                          } else {
+                            const step = recordedWaveform.length / targetBars;
+                            displayWaveform = [];
+                            for (let i = 0; i < targetBars; i++) {
+                              const index = Math.floor(i * step);
+                              displayWaveform.push(recordedWaveform[index]);
+                            }
+                          }
+                          
+                          return displayWaveform.map((level, index) => {
+                            const amplifiedLevel = Math.min(1, level * 2);
+                            const height = Math.max(3, amplifiedLevel * 28);
+                            return (
+                              <div
+                                key={index}
+                                className="bg-glow-purple rounded-full"
+                                style={{
+                                  height: `${height}px`,
+                                  opacity: 0.5,
+                                  width: '2px',
+                                  flex: '1 1 0',
+                                }}
+                              />
+                            );
+                          });
+                        })()}
                       </div>
                       
+                      {/* Time Display */}
+                      <span className="text-sm font-mono text-text-primary whitespace-nowrap">{formatRecordingTime(recordingTime)}</span>
+                      
+                      {/* Play/Pause Button */}
                       <button
-                        onClick={() => {
-                          if (messageInput.trim().length > 0 || selectedFiles.length > 0) {
-                            handleSendMessage();
-                          } else {
-                            startRecording();
-                          }
-                        }}
-                        disabled={false}
-                        className="p-3 rounded-full transition-all relative overflow-hidden"
-                        style={{
-                          background: (messageInput.trim().length > 0 || selectedFiles.length > 0)
-                            ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
-                            : 'var(--color-overlay)'
-                        }}
+                        onClick={isPlayingRecording ? pausePlayback : playRecording}
+                        className="p-2 hover:bg-glow-purple/20 rounded-full transition-colors flex-shrink-0"
+                        title={isPlayingRecording ? "Pause" : "Abspielen"}
                       >
-                        {(messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
-                          <SendIcon className="w-5 h-5 text-white" />
+                        {isPlayingRecording ? (
+                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                          </svg>
                         ) : (
-                          <MicIcon className="w-5 h-5 text-text-secondary" />
+                          <svg className="w-5 h-5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
                         )}
                       </button>
-                    </>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={cancelRecording}
+                        className="p-2 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0"
+                        title="Löschen"
+                      >
+                        <TrashIcon className="w-5 h-5 text-red-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    // Normal Text-Modus
+                    <div 
+                      className="flex-1 relative"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const files = Array.from(e.dataTransfer.files);
+                        if (files.length > 0) {
+                          setSelectedFiles(prev => [...prev, ...files]);
+                        }
+                      }}
+                    >
+                      <textarea
+                        ref={textareaRef}
+                        value={messageInput}
+                        onChange={(e) => {
+                          setMessageInput(e.target.value);
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          const newHeight = Math.max(44, Math.min(target.scrollHeight, 200));
+                          target.style.height = newHeight + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        placeholder={`Nachricht an ${currentChannel.type === ChatChannelType.Direct ? getDMPartnerName(currentChannel) : `#${currentChannel.name}`}...`}
+                        className="w-full px-4 bg-overlay rounded-2xl text-sm focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none transition-all resize-none overflow-y-auto flex items-center caret-glow-purple placeholder:opacity-40"
+                        rows={1}
+                        style={{
+                          height: '44px',
+                          minHeight: '44px',
+                          maxHeight: '200px',
+                          paddingTop: '11px',
+                          paddingBottom: '11px',
+                          lineHeight: '22px',
+                          boxShadow: 'none',
+                        }}
+                      />
+                    </div>
                   )}
+                  
+                  {/* Rechter Button - Mikrofon/Stop/Send */}
+                  <button
+                    onClick={() => {
+                      if (isRecording) {
+                        stopRecording();
+                      } else if (audioBlob) {
+                        sendVoiceMessage();
+                      } else if (messageInput.trim().length > 0 || selectedFiles.length > 0) {
+                        handleSendMessage();
+                      } else {
+                        startRecording();
+                      }
+                    }}
+                    disabled={false}
+                    className="p-3 rounded-full transition-all relative overflow-hidden flex-shrink-0"
+                    style={{
+                      background: isRecording 
+                        ? '#EF4444'
+                        : (audioBlob || messageInput.trim().length > 0 || selectedFiles.length > 0)
+                          ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
+                          : 'var(--color-overlay)'
+                    }}
+                    title={isRecording ? "Aufnahme beenden" : audioBlob ? "Senden" : (messageInput.trim().length > 0 || selectedFiles.length > 0) ? "Senden" : "Aufnahme starten"}
+                  >
+                    {isRecording ? (
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="6" width="12" height="12" />
+                      </svg>
+                    ) : (audioBlob || messageInput.trim().length > 0 || selectedFiles.length > 0) ? (
+                      <SendIcon className="w-5 h-5 text-white" />
+                    ) : (
+                      <MicIcon className="w-5 h-5 text-text-secondary" />
+                    )}
+                  </button>
                 </div>
               </div>
             )}
