@@ -813,7 +813,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </svg>
                                             <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                           </div>
-                                          <div className="text-xs text-text-secondary/90 line-clamp-2">"{reply.replyContent}"</div>
+                                          <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                         </div>
                                         {/* Actual Message Content */}
                                         <div className="whitespace-pre-wrap">{reply.actualContent}</div>
@@ -940,7 +940,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </svg>
                                                 <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                               </div>
-                                              <div className="text-xs text-text-secondary/90 line-clamp-2">"{reply.replyContent}"</div>
+                                              <div className="text-xs text-text-secondary/90 line-clamp-2">{reply.replyContent}</div>
                                             </div>
                                             {/* Actual Message Content */}
                                             <div className="whitespace-pre-wrap">{reply.actualContent}</div>
