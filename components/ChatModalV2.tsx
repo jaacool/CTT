@@ -249,7 +249,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </button>
 
             {showProjectDropdown && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[100] overflow-hidden">
                 {/* Suchfeld */}
                 <div className="p-3 border-b border-border">
                   <input
