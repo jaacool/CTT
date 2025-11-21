@@ -323,18 +323,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           </div>
 
           {/* Project Filter Dropdown - NEU GEBAUT */}
-          <div className="relative mr-2" ref={dropdownRef}>
-            <button
-              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-              className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
-            >
-              <FolderIcon className="w-4 h-4" />
-              <span className="hidden md:inline">
-                {currentProject ? currentProject.name : 'Alle Projekte'}
-              </span>
-              <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
-              <ChevronDownIcon className="w-4 h-4" />
-            </button>
+          <div className="flex items-center space-x-2 mr-2">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                className="flex items-center space-x-2 px-3 py-2 bg-overlay rounded-lg text-sm hover:bg-overlay/80 transition-colors"
+              >
+                <FolderIcon className="w-4 h-4" />
+                <span className="hidden md:inline">
+                  {currentProject ? currentProject.name : 'Alle Projekte'}
+                </span>
+                <span className="md:hidden">{currentProject ? currentProject.icon : '📁'}</span>
+                <ChevronDownIcon className="w-4 h-4" />
+              </button>
 
             {showProjectDropdown && (
               <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[1000] overflow-hidden">
@@ -418,6 +419,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   )}
                 </div>
               </div>
+            )}
+            </div>
+
+            {/* Reset Button - nur anzeigen wenn ein Projekt ausgewählt ist */}
+            {currentProject && (
+              <button
+                onClick={() => onSwitchProject('')}
+                className="p-2 bg-overlay rounded-lg hover:bg-overlay/80 transition-colors"
+                title="Filter zurücksetzen"
+              >
+                <svg className="w-4 h-4 text-text-secondary hover:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             )}
           </div>
 
