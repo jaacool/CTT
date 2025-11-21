@@ -31,6 +31,8 @@ interface SettingsPageProps {
   onSelectedStateChange: (state: GermanState | undefined) => void;
   separateHomeOffice: boolean;
   onSeparateHomeOfficeChange: (value: boolean) => void;
+  showAdminsInDMs?: boolean;
+  onToggleShowAdminsInDMs?: (show: boolean) => void;
 }
 
 const UserRow: React.FC<{ 
@@ -233,7 +235,7 @@ const UserRow: React.FC<{
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onChangeUserStatus, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onChangeUserStatus, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange, showAdminsInDMs, onToggleShowAdminsInDMs }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels' | 'calendar'>('users');
@@ -290,7 +292,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
             activeTab === 'channels' ? 'glow-button text-text-primary' : 'bg-background text-text-primary hover:bg-overlay'
           }`}
         >
-          Channels
+          Chat
         </button>
         <button
           onClick={() => setActiveTab('calendar')}
@@ -376,6 +378,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
             onCreateChannel={onCreateChannel}
             onUpdateChannel={onUpdateChannel}
             onDeleteChannel={onDeleteChannel}
+            showAdminsInDMs={showAdminsInDMs}
+            onToggleShowAdminsInDMs={onToggleShowAdminsInDMs}
           />
         ) : (
           <div className="text-center py-12 text-text-secondary">

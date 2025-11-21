@@ -116,6 +116,10 @@ const App: React.FC = () => {
   const [currentChatChannel, setCurrentChatChannel] = useState<ChatChannel | null>(null);
   const [currentChatProject, setCurrentChatProject] = useState<Project | null>(selectedProject);
   const [chatProjectLocked, setChatProjectLocked] = useState<boolean>(false);
+  const [showAdminsInDMs, setShowAdminsInDMs] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ctt_show_admins_in_dms');
+    return saved ? JSON.parse(saved) : true; // Default: Admins werden angezeigt
+  });
 
   // Berechne ungelesene Nachrichten
   const unreadMessagesCount = useMemo(() => {
@@ -1166,6 +1170,11 @@ const App: React.FC = () => {
     }
   };
 
+  const handleToggleShowAdminsInDMs = (show: boolean) => {
+    setShowAdminsInDMs(show);
+    localStorage.setItem('ctt_show_admins_in_dms', JSON.stringify(show));
+  };
+
   const handleEditMessage = (messageId: string, newContent: string) => {
     setChatMessages(prev => prev.map(msg =>
       msg.id === messageId
@@ -1792,6 +1801,8 @@ const App: React.FC = () => {
               onSelectedStateChange={setSelectedState}
               separateHomeOffice={separateHomeOffice}
               onSeparateHomeOfficeChange={setSeparateHomeOffice}
+              showAdminsInDMs={showAdminsInDMs}
+              onToggleShowAdminsInDMs={handleToggleShowAdminsInDMs}
               onImportComplete={(result) => {
                 // Merge neue Projekte
                 const updatedProjects = [...projects];
@@ -2026,6 +2037,7 @@ const App: React.FC = () => {
           onSwitchChannel={handleSwitchChatChannel}
           onSwitchProject={handleSwitchChatProject}
           allUsers={users}
+          showAdminsInDMs={showAdminsInDMs}
         />
       )}
 

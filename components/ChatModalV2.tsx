@@ -20,6 +20,7 @@ interface ChatModalV2Props {
   onSwitchChannel: (channelId: string) => void;
   onSwitchProject: (projectId: string) => void;
   allUsers: User[];
+  showAdminsInDMs?: boolean;
 }
 
 export const ChatModalV2: React.FC<ChatModalV2Props> = ({
@@ -38,6 +39,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   onSwitchChannel,
   onSwitchProject,
   allUsers,
+  showAdminsInDMs = true,
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
@@ -372,6 +374,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               <div className="space-y-1">
                 {allUsers
                   .filter(user => user.id !== currentUser.id)
+                  .filter(user => user.status === 'AKTIV') // Nur aktive User anzeigen
+                  .filter(user => {
+                    // Wenn showAdminsInDMs false ist, blende Admins aus (außer der currentUser ist selbst Admin)
+                    if (!showAdminsInDMs && currentUser.role !== 'admin' && user.role === 'admin') {
+                      return false;
+                    }
+                    return true;
+                  })
                   .filter(user => !channelSearchQuery || user.name.toLowerCase().includes(channelSearchQuery.toLowerCase()))
                   .sort((a, b) => {
                     // Finde DM-Channels für beide User - muss GENAU diese beiden User enthalten
