@@ -140,7 +140,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur">
@@ -251,7 +251,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Group Channels */}
             <div className="mb-6">
-              <div className="text-xs text-text-secondary mb-2 font-semibold uppercase">Channels</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-text-secondary font-semibold uppercase">Channels</div>
+                {currentUser.role === 'admin' && (
+                  <button
+                    onClick={() => alert('Channel erstellen - Feature kommt bald!')}
+                    className="text-glow-purple hover:text-glow-purple/80 transition-colors"
+                    title="Neuen Channel erstellen"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                )}
+              </div>
               <div className="space-y-1">
                 {filteredGroupChannels.map(channel => {
                   const unreadCount = getUnreadCountForChannel(channel.id);
@@ -283,7 +296,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Direct Messages */}
             <div>
-              <div className="text-xs text-text-secondary mb-2 font-semibold uppercase">Direktnachrichten</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-text-secondary font-semibold uppercase">Direktnachrichten</div>
+                <button
+                  onClick={() => alert('Direktnachricht starten - Feature kommt bald!')}
+                  className="text-glow-purple hover:text-glow-purple/80 transition-colors"
+                  title="Neue Direktnachricht starten"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
               <div className="space-y-1">
                 {filteredDirectMessages.map(channel => {
                   const partner = channel.members.find(m => m.id !== currentUser.id);
