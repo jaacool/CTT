@@ -732,10 +732,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
                         <div className="flex flex-col items-end max-w-[75%]">
-                          {/* Nur Timestamp, kein Name */}
+                          {/* Timestamp & Projekt-Tag */}
                           {showAvatar && (
-                            <div className="flex items-center mb-1 px-1">
+                            <div className="flex items-center space-x-2 mb-1 px-1">
                               <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
+                              {/* Projekt-Tag */}
+                              {message.projectId && (
+                                <button
+                                  onClick={() => onSwitchProject(message.projectId)}
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-overlay/50 text-text-secondary hover:bg-overlay hover:text-text-primary transition-colors"
+                                  title="Zu diesem Projekt wechseln"
+                                >
+                                  {projects.find(p => p.id === message.projectId)?.name || 'Projekt'}
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -1094,7 +1104,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 })
               )}
               {/* Spacer for hover menu - ensures last message has room for the hover menu */}
-              <div className="h-10" />
+              <div className="h-4" />
               <div ref={messagesEndRef} />
             </div>
 
