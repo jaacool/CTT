@@ -760,23 +760,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       (bearbeitet)
                                     </span>
                                   )}
+                                  
+                                  {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
+                                  {hoveredMessageId === message.id && !isOwnMessage && (
+                                    <div className="absolute -bottom-3 -right-2 flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-[5]">
+                                      {quickReactions.map((emoji) => (
+                                        <button
+                                          key={emoji}
+                                          onClick={() => handleReaction(message.id, emoji)}
+                                          className="text-lg hover:scale-125 transition-transform"
+                                          title={`Mit ${emoji} reagieren`}
+                                        >
+                                          {emoji}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                
-                                {/* Emoji Reaction Bar - unter der Bubble */}
-                                {hoveredMessageId === message.id && !isOwnMessage && (
-                                  <div className="flex items-center space-x-1 bg-surface border border-border rounded-lg px-2 py-1 shadow-lg z-[5] mt-1">
-                                    {quickReactions.map((emoji) => (
-                                      <button
-                                        key={emoji}
-                                        onClick={() => handleReaction(message.id, emoji)}
-                                        className="text-lg hover:scale-125 transition-transform"
-                                        title={`Mit ${emoji} reagieren`}
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
 
                                 {/* Link Preview */}
                                 {message.content.match(/https?:\/\/[^\s]+/) && (
