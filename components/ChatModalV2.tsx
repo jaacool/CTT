@@ -1104,6 +1104,59 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     </>
                                   );
                                 })()}
+                                
+                                {/* Attachments */}
+                                {message.attachments && message.attachments.length > 0 && (
+                                  <div className="mt-2 space-y-2">
+                                    {message.attachments.map((attachment, idx) => (
+                                      <div key={idx}>
+                                        {isImageFile(attachment.type) ? (
+                                          // Image Preview
+                                          <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                                            <img 
+                                              src={attachment.url} 
+                                              alt={attachment.name}
+                                              className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                            />
+                                          </a>
+                                        ) : isVideoFile(attachment.type) ? (
+                                          // Video Preview
+                                          <video 
+                                            src={attachment.url} 
+                                            controls
+                                            className="max-w-xs rounded-lg"
+                                          />
+                                        ) : isAudioFile(attachment.type) ? (
+                                          // Audio Player
+                                          <audio 
+                                            src={attachment.url} 
+                                            controls
+                                            className="w-full max-w-xs"
+                                          />
+                                        ) : (
+                                          // File Download Button
+                                          <a
+                                            href={attachment.url}
+                                            download={attachment.name}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center space-x-3 p-3 bg-overlay/50 hover:bg-overlay rounded-lg transition-colors max-w-xs"
+                                          >
+                                            <span className="text-2xl">{getFileIcon(attachment.type)}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm text-text-primary truncate">{attachment.name}</div>
+                                              <div className="text-xs text-text-secondary">{formatFileSize(attachment.size)}</div>
+                                            </div>
+                                            <svg className="w-5 h-5 text-text-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                
                                 {message.edited && (
                                   <span className="text-xs ml-2 italic text-text-secondary">
                                     (bearbeitet)
@@ -1410,6 +1463,59 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         </>
                                       );
                                     })()}
+                                    
+                                    {/* Attachments */}
+                                    {message.attachments && message.attachments.length > 0 && (
+                                      <div className="mt-2 space-y-2">
+                                        {message.attachments.map((attachment, idx) => (
+                                          <div key={idx}>
+                                            {isImageFile(attachment.type) ? (
+                                              // Image Preview
+                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                                                <img 
+                                                  src={attachment.url} 
+                                                  alt={attachment.name}
+                                                  className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                />
+                                              </a>
+                                            ) : isVideoFile(attachment.type) ? (
+                                              // Video Preview
+                                              <video 
+                                                src={attachment.url} 
+                                                controls
+                                                className="max-w-xs rounded-lg"
+                                              />
+                                            ) : isAudioFile(attachment.type) ? (
+                                              // Audio Player
+                                              <audio 
+                                                src={attachment.url} 
+                                                controls
+                                                className="w-full max-w-xs"
+                                              />
+                                            ) : (
+                                              // File Download Button
+                                              <a
+                                                href={attachment.url}
+                                                download={attachment.name}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center space-x-3 p-3 bg-surface/50 hover:bg-surface rounded-lg transition-colors max-w-xs"
+                                              >
+                                                <span className="text-2xl">{getFileIcon(attachment.type)}</span>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-sm text-text-primary truncate">{attachment.name}</div>
+                                                  <div className="text-xs text-text-secondary">{formatFileSize(attachment.size)}</div>
+                                                </div>
+                                                <svg className="w-5 h-5 text-text-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                              </a>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
                                     {message.edited && (
                                       <span className="text-xs ml-2 italic text-text-secondary">
                                         (bearbeitet)
