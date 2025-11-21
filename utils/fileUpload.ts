@@ -108,6 +108,12 @@ export const uploadChatFiles = async (
  */
 export const deleteChatFile = async (fileUrl: string): Promise<void> => {
   try {
+    // Skip deletion for blob URLs (local preview URLs)
+    if (fileUrl.startsWith('blob:')) {
+      console.log('Skipping deletion of local blob URL:', fileUrl);
+      return;
+    }
+
     // Extract file path from URL
     const urlParts = fileUrl.split('/chat-attachments/');
     if (urlParts.length < 2) {
