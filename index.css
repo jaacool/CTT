@@ -1319,19 +1319,39 @@ textarea:focus {
   animation: highlightGlow 3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Message Highlight Glow - Simple fade in/out effect for quoted message navigation */
+/* Message Highlight Glow - Double pulse fade in/out effect for quoted message navigation */
 @keyframes messageHighlightGlow {
   0% {
     box-shadow: 0 0 20px rgba(168, 85, 247, 0),
                 0 0 40px rgba(236, 72, 153, 0);
   }
+  10% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
+                0 0 40px rgba(236, 72, 153, 0.5);
+  }
   20% {
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
                 0 0 40px rgba(236, 72, 153, 0.5);
   }
-  80% {
+  30% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0),
+                0 0 40px rgba(236, 72, 153, 0);
+  }
+  40% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0),
+                0 0 40px rgba(236, 72, 153, 0);
+  }
+  50% {
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
                 0 0 40px rgba(236, 72, 153, 0.5);
+  }
+  60% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.7),
+                0 0 40px rgba(236, 72, 153, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0),
+                0 0 40px rgba(236, 72, 153, 0);
   }
   100% {
     box-shadow: 0 0 20px rgba(168, 85, 247, 0),
