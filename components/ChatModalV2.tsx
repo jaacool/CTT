@@ -59,9 +59,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [maxUploadSize, setMaxUploadSize] = useState<number>(100); // MB, Standard 100 MB
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
@@ -280,6 +284,45 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const validFiles: File[] = [];
+    const maxSizeBytes = maxUploadSize * 1024 * 1024; // Convert MB to bytes
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxSizeBytes) {
+        alert(`Datei "${file.name}" ist zu groß! Maximum: ${maxUploadSize} MB`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    
+    // Reset input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  // Remove selected file
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   // Handle edit message
@@ -1536,7 +1579,41 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                 )}
                 
+                {/* Selected Files Preview */}
+                {selectedFiles.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-overlay px-3 py-2 rounded-lg">
+                        <span className="text-xs text-text-primary truncate max-w-[150px]">{file.name}</span>
+                        <span className="text-xs text-text-secondary">{formatFileSize(file.size)}</span>
+                        <button
+                          onClick={() => removeSelectedFile(index)}
+                          className="text-text-secondary hover:text-red-500 transition-colors"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-end space-x-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 rounded-full bg-overlay hover:bg-overlay/80 transition-colors self-end mb-1"
+                    title="Datei anhängen"
+                  >
+                    <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
                   <div className="flex-1 relative">
                     <textarea
                       ref={textareaRef}
@@ -1565,15 +1642,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   </div>
                   <button
                     onClick={handleSendMessage}
-                    disabled={!messageInput.trim()}
+                    disabled={!messageInput.trim() && selectedFiles.length === 0}
                     className="p-3 rounded-full transition-all relative overflow-hidden self-end mb-1"
                     style={{
-                      background: messageInput.trim() 
+                      background: (messageInput.trim() || selectedFiles.length > 0)
                         ? 'linear-gradient(135deg, #A855F7, #EC4899, #A855F7)'
                         : 'var(--color-overlay)'
                     }}
                   >
-                    {messageInput.trim() ? (
+                    {(messageInput.trim() || selectedFiles.length > 0) ? (
                       <SendIcon className="w-5 h-5 text-white" />
                     ) : (
                       <MicIcon className="w-5 h-5 text-text-secondary" />

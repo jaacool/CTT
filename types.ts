@@ -221,6 +221,14 @@ export interface ChatChannel {
   isPrivate?: boolean; // Nur für Group Channels - ob Channel privat ist
 }
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  size: number; // in bytes
+  type: string; // MIME type
+  url: string; // Supabase Storage URL
+}
+
 export interface ChatMessage {
   id: string;
   channelId: string;
@@ -237,6 +245,7 @@ export interface ChatMessage {
     content: string;
     senderName: string;
   };
+  attachments?: ChatAttachment[]; // Datei-Anhänge
 }
 
 export enum ChatViewMode {
