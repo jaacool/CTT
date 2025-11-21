@@ -2312,8 +2312,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 const displayWaveform = recordedWaveform.slice(-maxBars);
                                 
                                 return displayWaveform.map((level, index) => {
-                                  const height = Math.max(3, level * 28); // Min 3px, max 28px
-                                  const opacity = 0.3 + (level * 0.7); // Min 0.3, max 1.0
+                                  // Erhöhter Pegelausschlag: 2x Multiplikator
+                                  const amplifiedLevel = Math.min(1, level * 2);
+                                  const height = Math.max(3, amplifiedLevel * 28); // Min 3px, max 28px
+                                  const opacity = 0.3 + (amplifiedLevel * 0.7); // Min 0.3, max 1.0
                                   return (
                                     <div
                                       key={recordedWaveform.length - displayWaveform.length + index}
@@ -2346,36 +2348,48 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         ) : (
                           <>
                             {/* Recorded Waveform Preview */}
-                            <div className="flex items-center space-x-0.5 flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
+                            <div className="flex items-center justify-between flex-1 min-w-0 overflow-hidden" style={{ height: '28px' }}>
                               {(() => {
-                                // Limit to max 100 bars and downsample if necessary
-                                const maxBars = 100;
+                                // Always show exactly 100 bars, stretched to full width
+                                const targetBars = 100;
                                 let displayWaveform: number[];
                                 
-                                if (recordedWaveform.length <= maxBars) {
-                                  // If we have fewer samples than max, show all
-                                  displayWaveform = recordedWaveform;
+                                if (recordedWaveform.length === 0) {
+                                  // No data yet
+                                  displayWaveform = new Array(targetBars).fill(0);
+                                } else if (recordedWaveform.length <= targetBars) {
+                                  // Stretch by repeating samples
+                                  displayWaveform = [];
+                                  const repeatFactor = targetBars / recordedWaveform.length;
+                                  for (let i = 0; i < recordedWaveform.length; i++) {
+                                    const repeats = Math.ceil(repeatFactor);
+                                    for (let j = 0; j < repeats && displayWaveform.length < targetBars; j++) {
+                                      displayWaveform.push(recordedWaveform[i]);
+                                    }
+                                  }
                                 } else {
                                   // Downsample by taking every nth sample
-                                  const step = Math.ceil(recordedWaveform.length / maxBars);
+                                  const step = recordedWaveform.length / targetBars;
                                   displayWaveform = [];
-                                  for (let i = 0; i < recordedWaveform.length; i += step) {
-                                    displayWaveform.push(recordedWaveform[i]);
+                                  for (let i = 0; i < targetBars; i++) {
+                                    const index = Math.floor(i * step);
+                                    displayWaveform.push(recordedWaveform[index]);
                                   }
-                                  // Ensure we don't exceed maxBars
-                                  displayWaveform = displayWaveform.slice(0, maxBars);
                                 }
                                 
                                 return displayWaveform.map((level, index) => {
-                                  const height = Math.max(3, level * 28);
+                                  // Erhöhter Pegelausschlag: 2x Multiplikator
+                                  const amplifiedLevel = Math.min(1, level * 2);
+                                  const height = Math.max(3, amplifiedLevel * 28);
                                   return (
                                     <div
                                       key={index}
-                                      className="bg-glow-purple rounded-full flex-shrink-0"
+                                      className="bg-glow-purple rounded-full"
                                       style={{
                                         height: `${height}px`,
                                         opacity: 0.5,
                                         width: '2px',
+                                        flex: '1 1 0',
                                       }}
                                     />
                                   );
