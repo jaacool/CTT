@@ -1427,3 +1427,13 @@ textarea:focus {
     opacity: 1;
   }
 }
+
+/* Fade Out Animation für Loading Screen */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

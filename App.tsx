@@ -107,6 +107,7 @@ const App: React.FC = () => {
   
   // Loading State - initial false, wird auf true gesetzt sobald Daten geladen sind
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isLoadingFadingOut, setIsLoadingFadingOut] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -236,6 +237,13 @@ const App: React.FC = () => {
       setChatChannels([...initialChannels, ...dmChannels]);
     }
   }, [users, chatChannels.length]);
+
+  // Fade-Out-Animation triggern, wenn Daten geladen sind
+  useEffect(() => {
+    if (isDataLoaded && !isLoadingFadingOut) {
+      setIsLoadingFadingOut(true);
+    }
+  }, [isDataLoaded, isLoadingFadingOut]);
 
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
@@ -1996,17 +2004,28 @@ const App: React.FC = () => {
     return <LoginScreen users={users} onLogin={setCurrentUser} />;
   }
 
-  // Zeige Lade-Animation während Daten geladen werden
-  if (!isDataLoaded) {
-    return (
-      <div className="flex flex-col h-screen font-sans text-sm bg-background">
-        <LoadingScreen message="Projekte werden geladen..." />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-screen font-sans text-sm">
+    <div className="flex flex-col h-screen font-sans text-sm relative">
+      {/* Loading Screen mit Fade-Out */}
+      {!isDataLoaded && (
+        <div className="absolute inset-0 z-50">
+          <LoadingScreen message="Projekte werden geladen..." />
+        </div>
+      )}
+      
+      {isDataLoaded && isLoadingFadingOut && (
+        <div 
+          className="absolute inset-0 z-50 pointer-events-none"
+          style={{
+            animation: 'fadeOut 0.6s ease-out forwards'
+          }}
+        >
+          <LoadingScreen message="Projekte werden geladen..." />
+        </div>
+      )}
+      
+      {/* Main App Content */}
+      <div className={`flex flex-col h-screen font-sans text-sm ${!isDataLoaded ? 'opacity-0' : ''}`}>
       <TopBar
         user={currentUser}
         users={users}
@@ -2709,6 +2728,7 @@ const App: React.FC = () => {
           onStartTracking={handleStartTimeTracking}
         />
       )}
+      </div>
       </div>
     </div>
   );
