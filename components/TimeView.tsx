@@ -133,10 +133,16 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   }, [entriesByDate]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {sortedDateEntries.map(([date, entries]: [string, TimeEntry[]]) => (
-        <React.Fragment key={date}>
-          {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
+        <div key={date} className="space-y-1">
+          <div className="px-1 text-xs font-semibold text-text-secondary mt-1">
+            {date}
+          </div>
+          {entries
+            .slice()
+            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            .map((entry) => (
             <div
               key={entry.id}
               className="glow-card rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
@@ -428,7 +434,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
               )}
             </div>
           ))}
-        </React.Fragment>
+        </div>
       ))}
       
       {/* Pagination */}

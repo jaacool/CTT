@@ -2325,16 +2325,14 @@ const App: React.FC = () => {
 
       {activeTimerTaskId && (() => {
         const activeEntry = timeEntries.find(e => e.id === activeTimeEntryId);
-        
         if (!activeEntry) return null;
-        
+
         return (
-          <>
-            <div 
-              className="fixed bottom-8 right-8 transition-all duration-300 ease-in-out"
-              onMouseEnter={() => setTimerHovered(true)}
-              onMouseLeave={() => setTimerHovered(false)}
-            >
+          <div 
+            className="fixed bottom-8 right-8 transition-all duration-300 ease-in-out"
+            onMouseEnter={() => setTimerHovered(true)}
+            onMouseLeave={() => setTimerHovered(false)}
+          >
               {/* Hover Tooltip */}
               {timerHovered && (
                 <div className="absolute bottom-full right-0 mb-3 bg-overlay text-text-primary px-4 py-2 rounded-lg shadow-xl whitespace-nowrap">
@@ -2404,47 +2402,51 @@ const App: React.FC = () => {
                 </div>
               </button>
             </div>
-            
-            {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (() => {
-              // Verwende entweder editingTimeEntry oder activeEntry
-              const entryToEdit = editingTimeEntry || activeEntry;
-              if (!entryToEdit) return null;
-              
-              // Finde Task/Subtask für Billable-Status
-              let taskBillable = true;
-              const taskIdToCheck = editingTimeEntry ? editingTimeEntry.taskId : activeTimerTaskId;
-              projects.forEach(proj => {
-                proj.taskLists.forEach(list => {
-                  list.tasks.forEach(task => {
-                    if (task.id === taskIdToCheck) {
-                      taskBillable = task.billable ?? true;
-                    }
-                    task.subtasks.forEach(subtask => {
-                      if (subtask.id === taskIdToCheck) {
-                        taskBillable = subtask.billable ?? task.billable ?? true;
-                      }
-                    });
-                  });
-                });
+        );
+      })()}
+
+      {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (() => {
+        // Quelle für zu bearbeitenden Eintrag: zuerst explizit gewählter (TimeView), sonst aktiver Timer-Eintrag
+        const fallbackActiveEntry = timeEntries.find(e => e.id === activeTimeEntryId);
+        const entryToEdit = editingTimeEntry || fallbackActiveEntry;
+        if (!entryToEdit) return null;
+
+        // Finde Task/Subtask für Billable-Status
+        let taskBillable = true;
+        const taskIdToCheck = entryToEdit.taskId;
+        projects.forEach(proj => {
+          proj.taskLists.forEach(list => {
+            list.tasks.forEach(task => {
+              if (task.id === taskIdToCheck) {
+                taskBillable = task.billable ?? true;
+              }
+              task.subtasks.forEach(subtask => {
+                if (subtask.id === taskIdToCheck) {
+                  taskBillable = subtask.billable ?? task.billable ?? true;
+                }
               });
-              
-              return (
-                <TimerMenu
-                  timeEntry={entryToEdit}
-                  elapsedSeconds={editingTimeEntry ? entryToEdit.duration : (taskTimers[activeTimerTaskId] || 0)}
-                  onClose={() => {
-                    setShowTimerMenu(false);
-                    setEditingTimeEntry(null);
-                  }}
-                  onUpdate={handleUpdateTimeEntry}
-                  onStop={editingTimeEntry ? undefined : () => handleToggleTimer(activeTimerTaskId)}
-                  anchorRect={timerMenuAnchor}
-                  taskBillable={taskBillable}
-                  onBillableChange={handleBillableChange}
-                />
-              );
-            })()}
-          </>
+            });
+          });
+        });
+
+        const elapsedSeconds = editingTimeEntry
+          ? entryToEdit.duration
+          : (activeTimerTaskId ? (taskTimers[activeTimerTaskId] || 0) : entryToEdit.duration);
+
+        return (
+          <TimerMenu
+            timeEntry={entryToEdit}
+            elapsedSeconds={elapsedSeconds}
+            onClose={() => {
+              setShowTimerMenu(false);
+              setEditingTimeEntry(null);
+            }}
+            onUpdate={handleUpdateTimeEntry}
+            onStop={editingTimeEntry || !activeTimerTaskId ? undefined : () => handleToggleTimer(activeTimerTaskId)}
+            anchorRect={timerMenuAnchor}
+            taskBillable={taskBillable}
+            onBillableChange={handleBillableChange}
+          />
         );
       })()}
       
