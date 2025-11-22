@@ -14,7 +14,7 @@ interface ChatModalV2Props {
   currentUser: User;
   currentProject: Project | null;
   currentChannel: ChatChannel | null;
-  onSendMessage: (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[]) => void;
+  onSendMessage: (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[], messageId?: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   onUpdateMessageAttachments: (messageId: string, attachments: ChatAttachment[]) => void;
   onDeleteMessage: (messageId: string) => void;
@@ -671,11 +671,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         }
         
         // 2. Send each file as a separate message with Blob URL for instant preview
-        const messageIds: string[] = [];
+        // Store mapping: filename -> messageId for later update
+        const fileMessageMap = new Map<string, string>();
         if (filesToUpload.length > 0) {
           filesToUpload.forEach((file, idx) => {
             const messageId = `msg-${Date.now()}-${idx}`;
-            messageIds.push(messageId);
+            fileMessageMap.set(file.name, messageId);
             
             const placeholderAttachment: ChatAttachment = {
               id: `uploading-${Date.now()}-${idx}`,
@@ -686,7 +687,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             };
             
             // Send empty message with single attachment (Blob URL)
-            onSendMessage('', currentChannel.id, projectId, [placeholderAttachment]);
+            onSendMessage('', currentChannel.id, projectId, [placeholderAttachment], messageId);
           });
         }
         
@@ -715,30 +716,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           }).then(uploadedAttachments => {
             console.log('✅ Upload complete, updating messages with real URLs:', uploadedAttachments);
             
-            // WICHTIG: Warte kurz damit die Nachrichten in den Props ankommen
-            setTimeout(() => {
-              // Update each message with real Supabase URLs
-              uploadedAttachments.forEach((attachment, idx) => {
-                // Find the message by looking for the one with matching filename and blob URL
-                const targetMessage = messages.find(msg => 
-                  msg.attachments?.some(att => att.name === attachment.name && att.url.startsWith('blob:'))
-                );
-                
-                console.log('🔍 Looking for message with attachment:', attachment.name, 'Found:', !!targetMessage);
-                
-                if (targetMessage) {
-                  console.log('✅ Updating message:', targetMessage.id, 'with real URL:', attachment.url);
-                  onUpdateMessageAttachments(targetMessage.id, [attachment]);
-                } else {
-                  console.warn('⚠️ Could not find message for attachment:', attachment.name);
-                  console.warn('Available messages:', messages.map(m => ({ 
-                    id: m.id, 
-                    attachments: m.attachments?.map(a => ({ name: a.name, url: a.url.substring(0, 20) }))
-                  })));
-                }
-              });
-              setUploadProgress({});
-            }, 100); // Kurze Verzögerung damit Props aktualisiert werden
+            // Update each message with real Supabase URLs using stored messageId
+            uploadedAttachments.forEach((attachment, idx) => {
+              const messageId = fileMessageMap.get(attachment.name);
+              
+              if (messageId) {
+                console.log('✅ Updating message:', messageId, 'with real URL for:', attachment.name);
+                onUpdateMessageAttachments(messageId, [attachment]);
+              } else {
+                console.error('❌ No messageId found for attachment:', attachment.name);
+                console.error('Available mappings:', Array.from(fileMessageMap.entries()));
+              }
+            });
+            setUploadProgress({});
           }).catch(error => {
             console.error('❌ Error uploading files:', error);
             alert('Fehler beim Hochladen der Dateien.');

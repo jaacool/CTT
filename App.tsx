@@ -1083,11 +1083,11 @@ const App: React.FC = () => {
   };
 
   // Chat Handlers
-  const handleSendMessage = (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[]) => {
+  const handleSendMessage = (content: string, channelId: string, projectId: string, attachments?: ChatAttachment[], messageId?: string) => {
     if (!currentUser) return;
     
     const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
+      id: messageId || `msg-${Date.now()}`, // Verwende übergebene ID oder generiere neue
       channelId,
       projectId,
       content,
