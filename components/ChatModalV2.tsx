@@ -2723,7 +2723,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* Emoji Picker Dropdown */}
                                       {showEmojiPicker === message.id && (
                                         <div 
-                                          className={`emoji-picker-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64 ${
+                                          className={`emoji-picker-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl z-[500] w-64 ${
                                             menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
                                           }`}
                                           onClick={(e) => e.stopPropagation()}
@@ -2800,7 +2800,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* More Options Menu */}
                                       {showMoreMenu === message.id && (
                                         <div 
-                                          className={`more-options-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px] ${
+                                          className={`more-options-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[500] min-w-[200px] ${
                                             menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
                                           }`}
                                           onClick={(e) => e.stopPropagation()}
@@ -3271,7 +3271,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
                                             <div 
-                                              className={`emoji-picker-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64 ${
+                                              className={`emoji-picker-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl z-[500] w-64 ${
                                                 menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
                                               }`}
                                               onClick={(e) => e.stopPropagation()}
@@ -3348,7 +3348,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
                                             <div 
-                                              className={`more-options-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px] ${
+                                              className={`more-options-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[500] min-w-[200px] ${
                                                 menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
                                               }`}
                                               onClick={(e) => e.stopPropagation()}
