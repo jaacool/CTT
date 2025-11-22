@@ -120,6 +120,10 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('ctt_show_admins_in_dms');
     return saved ? JSON.parse(saved) : true; // Default: Admins werden angezeigt
   });
+  const [maxUploadSize, setMaxUploadSize] = useState<number>(() => {
+    const saved = localStorage.getItem('ctt_max_upload_size');
+    return saved ? parseInt(saved) : 100; // Default: 100 MB
+  });
   
   // Anomaly Detection State
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -1220,6 +1224,11 @@ const App: React.FC = () => {
     localStorage.setItem('ctt_show_admins_in_dms', JSON.stringify(show));
   };
 
+  const handleMaxUploadSizeChange = (size: number) => {
+    setMaxUploadSize(size);
+    localStorage.setItem('ctt_max_upload_size', size.toString());
+  };
+
   const handleEditMessage = (messageId: string, newContent: string) => {
     setChatMessages(prev => prev.map(msg =>
       msg.id === messageId
@@ -2310,6 +2319,8 @@ const App: React.FC = () => {
           onReactToMessage={handleReactToMessage}
           allUsers={users}
           showAdminsInDMs={showAdminsInDMs}
+          maxUploadSize={maxUploadSize}
+          onMaxUploadSizeChange={handleMaxUploadSizeChange}
         />
       )}
 

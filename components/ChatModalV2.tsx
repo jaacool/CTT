@@ -24,6 +24,8 @@ interface ChatModalV2Props {
   onReactToMessage: (messageId: string, emoji: string) => void;
   allUsers: User[];
   showAdminsInDMs?: boolean;
+  maxUploadSize?: number; // MB
+  onMaxUploadSizeChange?: (size: number) => void;
 }
 
 // Custom Audio Player Component
@@ -328,6 +330,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   onReactToMessage,
   allUsers,
   showAdminsInDMs = true,
+  maxUploadSize: maxUploadSizeProp = 100,
+  onMaxUploadSizeChange,
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
@@ -347,9 +351,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [showChatSettings, setShowChatSettings] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
-  const [maxUploadSize, setMaxUploadSize] = useState<number>(100); // MB, Standard 100 MB
+  const [maxUploadSize, setMaxUploadSize] = useState<number>(maxUploadSizeProp); // MB
+  const [showFileSizeWarning, setShowFileSizeWarning] = useState<{fileName: string, fileSize: number} | null>(null);
   const [previewAttachment, setPreviewAttachment] = useState<ChatAttachment | null>(null);
   const [previewZoom, setPreviewZoom] = useState<number>(1);
   const [previewPosition, setPreviewPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
@@ -961,7 +967,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       const file = files[i];
       console.log(`📎 Checking file: ${file.name}, size: ${file.size} bytes`);
       if (file.size > maxSizeBytes) {
-        alert(`Datei "${file.name}" ist zu groß! Maximum: ${maxUploadSize} MB`);
+        // Zeige Warnung mit Google Drive Vorschlag
+        setShowFileSizeWarning({
+          fileName: file.name,
+          fileSize: Math.round(file.size / (1024 * 1024)) // Convert to MB
+        });
         continue;
       }
       validFiles.push(file);
@@ -1195,8 +1205,21 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <h2 className="text-xl font-bold text-text-primary">Chat</h2>
           </div>
 
-          {/* Project Filter Dropdown - NEU GEBAUT */}
-          <div className="flex items-center mr-2">
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-2">
+            {/* Settings Button */}
+            <button
+              onClick={() => setShowChatSettings(true)}
+              className="p-2 hover:bg-overlay rounded-lg transition-colors"
+              title="Chat-Einstellungen"
+            >
+              <svg className="w-5 h-5 text-text-secondary hover:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+
+            {/* Project Filter Dropdown - NEU GEBAUT */}
             <div className="relative" ref={dropdownRef}>
               <div className="flex items-center bg-overlay rounded-lg overflow-hidden">
                 <button
@@ -2886,6 +2909,119 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div className="flex justify-end">
               <button
                 onClick={() => setShowAddChannelModal(false)}
+                className="px-4 py-2 glow-button rounded-lg"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Settings Modal */}
+      {showChatSettings && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Chat-Einstellungen</h3>
+              <button
+                onClick={() => setShowChatSettings(false)}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Upload Limit Setting */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  Upload-Limit
+                </label>
+                <p className="text-xs text-text-secondary mb-3">
+                  Maximale Dateigröße für Uploads im Chat
+                </p>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="number"
+                    min="1"
+                    max="500"
+                    value={maxUploadSize}
+                    onChange={(e) => {
+                      const newSize = parseInt(e.target.value) || 100;
+                      setMaxUploadSize(newSize);
+                      if (onMaxUploadSizeChange) {
+                        onMaxUploadSizeChange(newSize);
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 bg-overlay border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                  />
+                  <span className="text-sm text-text-secondary font-semibold">MB</span>
+                </div>
+                <div className="mt-2 flex items-center space-x-2 text-xs text-text-secondary">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Empfohlen: 100 MB</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowChatSettings(false)}
+                className="px-4 py-2 glow-button rounded-lg"
+              >
+                Fertig
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* File Size Warning Modal */}
+      {showFileSizeWarning && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex items-start space-x-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold mb-2">Datei zu groß</h3>
+                <p className="text-text-secondary text-sm mb-3">
+                  Die Datei <span className="font-semibold text-text-primary">"{showFileSizeWarning.fileName}"</span> ist zu groß ({showFileSizeWarning.fileSize} MB).
+                </p>
+                <p className="text-text-secondary text-sm mb-4">
+                  Das Upload-Limit beträgt <span className="font-semibold text-text-primary">{maxUploadSize} MB</span>.
+                </p>
+                <div className="bg-overlay rounded-lg p-3 mb-4">
+                  <p className="text-sm text-text-secondary mb-2">
+                    💡 <span className="font-semibold">Tipp:</span> Für größere Dateien empfehlen wir:
+                  </p>
+                  <a
+                    href="https://drive.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 text-sm text-glow-purple hover:text-glow-purple/80 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"/>
+                    </svg>
+                    <span>Google Drive öffnen</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowFileSizeWarning(null)}
                 className="px-4 py-2 glow-button rounded-lg"
               >
                 OK
