@@ -41,9 +41,22 @@ interface TaskAreaProps {
     onOpenTimeTracking?: () => void;
     unreadMessagesCount?: number;
     onEditEntry?: (entry: TimeEntry) => void;
+    onUpdateProject?: (project: Project) => void;
+    favoriteProjectIds?: string[];
+    onToggleFavorite?: (projectId: string) => void;
 }
 
-const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
+const ProjectHeader: React.FC<{ 
+    project: Project; 
+    timeEntries: TimeEntry[]; 
+    taskTimers: { [taskId: string]: number }; 
+    defaultBillable: boolean; 
+    onToggleDefaultBillable: () => void;
+    allUsers: User[];
+    onUpdateProjectMembers: (members: User[]) => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: (projectId: string) => void;
+}> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers, isFavorite, onToggleFavorite }) => {
     
     const allTasks = useMemo(() => project.taskLists.flatMap(list => list.tasks), [project.taskLists]);
     const totalTasks = allTasks.length;
@@ -60,10 +73,37 @@ const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; task
 
     return (
         <header className="mb-6 bg-surface p-4 rounded-xl">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
-                    <div className="flex items-center space-x-4 text-text-secondary text-xs mt-2">
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-start space-x-3">
+                        <h1 className="text-2xl font-bold text-text-primary break-words">{project.name}</h1>
+                        {onToggleFavorite && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleFavorite(project.id);
+                                }}
+                                className="p-1.5 mt-1 rounded-md hover:bg-overlay transition-colors flex-shrink-0"
+                                title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                            >
+                                <svg 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    width="20" 
+                                    height="20" 
+                                    viewBox="0 0 24 24" 
+                                    fill={isFavorite ? 'currentColor' : 'none'}
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                    className={isFavorite ? 'text-yellow-500' : 'text-text-secondary'}
+                                >
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 text-text-secondary text-xs mt-2">
                         <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'glow-button' : 'bg-overlay'}`}>{project.status}</span>
                          <div className="flex items-center space-x-1.5">
                             <CalendarIcon className="w-4 h-4"/>
@@ -71,11 +111,13 @@ const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; task
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                    {project.members.map(member => (
-                        <img key={member.id} src={member.avatarUrl} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-surface ring-2 ring-overlay" />
-                    ))}
-                    <button className="w-8 h-8 rounded-full bg-overlay flex items-center justify-center text-text-secondary hover:bg-surface">+</button>
+                <div className="flex-shrink-0 pt-1">
+                    <AssigneeSelector
+                        assignees={project.members || []}
+                        allUsers={allUsers}
+                        onAssigneesChange={onUpdateProjectMembers}
+                        size="medium"
+                    />
                 </div>
             </div>
             <div className="mt-4">
@@ -242,8 +284,8 @@ const SubtaskItem: React.FC<{
     onSetTaskStatus: (id: string, newStatus: TaskStatus) => void;
     onRenameItem: RenameFn;
     allUsers?: User[];
-    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
-}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateAssignees }) => {
+    onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
+}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateTaskAssignees }) => {
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
     const [timerHovered, setTimerHovered] = useState(false);
     
@@ -303,7 +345,7 @@ const SubtaskItem: React.FC<{
                 <AssigneeSelector
                     assignees={subtask.assignees}
                     allUsers={allUsers || []}
-                    onAssigneesChange={(assignees) => onUpdateAssignees?.(subtask.id, assignees)}
+                    onAssigneesChange={(assignees) => onUpdateTaskAssignees?.(subtask.id, assignees)}
                     size="small"
                 />
             </div>
@@ -327,7 +369,7 @@ interface TaskItemProps {
     pinnedTaskIds?: string[];
     onDeleteTask?: (taskId: string) => void;
     allUsers?: User[];
-    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
+    onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = (props) => {
@@ -405,7 +447,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     <AssigneeSelector
                         assignees={task.assignees}
                         allUsers={props.allUsers || []}
-                        onAssigneesChange={(assignees) => props.onUpdateAssignees?.(task.id, assignees)}
+                        onAssigneesChange={(assignees) => props.onUpdateTaskAssignees?.(task.id, assignees)}
                         size="small"
                     />
                 </div>
@@ -431,7 +473,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onSetTaskStatus={onSetTaskStatus}
                         onRenameItem={onRenameItem}
                         allUsers={props.allUsers}
-                        onUpdateAssignees={props.onUpdateAssignees}
+                        onUpdateTaskAssignees={props.onUpdateTaskAssignees}
                     />
                 );
             })}
@@ -626,7 +668,21 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
     
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <ProjectHeader project={props.project} timeEntries={props.timeEntries} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
+            <ProjectHeader 
+                project={props.project} 
+                timeEntries={props.timeEntries} 
+                taskTimers={props.taskTimers} 
+                defaultBillable={props.defaultBillable} 
+                onToggleDefaultBillable={props.onToggleDefaultBillable}
+                allUsers={props.allUsers || []}
+                onUpdateProjectMembers={(members) => {
+                    if (props.onUpdateProject) {
+                        props.onUpdateProject({ ...props.project, members });
+                    }
+                }}
+                isFavorite={props.favoriteProjectIds?.includes(props.project.id)}
+                onToggleFavorite={props.onToggleFavorite}
+            />
             
             {/* Tab Navigation */}
             <div className="flex space-x-1 mb-6 bg-overlay rounded-lg p-1 border border-border">

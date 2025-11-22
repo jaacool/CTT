@@ -5,9 +5,11 @@ interface ProjectsOverviewProps {
   projects: Project[];
   onSelectProject: (projectId: string) => void;
   onDeleteProject: (projectId: string) => void;
+  favoriteProjectIds?: string[];
+  onToggleFavorite?: (projectId: string) => void;
 }
 
-export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, onSelectProject, onDeleteProject }) => {
+export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, onSelectProject, onDeleteProject, favoriteProjectIds = [], onToggleFavorite }) => {
   const [view, setView] = useState<'list' | 'timeline'>('list');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterStandard, setFilterStandard] = useState<string>('all');
@@ -213,10 +215,35 @@ export const ProjectsOverview: React.FC<ProjectsOverviewProps> = ({ projects, on
                     >
                       {project.name.substring(0, 2).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-text-primary font-semibold truncate">{project.name}</div>
                       <div className="text-text-secondary text-xs truncate">{project.client || '-'}</div>
                     </div>
+                    {onToggleFavorite && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleFavorite(project.id);
+                        }}
+                        className="p-1.5 rounded-md hover:bg-overlay transition-colors flex-shrink-0"
+                        title={favoriteProjectIds.includes(project.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill={favoriteProjectIds.includes(project.id) ? 'currentColor' : 'none'}
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          className={favoriteProjectIds.includes(project.id) ? 'text-yellow-500' : 'text-text-secondary'}
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                      </button>
+                    )}
                   </div>
 
                   {/* Typ */}

@@ -22,6 +22,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
 import { BottomBar } from './components/BottomBar';
+import { LoadingScreen } from './components/LoadingScreen';
 import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
@@ -101,6 +102,9 @@ const App: React.FC = () => {
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [showTimeStatistics, setShowTimeStatistics] = useState(false);
+  
+  // Loading State für optimistisches UI - initial true da MOCK_PROJECTS vorhanden
+  const [isDataLoaded, setIsDataLoaded] = useState(true);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -109,6 +113,12 @@ const App: React.FC = () => {
   // Kalender-Einstellungen
   const [selectedState, setSelectedState] = useState<import('./utils/holidays').GermanState | undefined>('BE'); // Default: Berlin
   const [separateHomeOffice, setSeparateHomeOffice] = useState(false);
+  
+  // Favoriten-System mit localStorage Caching
+  const [favoriteProjectIds, setFavoriteProjectIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('ctt_favorite_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   // Chat State
   const [showChat, setShowChat] = useState(false);
@@ -149,6 +159,7 @@ const App: React.FC = () => {
   }, []);
 
   // PHASE 2: Calculate Anomalies (Background, Debounced)
+  // OPTIMIERT: Nur bei Datenänderung neu berechnen, nicht bei User-Wechsel
   useEffect(() => {
     if (!anomaliesLoaded || users.length === 0 || !currentUser) return;
 
@@ -191,7 +202,7 @@ const App: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [timeEntries, absenceRequests, users, currentUser, anomaliesLoaded]);
+  }, [timeEntries, absenceRequests, users, anomaliesLoaded]); // currentUser entfernt für Performance
 
   // PHASE 3: Realtime Sync (Safe)
   useEffect(() => {
@@ -331,7 +342,31 @@ const App: React.FC = () => {
           setAbsenceRequests(cachedData.absenceRequests);
         }
         
+        // Lade Session-Daten aus Cache
+        if (cachedData.favoriteProjectIds) {
+          setFavoriteProjectIds(cachedData.favoriteProjectIds);
+        }
+        if (cachedData.pinnedTasks) {
+          setPinnedTasks(cachedData.pinnedTasks);
+        }
+        if (cachedData.dashboardNote) {
+          setDashboardNote(cachedData.dashboardNote);
+        }
+        if (cachedData.selectedState) {
+          setSelectedState(cachedData.selectedState as any);
+        }
+        if (cachedData.separateHomeOffice !== undefined) {
+          setSeparateHomeOffice(cachedData.separateHomeOffice);
+        }
+        if (cachedData.showAdminsInDMs !== undefined) {
+          setShowAdminsInDMs(cachedData.showAdminsInDMs);
+        }
+        if (cachedData.maxUploadSize) {
+          setMaxUploadSize(cachedData.maxUploadSize);
+        }
+        
         console.log('✅ Daten aus Cache geladen!');
+        setIsDataLoaded(true);
         return; // Fertig, kein Supabase-Load nötig
       }
       
@@ -363,9 +398,10 @@ const App: React.FC = () => {
         }
         
         console.log('✅ Daten aus Supabase Backup geladen!');
+        setIsDataLoaded(true);
         
         // Speichere auch in localStorage Cache
-        saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests);
+        saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests, getSessionData());
         
         // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
         if (backupData.users.length > 0) {
@@ -416,6 +452,7 @@ const App: React.FC = () => {
         }
         
         console.log('🎉 Daten aus Supabase geladen!');
+        setIsDataLoaded(true);
         
         // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
         if (data.users.length > 0) {
@@ -441,7 +478,7 @@ const App: React.FC = () => {
         if (data.users.length > 0 || data.projects.length > 0 || data.timeEntries.length > 0) {
           console.log('💾 Speichere in localStorage Cache...');
           try {
-            saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+            saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests, getSessionData());
             console.log('✅ Cache gespeichert');
           } catch (error) {
             console.error('⚠️ Fehler beim Speichern des Cache:', error);
@@ -494,7 +531,7 @@ const App: React.FC = () => {
       // Update localStorage Cache (TimeEntries werden gemergt asynchron gesetzt)
       // Wir speichern hier die vom Server empfangenen Daten; die gemergten Einträge
       // werden beim nächsten Cache-Write mit übernommen.
-      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests, getSessionData());
     }, 3); // 3 Sekunden Intervall
     
     // Cleanup beim Unmount
@@ -1202,10 +1239,11 @@ const App: React.FC = () => {
     }
   }, [currentUser, users, chatChannels]);
 
-  // Stelle sicher, dass DM-Channels existieren wenn Users oder currentUser sich ändern
+  // Stelle sicher, dass DM-Channels existieren wenn Users sich ändern
+  // OPTIMIERT: Nicht bei jedem User-Wechsel neu erstellen
   useEffect(() => {
     ensureDirectMessageChannels();
-  }, [users, currentUser]);
+  }, [users]); // currentUser entfernt für Performance
 
   const handleCreateChannel = (name: string, description: string, memberIds: string[], isPrivate: boolean = false) => {
     if (!currentUser) return;
@@ -1561,25 +1599,50 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: User[]) => {
-    updateProjects(prevProjects => prevProjects.map(p => ({
-      ...p,
-      taskLists: p.taskLists.map(list => ({
-        ...list,
-        tasks: list.tasks.map(t => {
-          if (t.id === taskId) {
-            return { ...t, assignees };
-          }
-          // Check subtasks
-          const subtaskIndex = t.subtasks.findIndex(st => st.id === taskId);
-          if (subtaskIndex > -1) {
-            const updatedSubtasks = [...t.subtasks];
-            updatedSubtasks[subtaskIndex] = { ...updatedSubtasks[subtaskIndex], assignees };
-            return { ...t, subtasks: updatedSubtasks };
-          }
-          return t;
-        })
-      }))
-    })));
+    updateProjects(prevProjects => {
+      const updatedProjects = prevProjects.map(p => {
+        const updatedProject = {
+          ...p,
+          taskLists: p.taskLists.map(list => ({
+            ...list,
+            tasks: list.tasks.map(t => {
+              if (t.id === taskId) {
+                return { ...t, assignees };
+              }
+              // Check subtasks
+              const subtaskIndex = t.subtasks.findIndex(st => st.id === taskId);
+              if (subtaskIndex > -1) {
+                const updatedSubtasks = [...t.subtasks];
+                updatedSubtasks[subtaskIndex] = { ...updatedSubtasks[subtaskIndex], assignees };
+                return { ...t, subtasks: updatedSubtasks };
+              }
+              return t;
+            })
+          }))
+        };
+        
+        // Sync to Supabase if this project was modified
+        const wasModified = updatedProject.taskLists.some(list => 
+          list.tasks.some(t => 
+            t.id === taskId || t.subtasks.some(st => st.id === taskId)
+          )
+        );
+        if (wasModified) {
+          saveProject(updatedProject);
+        }
+        
+        return updatedProject;
+      });
+      return updatedProjects;
+    });
+  }, [updateProjects]);
+
+  const handleUpdateProject = useCallback((updatedProject: Project) => {
+    updateProjects(prevProjects => prevProjects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    ));
+    // Sync to Supabase
+    saveProject(updatedProject);
   }, [updateProjects]);
 
   const handleStartTimeTracking = useCallback((projectId: string, taskId: string) => {
@@ -1703,8 +1766,13 @@ const App: React.FC = () => {
 
   const handleDeleteUser = useCallback((userId: string) => {
     deleteUserFromSupabase(userId); // Auto-Delete from Supabase
-    setUsers(prev => prev.filter(u => u.id !== userId));
-  }, []);
+    setUsers(prev => {
+      const updatedUsers = prev.filter(u => u.id !== userId);
+      // Update localStorage Cache sofort
+      saveToLocalStorage(updatedUsers, projects, timeEntries, absenceRequests, getSessionData());
+      return updatedUsers;
+    });
+  }, [projects, timeEntries, absenceRequests]);
 
   const handleChangeRole = useCallback((userId: string, roleId: string) => {
     setUsers(prev => {
@@ -1763,6 +1831,30 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  // Helper: Sammle alle Session-Daten für Cache
+  const getSessionData = useCallback(() => ({
+    favoriteProjectIds,
+    pinnedTasks,
+    dashboardNote,
+    selectedState,
+    separateHomeOffice,
+    showAdminsInDMs,
+    maxUploadSize
+  }), [favoriteProjectIds, pinnedTasks, dashboardNote, selectedState, separateHomeOffice, showAdminsInDMs, maxUploadSize]);
+
+  // Favoriten Toggle Handler mit localStorage Sync
+  const handleToggleFavorite = useCallback((projectId: string) => {
+    setFavoriteProjectIds(prev => {
+      const newFavorites = prev.includes(projectId)
+        ? prev.filter(id => id !== projectId) // Entfernen
+        : [...prev, projectId]; // Hinzufügen
+      
+      // Speichere in localStorage
+      localStorage.setItem('ctt_favorite_projects', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  }, []);
 
   // Removed login screen - always logged in as admin
 
@@ -2008,6 +2100,8 @@ const App: React.FC = () => {
           setSelectedTask(null);
           setIsSidebarOpen(false); // Close sidebar
         }}
+        favoriteProjectIds={favoriteProjectIds}
+        onToggleFavorite={handleToggleFavorite}
       />
       
         <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300">
@@ -2031,13 +2125,20 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
           />
         ) : showProjectsOverview ? (
-          <ProjectsOverview
-            projects={projects}
-            onSelectProject={handleSelectProject}
-            onDeleteProject={handleDeleteProject}
-          />
+          isDataLoaded ? (
+            <ProjectsOverview
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onDeleteProject={handleDeleteProject}
+              favoriteProjectIds={favoriteProjectIds}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          ) : (
+            <LoadingScreen message="Projekte werden geladen..." />
+          )
         ) : showVacationAbsence ? (
-          <VacationAbsence
+          isDataLoaded ? (
+            <VacationAbsence
             absenceRequests={absenceRequests}
             currentUser={currentUser}
             allUsers={users}
@@ -2056,8 +2157,12 @@ const App: React.FC = () => {
             selectedState={selectedState}
             separateHomeOffice={separateHomeOffice}
           />
+          ) : (
+            <LoadingScreen message="Urlaub & Abwesenheit werden geladen..." />
+          )
         ) : showTimeTracking ? (
-          <TimeTracking
+          isDataLoaded ? (
+            <TimeTracking
             timeEntries={timeEntries}
             currentUser={currentUser}
             absenceRequests={absenceRequests}
@@ -2069,8 +2174,12 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
+          ) : (
+            <LoadingScreen message="Zeiterfassung wird geladen..." />
+          )
         ) : showTimeStatistics ? (
-          <TimeStatistics
+          isDataLoaded ? (
+            <TimeStatistics
             users={users}
             timeEntries={timeEntries}
             absenceRequests={absenceRequests}
@@ -2086,6 +2195,9 @@ const App: React.FC = () => {
             onMuteAnomaly={handleMuteAnomaly}
             onAddAnomalyComment={handleAddAnomalyComment}
           />
+          ) : (
+            <LoadingScreen message="Zeitauswertungen werden geladen..." />
+          )
         ) : selectedProject ? (
           <TaskArea 
             project={selectedProject}
@@ -2115,6 +2227,9 @@ const App: React.FC = () => {
             currentUser={currentUser}
             allUsers={MOCK_USERS}
             onUpdateTaskAssignees={handleUpdateTaskAssignees}
+            onUpdateProject={handleUpdateProject}
+            favoriteProjectIds={favoriteProjectIds}
+            onToggleFavorite={handleToggleFavorite}
             onOpenChat={() => {
               setShowChat(true);
               // Setze das aktuelle Projekt für den Chat

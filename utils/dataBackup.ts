@@ -6,8 +6,16 @@ interface BackupData {
   timestamp: string;
   users: User[];
   projects: Project[];
-  timeEntries: TimeEntry[];
+  timeEntries: TimeEntry[]; // Limitiert auf letzte 1500
   absenceRequests: AbsenceRequest[];
+  // Session-Daten
+  favoriteProjectIds?: string[];
+  pinnedTasks?: string[];
+  dashboardNote?: string;
+  selectedState?: string;
+  separateHomeOffice?: boolean;
+  showAdminsInDMs?: boolean;
+  maxUploadSize?: number;
 }
 
 /**
@@ -86,16 +94,31 @@ export function saveToLocalStorage(
   users: User[],
   projects: Project[],
   timeEntries: TimeEntry[],
-  absenceRequests: AbsenceRequest[]
+  absenceRequests: AbsenceRequest[],
+  sessionData?: {
+    favoriteProjectIds?: string[];
+    pinnedTasks?: string[];
+    dashboardNote?: string;
+    selectedState?: string;
+    separateHomeOffice?: boolean;
+    showAdminsInDMs?: boolean;
+    maxUploadSize?: number;
+  }
 ): void {
   try {
+    // Limitiere timeEntries auf letzte 1500 für Performance
+    const limitedTimeEntries = timeEntries
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(0, 1500);
+    
     const backup: BackupData = {
       version: '1.0',
       timestamp: new Date().toISOString(),
       users,
       projects,
-      timeEntries,
-      absenceRequests
+      timeEntries: limitedTimeEntries,
+      absenceRequests,
+      ...sessionData
     };
 
     const jsonString = JSON.stringify(backup);

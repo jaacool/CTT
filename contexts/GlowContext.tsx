@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { saveUserSettings, loadUserSettings } from '../utils/supabaseSync';
 
 export type ThemeMode = 'glow' | 'blue' | 'original' | 'light';
 
 interface GlowContextType {
   themeMode: ThemeMode;
-  setThemeMode: (mode: ThemeMode) => void;
+  setThemeMode: (mode: ThemeMode, userId?: string) => void;
   // Legacy support
   glowEnabled: boolean;
   toggleGlow: () => void;
@@ -36,8 +37,13 @@ export const GlowProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [themeMode]);
 
-  const setThemeMode = (mode: ThemeMode) => {
+  const setThemeMode = (mode: ThemeMode, userId?: string) => {
     setThemeModeState(mode);
+    
+    // Speichere in Supabase wenn userId vorhanden
+    if (userId) {
+      saveUserSettings(userId, { themeMode: mode }).catch(console.error);
+    }
   };
 
   // Legacy support for old toggle

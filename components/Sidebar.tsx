@@ -19,6 +19,8 @@ interface SidebarProps {
   onSelectTimeTracking: () => void;
   onSelectTimeStatistics: () => void;
   onSelectSettings: () => void;
+  favoriteProjectIds: string[];
+  onToggleFavorite: (projectId: string) => void;
 }
 
 const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, newName: string) => void }> = ({ project, onRename }) => {
@@ -63,27 +65,59 @@ const EditableProjectName: React.FC<{ project: Project; onRename: (id: string, n
 };
 
 
-const ProjectItem: React.FC<{ project: Project; isSelected: boolean; onClick: () => void; onRename: (id: string, newName: string) => void }> = ({ project, isSelected, onClick, onRename }) => {
+const ProjectItem: React.FC<{ 
+  project: Project; 
+  isSelected: boolean; 
+  isFavorite: boolean;
+  onClick: () => void; 
+  onRename: (id: string, newName: string) => void;
+  onToggleFavorite: (projectId: string) => void;
+}> = ({ project, isSelected, isFavorite, onClick, onRename, onToggleFavorite }) => {
   // Prüfe ob icon ein Farbcode ist (z.B. #d946ef)
   const isColorCode = project.icon?.startsWith('#');
   
   return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md ${
-        isSelected ? 'glow-button text-white' : 'hover-glow text-text-primary'
-      }`}
-    >
-      {isColorCode ? (
-        <div 
-          className="w-5 h-5 rounded-md flex-shrink-0" 
-          style={{ backgroundColor: project.icon }}
-        />
-      ) : (
-        <span className="text-lg">{project.icon}</span>
-      )}
-      <EditableProjectName project={project} onRename={onRename} />
-    </button>
+    <div className="w-full flex items-center space-x-2">
+      <button
+        onClick={onClick}
+        className={`flex-1 flex items-center space-x-3 px-3 py-2 text-left rounded-md ${
+          isSelected ? 'glow-button text-white' : 'hover-glow text-text-primary'
+        }`}
+      >
+        {isColorCode ? (
+          <div 
+            className="w-5 h-5 rounded-md flex-shrink-0" 
+            style={{ backgroundColor: project.icon }}
+          />
+        ) : (
+          <span className="text-lg">{project.icon}</span>
+        )}
+        <EditableProjectName project={project} onRename={onRename} />
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite(project.id);
+        }}
+        className="p-1.5 rounded-md hover:bg-overlay transition-colors flex-shrink-0"
+        title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill={isFavorite ? 'currentColor' : 'none'}
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+          className={isFavorite ? 'text-yellow-500' : 'text-text-secondary'}
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+      </button>
+    </div>
   );
 };
 
@@ -95,17 +129,40 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 );
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectVacationAbsence, onSelectTimeTracking, onSelectTimeStatistics, onSelectSettings }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectVacationAbsence, onSelectTimeTracking, onSelectTimeStatistics, onSelectSettings, favoriteProjectIds, onToggleFavorite }) => {
   const isAdmin = currentUser?.role === 'role-1';
   const [searchTerm, setSearchTerm] = useState('');
   
-  const filteredProjects = useMemo(() => 
-      projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())),
-      [projects, searchTerm]
+  // Filter: Nur Projekte wo User Member ist (oder alle für Admin)
+  const myProjectsList = useMemo(() => {
+    if (isAdmin) return projects; // Admin sieht alle
+    return projects.filter(p => 
+      p.members?.some(m => m.id === currentUser?.id) || 
+      p.owner?.id === currentUser?.id
+    );
+  }, [projects, currentUser, isAdmin]);
+  
+  // Suche anwenden - ALLE Projekte durchsuchen wenn Suchterm vorhanden
+  const filteredProjects = useMemo(() => {
+    if (searchTerm) {
+      // Bei Suche: Alle Projekte durchsuchen (nicht nur eigene)
+      return projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    // Ohne Suche: Nur eigene Projekte
+    return myProjectsList;
+  }, [projects, myProjectsList, searchTerm]);
+  
+  // Favoriten: IMMER alle favorisierten Projekte anzeigen (nicht filtern)
+  const favoriteProjects = useMemo(() => 
+    projects.filter(p => favoriteProjectIds.includes(p.id)),
+    [projects, favoriteProjectIds]
   );
   
-  const favoriteProjects = filteredProjects.slice(0, 3);
-  const myProjects = filteredProjects.slice(3);
+  // Meine Projekte: Gefilterte Projekte außer Favoriten
+  const myProjects = useMemo(() => 
+    filteredProjects.filter(p => !favoriteProjectIds.includes(p.id)),
+    [filteredProjects, favoriteProjectIds]
+  );
 
   return (
     <>
@@ -192,9 +249,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
               <span>Favoriten</span>
             </h3>
             <div className="space-y-1 mt-1">
-              {favoriteProjects.map(p => (
-                <ProjectItem key={p.id} project={p} isSelected={selectedProject?.id === p.id} onClick={() => onSelectProject(p.id)} onRename={onRenameProject} />
-              ))}
+              {favoriteProjects.length > 0 ? (
+                favoriteProjects.map(p => (
+                  <ProjectItem 
+                    key={p.id} 
+                    project={p} 
+                    isSelected={selectedProject?.id === p.id} 
+                    isFavorite={true}
+                    onClick={() => onSelectProject(p.id)} 
+                    onRename={onRenameProject}
+                    onToggleFavorite={onToggleFavorite}
+                  />
+                ))
+              ) : (
+                <div className="px-3 py-2 text-xs text-text-secondary italic">
+                  Keine Favoriten
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -209,9 +280,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
                 </button>
             </div>
             <div className="space-y-1 mt-1">
-              {myProjects.map(p => (
-                <ProjectItem key={p.id} project={p} isSelected={selectedProject?.id === p.id} onClick={() => onSelectProject(p.id)} onRename={onRenameProject} />
-              ))}
+              {myProjects.length > 0 ? (
+                myProjects.map(p => (
+                  <ProjectItem 
+                    key={p.id} 
+                    project={p} 
+                    isSelected={selectedProject?.id === p.id} 
+                    isFavorite={false}
+                    onClick={() => onSelectProject(p.id)} 
+                    onRename={onRenameProject}
+                    onToggleFavorite={onToggleFavorite}
+                  />
+                ))
+              ) : (
+                <div className="px-3 py-2 text-xs text-text-secondary italic">
+                  Keine Projekte
+                </div>
+              )}
             </div>
           </div>
         </div>
