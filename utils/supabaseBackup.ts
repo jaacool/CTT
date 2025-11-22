@@ -1,13 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { Project, TimeEntry, User, AbsenceRequest } from '../types';
+import { supabase, isSupabaseAvailable } from './supabaseClient';
 import pako from 'pako';
-
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
-
-const supabase = SUPABASE_URL && SUPABASE_ANON_KEY 
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
 
 interface BackupData {
   version: string;
@@ -27,7 +20,7 @@ export async function saveCompressedBackupToSupabase(
   timeEntries: TimeEntry[],
   absenceRequests: AbsenceRequest[]
 ): Promise<boolean> {
-  if (!supabase) return false;
+  if (!isSupabaseAvailable() || !supabase) return false;
 
   try {
     console.log('📦 Erstelle komprimiertes Backup...');
@@ -78,7 +71,7 @@ export async function saveCompressedBackupToSupabase(
  * Lädt alle Daten aus dem komprimierten Backup in Supabase Storage
  */
 export async function loadCompressedBackupFromSupabase(): Promise<BackupData | null> {
-  if (!supabase) return null;
+  if (!isSupabaseAvailable() || !supabase) return null;
 
   try {
     console.log('📥 Lade komprimiertes Backup aus Supabase...');
@@ -90,9 +83,18 @@ export async function loadCompressedBackupFromSupabase(): Promise<BackupData | n
 
     if (error) {
       // Wenn Bucket oder Datei nicht existiert, ist das OK - Feature ist optional
-      if (error.message?.includes('not found') || 
-          error.message?.includes('Bucket not found') ||
-          (error as any).__isStorageError) {
+      // 400 = Bad Request (z.B. Bucket existiert nicht)
+      // 404 = Not Found (Datei existiert nicht)
+      const errorMsg = error.message?.toLowerCase() || '';
+      const isOptionalError = 
+        errorMsg.includes('not found') || 
+        errorMsg.includes('bucket not found') ||
+        errorMsg.includes('does not exist') ||
+        (error as any).statusCode === 400 ||
+        (error as any).statusCode === 404 ||
+        (error as any).__isStorageError;
+      
+      if (isOptionalError) {
         console.log('ℹ️ Kein Backup gefunden (Storage Bucket oder Datei existiert nicht - optional)');
         return null;
       }
