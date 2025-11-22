@@ -2550,20 +2550,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {currentChannel && (
               <div 
                 ref={composerRef} 
-                className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border z-20 relative"
+                className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border z-20"
                 style={{
                   background: 'transparent',
-                  backdropFilter: 'blur(0px)',
                 }}
               >
                 {/* Gradient Blur Background */}
                 <div 
-                  className="absolute inset-0 -z-10 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none"
                   style={{
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
                     WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
+                    zIndex: -1,
                   }}
                 />
                 {/* Reply To Message Preview */}
