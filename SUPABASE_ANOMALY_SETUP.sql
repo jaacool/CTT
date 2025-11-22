@@ -73,11 +73,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS anomalies_updated_at ON anomalies;
 CREATE TRIGGER anomalies_updated_at
   BEFORE UPDATE ON anomalies
   FOR EACH ROW
   EXECUTE FUNCTION update_anomaly_updated_at();
 
--- 7. Real-time aktivieren
-ALTER PUBLICATION supabase_realtime ADD TABLE anomalies;
-ALTER PUBLICATION supabase_realtime ADD TABLE anomaly_comments;
+-- 7. Real-time aktivieren (nur wenn noch nicht vorhanden)
+DO $$
+BEGIN
+  -- Versuche anomalies hinzuzufügen, ignoriere Fehler wenn bereits vorhanden
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE anomalies;
+  EXCEPTION WHEN duplicate_object THEN
+    NULL; -- Tabelle ist bereits in der Publication
+  END;
+  
+  -- Versuche anomaly_comments hinzuzufügen, ignoriere Fehler wenn bereits vorhanden
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE anomaly_comments;
+  EXCEPTION WHEN duplicate_object THEN
+    NULL; -- Tabelle ist bereits in der Publication
+  END;
+END $$;

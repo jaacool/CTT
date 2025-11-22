@@ -466,6 +466,64 @@ export async function deleteUser(userId: string): Promise<boolean> {
 }
 
 // ============================================
+// USER SETTINGS
+// ============================================
+
+export interface UserSettings {
+  selectedState?: string;
+  themeMode?: 'glow' | 'blue' | 'original' | 'light';
+  separateHomeOffice?: boolean;
+}
+
+export async function saveUserSettings(userId: string, settings: UserSettings): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  
+  try {
+    const { error } = await supabase!
+      .from('users')
+      .update({
+        selected_state: settings.selectedState,
+        theme_mode: settings.themeMode,
+        separate_home_office: settings.separateHomeOffice,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+    
+    if (error) throw error;
+    console.log('✅ User Settings gespeichert:', userId);
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Speichern der User Settings:', error);
+    return false;
+  }
+}
+
+export async function loadUserSettings(userId: string): Promise<UserSettings | null> {
+  if (!isSupabaseAvailable()) return null;
+  
+  try {
+    const { data, error } = await supabase!
+      .from('users')
+      .select('selected_state, theme_mode, separate_home_office')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    if (!data) return null;
+    
+    return {
+      selectedState: data.selected_state,
+      themeMode: data.theme_mode as 'glow' | 'blue' | 'original' | 'light',
+      separateHomeOffice: data.separate_home_office
+    };
+  } catch (error) {
+    console.error('❌ Fehler beim Laden der User Settings:', error);
+    return null;
+  }
+}
+
+// ============================================
 // ABSENCE REQUESTS
 // ============================================
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { saveUserSettings } from '../utils/supabaseSync';
 import { User, UserStatus, Role, TimeEntry, Project, AbsenceRequest, ChatChannel } from '../types';
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
@@ -50,19 +52,29 @@ const UserRow: React.FC<{
   const [confirming, setConfirming] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [roleMenuPosition, setRoleMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [statusMenuPosition, setStatusMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const roleButtonRef = useRef<HTMLButtonElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) && 
+          menuButtonRef.current && !menuButtonRef.current.contains(event.target as Node)) {
         setShowMenu(false);
+        setConfirming(false);
       }
-      if (roleMenuRef.current && !roleMenuRef.current.contains(event.target as Node)) {
+      if (roleMenuRef.current && !roleMenuRef.current.contains(event.target as Node) &&
+          roleButtonRef.current && !roleButtonRef.current.contains(event.target as Node)) {
         setShowRoleMenu(false);
       }
-      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node) &&
+          statusButtonRef.current && !statusButtonRef.current.contains(event.target as Node)) {
         setShowStatusMenu(false);
       }
     };
@@ -75,6 +87,39 @@ const UserRow: React.FC<{
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMenu, showRoleMenu, showStatusMenu]);
+
+  const handleMenuToggle = () => {
+    if (!showMenu && menuButtonRef.current) {
+      const rect = menuButtonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 200 // 200px = min-w-[200px] des Menüs
+      });
+    }
+    setShowMenu(!showMenu);
+  };
+
+  const handleRoleMenuToggle = () => {
+    if (!showRoleMenu && roleButtonRef.current) {
+      const rect = roleButtonRef.current.getBoundingClientRect();
+      setRoleMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+    setShowRoleMenu(!showRoleMenu);
+  };
+
+  const handleStatusMenuToggle = () => {
+    if (!showStatusMenu && statusButtonRef.current) {
+      const rect = statusButtonRef.current.getBoundingClientRect();
+      setStatusMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+    setShowStatusMenu(!showStatusMenu);
+  };
   const getTagColor = (tag: string) => {
     switch (tag.toLowerCase()) {
       case 'editor':
@@ -100,10 +145,11 @@ const UserRow: React.FC<{
       </div>
 
       {/* Role */}
-      <div className="col-span-3 flex items-center space-x-2 relative" ref={roleMenuRef}>
+      <div className="col-span-3 flex items-center space-x-2">
         {userRole ? (
           <button
-            onClick={() => setShowRoleMenu(!showRoleMenu)}
+            ref={roleButtonRef}
+            onClick={handleRoleMenuToggle}
             className={`px-2 py-1 rounded-md text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getTagColor(userRole.name)}`}
           >
             {userRole.name}
@@ -112,9 +158,16 @@ const UserRow: React.FC<{
           <span className="text-xs text-text-secondary italic">Keine Rolle</span>
         )}
         
-        {/* Role Selection Menu */}
-        {showRoleMenu && (
-          <div className="absolute left-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[160px] p-2">
+        {/* Role Selection Menu - Portal */}
+        {showRoleMenu && roleMenuPosition && createPortal(
+          <div 
+            ref={roleMenuRef}
+            className="fixed bg-surface border border-overlay rounded-lg shadow-xl z-[9999] min-w-[160px] p-2"
+            style={{
+              top: `${roleMenuPosition.top}px`,
+              left: `${roleMenuPosition.left}px`
+            }}
+          >
             {roles.map(role => (
               <button
                 key={role.id}
@@ -129,7 +182,8 @@ const UserRow: React.FC<{
                 {role.name}
               </button>
             ))}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
@@ -137,9 +191,10 @@ const UserRow: React.FC<{
       <div className="col-span-2 text-text-secondary truncate">{user.email}</div>
 
       {/* Status */}
-      <div className="col-span-2 relative" ref={statusMenuRef}>
+      <div className="col-span-2">
         <button
-          onClick={() => setShowStatusMenu(!showStatusMenu)}
+          ref={statusButtonRef}
+          onClick={handleStatusMenuToggle}
           className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity ${
             user.status === UserStatus.Active ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
           }`}
@@ -147,9 +202,16 @@ const UserRow: React.FC<{
           {user.status === UserStatus.Active ? 'Aktiv' : 'Deaktiviert'}
         </button>
         
-        {/* Status Selection Menu */}
-        {showStatusMenu && (
-          <div className="absolute left-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[140px] p-2">
+        {/* Status Selection Menu - Portal */}
+        {showStatusMenu && statusMenuPosition && createPortal(
+          <div 
+            ref={statusMenuRef}
+            className="fixed bg-surface border border-overlay rounded-lg shadow-xl z-[9999] min-w-[140px] p-2"
+            style={{
+              top: `${statusMenuPosition.top}px`,
+              left: `${statusMenuPosition.left}px`
+            }}
+          >
             <button
               onClick={() => {
                 onChangeStatus(user.id, UserStatus.Active);
@@ -174,22 +236,31 @@ const UserRow: React.FC<{
               <span className="w-2 h-2 rounded-full bg-red-500"></span>
               <span>Deaktiviert</span>
             </button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
       {/* Actions */}
-      <div className="col-span-1 flex justify-end relative" ref={menuRef}>
+      <div className="col-span-1 flex justify-end">
         <button 
-          onClick={() => setShowMenu(!showMenu)}
+          ref={menuButtonRef}
+          onClick={handleMenuToggle}
           className="text-text-secondary hover:text-text-primary"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         
-        {/* Context Menu */}
-        {showMenu && (
-          <div className="absolute right-0 top-8 bg-surface border border-overlay rounded-lg shadow-xl z-50 min-w-[200px] p-2">
+        {/* Context Menu - Portal */}
+        {showMenu && menuPosition && createPortal(
+          <div 
+            ref={menuRef}
+            className="fixed bg-surface border border-overlay rounded-lg shadow-xl z-[9999] min-w-[200px] p-2"
+            style={{
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`
+            }}
+          >
             <button
               onClick={() => {
                 onEdit(user);
@@ -231,7 +302,8 @@ const UserRow: React.FC<{
                 </div>
               </div>
             )}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
@@ -409,7 +481,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
                 </div>
                 <select
                   value={selectedState || ''}
-                  onChange={(e) => onSelectedStateChange(e.target.value as GermanState || undefined)}
+                  onChange={(e) => {
+                    const newState = e.target.value as GermanState || undefined;
+                    onSelectedStateChange(newState);
+                    if (currentUser) {
+                      saveUserSettings(currentUser.id, { selectedState: newState || undefined }).catch(console.error);
+                    }
+                  }}
                   className="bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-purple outline-none"
                 >
                   <option value="">Keine Feiertage</option>
@@ -433,7 +511,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
                     </p>
                   </div>
                   <button
-                    onClick={() => onSeparateHomeOfficeChange(!separateHomeOffice)}
+                    onClick={() => {
+                      const newValue = !separateHomeOffice;
+                      onSeparateHomeOfficeChange(newValue);
+                      if (currentUser) {
+                        saveUserSettings(currentUser.id, { separateHomeOffice: newValue }).catch(console.error);
+                      }
+                    }}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       separateHomeOffice ? 'bg-glow-purple' : 'bg-overlay'
                     }`}
@@ -460,7 +544,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setThemeMode('glow')}
+                  onClick={() => setThemeMode('glow', currentUser?.id)}
                   className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'glow'
                       ? 'border-purple-500 bg-purple-500/20 text-purple-400'
@@ -471,7 +555,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
                   <div className="text-xs opacity-75">Liquid Glass Effekte</div>
                 </button>
                 <button
-                  onClick={() => setThemeMode('blue')}
+                  onClick={() => setThemeMode('blue', currentUser?.id)}
                   className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'blue'
                       ? 'border-blue-500 bg-blue-600 text-white'
@@ -482,7 +566,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
                   <div className="text-xs opacity-75">AI Design mit Orbs</div>
                 </button>
                 <button
-                  onClick={() => setThemeMode('original')}
+                  onClick={() => setThemeMode('original', currentUser?.id)}
                   className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'original'
                       ? 'border-gray-500 bg-gray-500/20 text-gray-400'
@@ -493,7 +577,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
                   <div className="text-xs opacity-75">Cleanes Design</div>
                 </button>
                 <button
-                  onClick={() => setThemeMode('light')}
+                  onClick={() => setThemeMode('light', currentUser?.id)}
                   className={`px-4 py-3 rounded-lg border-2 transition-all ${
                     themeMode === 'light'
                       ? 'border-blue-400 bg-blue-100 text-blue-600'
