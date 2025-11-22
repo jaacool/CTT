@@ -1721,7 +1721,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div 
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
-              style={{ paddingBottom: Math.max(16, Math.ceil(composerHeight)) }}
+              style={{ paddingBottom: Math.max(8, Math.max(0, Math.ceil(composerHeight) - 16)) }}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
               {(() => {
@@ -2541,8 +2541,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 });
               })()}
-              {/* Spacer for hover menu - ensures last message has room for the hover menu */}
-              <div className="h-4" />
               <div ref={messagesEndRef} />
             </div>
 
