@@ -1994,7 +1994,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   setShowProjectDropdown(false);
                                   setProjectSearchQuery('');
                                 }}
-                                className={`w-full flex items-center justify-between space-x-3 px-3 py-2 text-left transition-colors ${
+                                className={`w-full flex items-center justify-between space-x-3 p-3 text-left transition-colors ${
                                   currentProject?.id === project.id 
                                     ? 'bg-glow-purple/20 text-text-primary' 
                                     : 'hover:bg-overlay text-text-secondary'
@@ -2003,13 +2003,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                                   {isColorCode ? (
                                     <div 
-                                      className="w-4 h-4 rounded flex-shrink-0" 
+                                      className="w-5 h-5 rounded flex-shrink-0" 
                                       style={{ backgroundColor: project.icon }}
                                     />
                                   ) : (
-                                    <span className="text-base flex-shrink-0">{project.icon}</span>
+                                    <span className="text-xl flex-shrink-0">{project.icon}</span>
                                   )}
-                                  <span className="text-xs truncate">{project.name}</span>
+                                  <span className="text-sm truncate">{project.name}</span>
                                 </div>
                                 <svg className="w-3.5 h-3.5 text-yellow-400 fill-current flex-shrink-0" viewBox="0 0 24 24">
                                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -2039,7 +2039,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               setShowProjectDropdown(false);
                               setProjectSearchQuery('');
                             }}
-                            className={`w-full flex items-center space-x-3 px-3 py-2 text-left transition-colors ${
+                            className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
                               currentProject?.id === project.id 
                                 ? 'bg-glow-purple/20 text-text-primary' 
                                 : 'hover:bg-overlay text-text-secondary'
@@ -2047,13 +2047,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           >
                             {isColorCode ? (
                               <div 
-                                className="w-4 h-4 rounded flex-shrink-0" 
+                                className="w-5 h-5 rounded flex-shrink-0" 
                                 style={{ backgroundColor: project.icon }}
                               />
                             ) : (
-                              <span className="text-base flex-shrink-0">{project.icon}</span>
+                              <span className="text-xl flex-shrink-0">{project.icon}</span>
                             )}
-                            <span className="text-xs truncate">{project.name}</span>
+                            <span className="text-sm truncate">{project.name}</span>
                           </button>
                         );
                       })}
@@ -2099,7 +2099,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   setShowProjectDropdown(false);
                                   setProjectSearchQuery('');
                                 }}
-                                className={`w-full flex items-center space-x-3 px-3 py-2 text-left transition-colors ${
+                                className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
                                   currentProject?.id === project.id 
                                     ? 'bg-glow-purple/20 text-text-primary' 
                                     : 'hover:bg-overlay text-text-secondary'
@@ -2107,14 +2107,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               >
                                 {isColorCode ? (
                                   <div 
-                                    className="w-4 h-4 rounded flex-shrink-0 opacity-50" 
+                                    className="w-5 h-5 rounded flex-shrink-0 opacity-50" 
                                     style={{ backgroundColor: project.icon }}
                                   />
                                 ) : (
-                                  <span className="text-base flex-shrink-0 opacity-50">{project.icon}</span>
+                                  <span className="text-xl flex-shrink-0 opacity-50">{project.icon}</span>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-xs truncate opacity-60">{project.name}</span>
+                                  <span className="text-sm truncate opacity-60">{project.name}</span>
                                 </div>
                               </button>
                             );
