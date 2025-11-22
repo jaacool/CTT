@@ -1363,35 +1363,33 @@ textarea:focus {
   animation: messageHighlightGlow 2.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Upload Loader Animation - Schicke cleane Animation mit Glow und weißen Umrandungen */
+/* Upload Loader Animation - Schicke cleane Animation mit Glow */
 .upload-loader {
   width: 65px;
   aspect-ratio: 1;
   position: relative;
 }
 
-/* Lila Kreis mit weißer Umrandung */
+/* Lila Kreis - nur farbiger Glow, keine weiße Linie */
 .upload-loader:before {
   content: "";
   position: absolute;
   border-radius: 50px;
-  /* Doppelte box-shadow: erst weiße dünne Linie, dann farbiger Glow */
-  box-shadow: 0 0 0 1px inset rgba(255, 255, 255, 0.8),
-              0 0 0 3px inset #A855F7,
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 3px inset #A855F7,
               0 0 20px rgba(168, 85, 247, 0.6),
               0 0 40px rgba(236, 72, 153, 0.4);
   animation: uploadLoaderAnimation 2.5s infinite;
 }
 
-/* Pinkes Rechteck mit weißer Umrandung */
+/* Pinkes Rechteck - nur farbiger Glow, keine weiße Linie */
 .upload-loader:after {
   content: "";
   position: absolute;
   animation-delay: -1.25s;
   border-radius: 0;
-  /* Doppelte box-shadow: erst weiße dünne Linie, dann farbiger Glow */
-  box-shadow: 0 0 0 1px inset rgba(255, 255, 255, 0.8),
-              0 0 0 3px inset #EC4899,
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 3px inset #EC4899,
               0 0 20px rgba(236, 72, 153, 0.6),
               0 0 40px rgba(168, 85, 247, 0.4);
   animation: uploadLoaderAnimation 2.5s infinite;
