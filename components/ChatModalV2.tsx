@@ -1830,7 +1830,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden relative">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-10">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-[9999]">
           <div className="flex items-center space-x-4">
             {/* Mobile Menu Toggle */}
             <button
