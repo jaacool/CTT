@@ -130,7 +130,14 @@ const App: React.FC = () => {
   const [chatProjectLocked, setChatProjectLocked] = useState<boolean>(false);
   const [showAdminsInDMs, setShowAdminsInDMs] = useState<boolean>(() => {
     const saved = localStorage.getItem('ctt_show_admins_in_dms');
-    return saved ? JSON.parse(saved) : true; // Default: Admins werden angezeigt
+    if (!saved) return true; // Default: Admins werden angezeigt
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Invalid JSON in ctt_show_admins_in_dms, resetting to default');
+      localStorage.removeItem('ctt_show_admins_in_dms');
+      return true;
+    }
   });
   const [maxUploadSize, setMaxUploadSize] = useState<number>(() => {
     const saved = localStorage.getItem('ctt_max_upload_size');
