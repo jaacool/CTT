@@ -186,7 +186,8 @@ export function useAnomalyDetection(
     if (hasDataChanged()) {
       debouncedCalculate();
     }
-  }, [timeEntries, absenceRequests, users, currentUser, hasDataChanged, debouncedCalculate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeEntries, absenceRequests, users, currentUser, debouncedCalculate]);
 
   // Cache Management Funktionen
   const clearCache = useCallback(() => {
