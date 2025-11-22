@@ -263,7 +263,8 @@ export enum AnomalyType {
 
 export enum AnomalyStatus {
   Open = 'OPEN',
-  Resolved = 'RESOLVED'
+  Resolved = 'RESOLVED',
+  Muted = 'MUTED' // Stummgeschaltet - wird nicht mehr angezeigt
 }
 
 export interface AnomalyComment {
@@ -271,6 +272,12 @@ export interface AnomalyComment {
   userId: string;
   message: string;
   timestamp: string;
+  // Optional: User-Objekt für bessere Darstellung (wird von Supabase geladen)
+  user?: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+  };
 }
 
 export interface AnomalyRecord {

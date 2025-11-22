@@ -8,6 +8,7 @@ interface NotificationsModalProps {
   anomalies?: Anomaly[];
   onSelectAnomaly?: (anomaly: Anomaly) => void;
   onResolveAnomaly?: (anomaly: Anomaly) => void;
+  onMuteAnomaly?: (anomaly: Anomaly) => void;
   onAddAnomalyComment?: (anomaly: Anomaly, message: string) => void;
   onApproveRequest: (requestId: string) => void;
   onRejectRequest: (requestId: string, reason: string) => void;
@@ -78,6 +79,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   anomalies = [],
   onSelectAnomaly,
   onResolveAnomaly,
+  onMuteAnomaly,
   onAddAnomalyComment,
   onApproveRequest,
   onRejectRequest,
@@ -106,6 +108,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const [rejectReason, setRejectReason] = useState('');
   const [investigationMode, setInvestigationMode] = useState<string | null>(null);
   const [investigationMessage, setInvestigationMessage] = useState('');
+  const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
+  const [showMutedAnomalies, setShowMutedAnomalies] = useState(false);
+  const [anomalyChatMessage, setAnomalyChatMessage] = useState('');
   
   const isAdmin = currentUser.role === 'role-1';
 
@@ -120,7 +125,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       isAdmin || req.user.id === currentUser.id
     );
     const hasAnomalies = anomalies && anomalies.some(a => 
-      (isAdmin || a.userId === currentUser.id) && a.status !== AnomalyStatus.Resolved
+      (isAdmin || a.userId === currentUser.id) && a.status === AnomalyStatus.Open
     );
     
     if (!hasRequests && hasAnomalies) {
@@ -163,9 +168,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     req.status === AbsenceStatus.Rejected
   );
 
-  const relevantAnomalies = anomalies ? anomalies.filter(a => 
+  // Aktive Anomalien (Open)
+  const activeAnomalies = anomalies ? anomalies.filter(a => 
     (isAdmin || a.userId === currentUser.id) &&
-    a.status !== AnomalyStatus.Resolved
+    a.status === AnomalyStatus.Open
+  ) : [];
+  
+  // Stummgeschaltete Anomalien (Muted)
+  const mutedAnomalies = anomalies ? anomalies.filter(a => 
+    (isAdmin || a.userId === currentUser.id) &&
+    a.status === AnomalyStatus.Muted
   ) : [];
 
   const formatDate = (isoString: string) => {
@@ -245,11 +257,11 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           }
         }}
       >
-        <div className="bg-surface rounded-xl max-w-4xl w-full max-h-[80vh] border border-border shadow-2xl flex flex-col">
+        <div className="bg-surface rounded-xl max-w-4xl w-full h-[80vh] border border-border shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            {(relevantRequests.length > 0 || relevantAnomalies.length > 0) ? (
+            {(relevantRequests.length > 0 || activeAnomalies.length > 0) ? (
               <div className="flex space-x-4">
                 <button 
                   onClick={() => setActiveTab('requests')}
@@ -265,8 +277,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   className={`text-lg font-bold transition-colors flex items-center ${activeTab === 'anomalies' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
                 >
                   Auffälligkeiten
-                  {relevantAnomalies.length > 0 && (
-                    <span className="ml-2 text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">{relevantAnomalies.length}</span>
+                  {activeAnomalies.length > 0 && (
+                    <span className="ml-2 text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">{activeAnomalies.length}</span>
                   )}
                 </button>
               </div>
@@ -279,9 +291,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                  {pendingRequests.length} ausstehend • {completedRequests.length} erledigt
                </p>
             )}
-            {activeTab === 'anomalies' && relevantAnomalies.length > 0 && (
+            {activeTab === 'anomalies' && activeAnomalies.length > 0 && (
                <p className="text-sm text-text-secondary mt-1">
-                 {relevantAnomalies.length} erkannt
+                 {activeAnomalies.length} aktiv • {mutedAnomalies.length} erledigt
                </p>
             )}
           </div>
@@ -296,142 +308,314 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex">
           {activeTab === 'anomalies' ? (
-             <div className="flex-1 overflow-y-auto p-4">
-               {relevantAnomalies.length === 0 ? (
-                 <div className="text-center py-12">
-                   <AlertTriangleIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
-                   <p className="text-text-secondary">Keine Auffälligkeiten</p>
-                 </div>
-               ) : (
-                 <div className="space-y-2">
-                   {relevantAnomalies.map(anomaly => {
-                      const anomalyUser = users.find(u => u.id === anomaly.userId);
-                      const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
-                      return (
-                        <div key={key} 
-                             className="p-4 rounded-lg border border-border bg-overlay hover:border-yellow-500/50 cursor-pointer flex flex-col transition-all"
-                             onClick={() => onSelectAnomaly && onSelectAnomaly(anomaly)}
-                        >
-                           <div className="flex items-center space-x-4">
-                             <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
-                               <CircleAlertIcon className="w-5 h-5" />
-                             </div>
-                             <div className="flex-1">
-                               <div className="flex justify-between items-start">
-                                 <div>
-                                   {isAdmin && anomalyUser && (
+            <div className="w-full h-full flex">
+              {/* Anomaly List */}
+              <div className="w-1/2 border-r border-border overflow-y-auto p-4 space-y-4">
+                {activeAnomalies.length === 0 && mutedAnomalies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertTriangleIcon className="w-12 h-12 mx-auto mb-3 text-text-secondary opacity-50" />
+                    <p className="text-text-secondary">Keine Auffälligkeiten</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Aktive Anomalien */}
+                    {activeAnomalies.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-bold text-text-primary mb-2 px-1">Aktiv ({activeAnomalies.length})</h3>
+                        <div className="space-y-2">
+                          {activeAnomalies.map(anomaly => {
+                            const anomalyUser = users.find(u => u.id === anomaly.userId);
+                            const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+                            const hasComments = anomaly.comments && anomaly.comments.length > 0;
+                            
+                            return (
+                              <div
+                                key={key}
+                                className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
+                                  selectedAnomaly && `${selectedAnomaly.userId}-${selectedAnomaly.date}-${selectedAnomaly.type}` === key
+                                    ? 'border-yellow-500 bg-yellow-500/10'
+                                    : 'border-border bg-overlay hover:border-yellow-500/50'
+                                }`}
+                                onClick={() => setSelectedAnomaly(anomaly)}
+                              >
+                                {hasComments && (
+                                  <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                                
+                                <div className="flex items-start space-x-3">
+                                  <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
+                                    <CircleAlertIcon className="w-5 h-5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    {isAdmin && anomalyUser && (
                                       <div className="flex items-center space-x-2 mb-1">
                                         <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-5 h-5 rounded-full" />
-                                        <span className="text-sm font-bold text-text-primary">{anomalyUser.name}</span>
+                                        <span className="font-semibold text-text-primary text-sm">{anomalyUser.name}</span>
                                       </div>
-                                   )}
-                                   <div className="font-semibold text-text-primary">
-                                     {ANOMALY_LABELS[anomaly.type]}
-                                   </div>
-                                   <div className="text-sm text-text-secondary">
-                                     {formatDate(anomaly.date)} • {anomaly.details.trackedHours}h gearbeitet
-                                     {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
-                                   </div>
-                                 </div>
-                                 <div className="text-xs text-glow-purple font-semibold bg-glow-purple/10 px-2 py-1 rounded">
-                                   Anzeigen →
-                                 </div>
-                               </div>
-                             </div>
-                           </div>
-
-                           {/* Comments List */}
-                           {anomaly.comments && anomaly.comments.length > 0 && (
-                             <div className="mt-3 pl-16 space-y-2 cursor-default" onClick={e => e.stopPropagation()}>
-                               {anomaly.comments.map(comment => {
-                                 const author = users.find(u => u.id === comment.userId);
-                                 return (
-                                   <div key={comment.id} className="bg-surface/50 p-2 rounded border border-border text-xs">
-                                     <div className="flex justify-between text-text-secondary mb-1">
-                                        <span className="font-bold">{author?.name || 'Unbekannt'}</span>
-                                        <span>{new Date(comment.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} {new Date(comment.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
-                                     </div>
-                                     <div className="text-text-primary">{comment.message}</div>
-                                   </div>
-                                 );
-                               })}
-                             </div>
-                           )}
-
-                           {/* Actions (Admin & User) */}
-                           <div className="flex items-center space-x-2 mt-3 pl-16">
-                              {/* Admin: Erledigt Button */}
-                              {isAdmin && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onResolveAnomaly && onResolveAnomaly(anomaly); }}
-                                  className="flex items-center space-x-1 text-xs bg-green-500/20 text-green-500 px-3 py-1.5 rounded hover:bg-green-500/30 transition-colors"
-                                >
-                                  <CheckCircleIcon className="w-3 h-3" />
-                                  <span>Erledigt</span>
-                                </button>
-                              )}
-                              
-                              {/* Admin & User: Chat Button */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setInvestigationMode(investigationMode === key ? null : key);
-                                  setInvestigationMessage('');
-                                }}
-                                className="flex items-center space-x-1 text-xs bg-blue-500/20 text-blue-500 px-3 py-1.5 rounded hover:bg-blue-500/30 transition-colors"
-                              >
-                                <MessageSquareIcon className="w-3 h-3" />
-                                <span>{isAdmin ? 'Untersuchen' : 'Besprechen'}</span>
-                              </button>
-                           </div>
-
-                           {/* Chat Input */}
-                           {investigationMode === key && (
-                             <div className="mt-3 pl-16" onClick={e => e.stopPropagation()}>
-                               <div className="bg-surface border border-border rounded-lg p-2">
-                                 <input
-                                   value={investigationMessage}
-                                   onChange={e => setInvestigationMessage(e.target.value)}
-                                   placeholder={isAdmin ? "Nachfrage an Mitarbeiter..." : "Nachricht schreiben..."}
-                                   className="w-full text-sm bg-overlay border border-border rounded px-3 py-2 mb-2 focus:outline-none focus:border-glow-purple text-text-primary"
-                                   autoFocus
-                                   onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && investigationMessage.trim()) {
-                                       onAddAnomalyComment && onAddAnomalyComment(anomaly, investigationMessage);
-                                       setInvestigationMode(null);
-                                       setInvestigationMessage('');
-                                     }
-                                   }}
-                                 />
-                                 <div className="flex justify-end space-x-2">
-                                   <button
-                                     onClick={() => { setInvestigationMode(null); setInvestigationMessage(''); }}
-                                     className="text-xs text-text-secondary hover:text-text-primary px-2 py-1"
-                                   >
-                                     Abbrechen
-                                   </button>
-                                   <button
-                                     onClick={() => {
-                                       if (investigationMessage.trim()) {
-                                         onAddAnomalyComment && onAddAnomalyComment(anomaly, investigationMessage);
-                                         setInvestigationMode(null);
-                                         setInvestigationMessage('');
-                                       }
-                                     }}
-                                     className="text-xs bg-glow-purple text-white px-3 py-1 rounded hover:bg-glow-purple/80"
-                                   >
-                                     Senden
-                                   </button>
-                                 </div>
-                               </div>
-                             </div>
-                           )}
+                                    )}
+                                    <div className="text-xs text-text-secondary">
+                                      {ANOMALY_LABELS[anomaly.type]} • {formatDate(anomaly.date)}
+                                    </div>
+                                    <div className="text-xs text-text-secondary mt-1">
+                                      {anomaly.details.trackedHours}h gearbeitet
+                                      {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                   })}
-                 </div>
-               )}
-             </div>
+                      </div>
+                    )}
+
+                    {/* Stummgeschaltete Anomalien */}
+                    {mutedAnomalies.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => setShowMutedAnomalies(!showMutedAnomalies)}
+                          className="w-full flex items-center justify-between text-sm font-bold text-text-primary mb-2 px-1 hover:text-glow-purple transition-colors"
+                        >
+                          <span>Erledigt ({mutedAnomalies.length})</span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`transition-transform ${showMutedAnomalies ? 'rotate-180' : ''}`}
+                          >
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+                        {showMutedAnomalies && (
+                          <div className="space-y-2">
+                            {mutedAnomalies.map(anomaly => {
+                              const anomalyUser = users.find(u => u.id === anomaly.userId);
+                              const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+                              const hasComments = anomaly.comments && anomaly.comments.length > 0;
+                              
+                              return (
+                                <div
+                                  key={key}
+                                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative opacity-75 hover:opacity-100 ${
+                                    selectedAnomaly && `${selectedAnomaly.userId}-${selectedAnomaly.date}-${selectedAnomaly.type}` === key
+                                      ? 'border-yellow-500 bg-yellow-500/10'
+                                      : 'border-border bg-overlay hover:border-yellow-500/50'
+                                  }`}
+                                  onClick={() => setSelectedAnomaly(anomaly)}
+                                >
+                                  {hasComments && (
+                                    <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  )}
+                                  
+                                  <div className="flex items-start space-x-3">
+                                    <div className="p-2 rounded-lg bg-gray-500/20 text-gray-400 opacity-50">
+                                      <CircleAlertIcon className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      {isAdmin && anomalyUser && (
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-5 h-5 rounded-full" />
+                                          <span className="font-semibold text-text-primary text-sm">{anomalyUser.name}</span>
+                                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded font-semibold">🔇</span>
+                                        </div>
+                                      )}
+                                      <div className="text-xs text-text-secondary">
+                                        {ANOMALY_LABELS[anomaly.type]} • {formatDate(anomaly.date)}
+                                      </div>
+                                      <div className="text-xs text-text-secondary mt-1">
+                                        {anomaly.details.trackedHours}h gearbeitet
+                                        {anomaly.details.targetHours > 0 && ` (Soll: ${anomaly.details.targetHours}h)`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Detail & Chat Panel */}
+              <div className="w-1/2 flex flex-col">
+                {selectedAnomaly ? (
+                  <>
+                    {/* Anomaly Details */}
+                    <div className="p-4 border-b border-border flex-shrink-0">
+                      <div className="flex items-start space-x-3 mb-4">
+                        <div className={`p-3 rounded-lg ${selectedAnomaly.status === AnomalyStatus.Muted ? 'bg-gray-500/20 text-gray-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                          <CircleAlertIcon className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-text-primary">{ANOMALY_LABELS[selectedAnomaly.type]}</h3>
+                          {(() => {
+                            const anomalyUser = users.find(u => u.id === selectedAnomaly.userId);
+                            return anomalyUser && (
+                              <div className="flex items-center space-x-2 text-sm text-text-secondary mt-1">
+                                <img src={anomalyUser.avatarUrl} alt={anomalyUser.name} className="w-4 h-4 rounded-full" />
+                                <span>{anomalyUser.name}</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center space-x-2 text-text-secondary">
+                          <CalendarIcon className="w-4 h-4" />
+                          <span>{formatDate(selectedAnomaly.date)}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-text-secondary">
+                          <ClockIcon className="w-4 h-4" />
+                          <span>{selectedAnomaly.details.trackedHours}h gearbeitet
+                            {selectedAnomaly.details.targetHours > 0 && ` (Soll: ${selectedAnomaly.details.targetHours}h)`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {selectedAnomaly.status === AnomalyStatus.Open && (
+                        <div className="mt-4 space-y-2">
+                          <button
+                            onClick={() => {
+                              onSelectAnomaly && onSelectAnomaly(selectedAnomaly);
+                              onClose();
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-glow-purple/20 hover:bg-glow-purple/30 text-glow-purple rounded-lg font-semibold transition-all"
+                          >
+                            <span>Anzeigen →</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              onMuteAnomaly && onMuteAnomaly(selectedAnomaly);
+                              setSelectedAnomaly(null);
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 text-gray-400 rounded-lg font-semibold transition-all"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                              <line x1="23" y1="9" x2="17" y2="15"></line>
+                              <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                            <span>Stumm schalten</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons für stummgeschaltete Anomalien */}
+                      {selectedAnomaly.status === AnomalyStatus.Muted && (
+                        <div className="mt-4 space-y-2">
+                          <button
+                            onClick={() => {
+                              onSelectAnomaly && onSelectAnomaly(selectedAnomaly);
+                              onClose();
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-glow-purple/20 hover:bg-glow-purple/30 text-glow-purple rounded-lg font-semibold transition-all"
+                          >
+                            <span>Anzeigen →</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              onMuteAnomaly && onMuteAnomaly(selectedAnomaly);
+                              setSelectedAnomaly(null);
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 rounded-lg font-semibold transition-all"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                            </svg>
+                            <span>Nicht mehr stummschalten</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Chat Area */}
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <div className="px-4 py-2 border-b border-border">
+                        <h4 className="text-sm font-semibold text-text-primary">Nachrichten</h4>
+                      </div>
+                      
+                      {/* Messages - Scrollable */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                        {(selectedAnomaly.comments || []).length === 0 ? (
+                          <div className="text-center py-8 text-text-secondary text-sm">
+                            Noch keine Nachrichten
+                          </div>
+                        ) : (
+                          (selectedAnomaly.comments || []).map((comment) => {
+                            const author = users.find(u => u.id === comment.userId);
+                            return (
+                              <div key={comment.id} className="flex items-start space-x-2">
+                                <img src={author?.avatarUrl || comment.user?.avatarUrl || ''} alt={author?.name || comment.user?.name || 'User'} className="w-6 h-6 rounded-full" />
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <span className="text-xs font-semibold text-text-primary">{author?.name || comment.user?.name || 'Unbekannt'}</span>
+                                    <span className="text-[10px] text-text-secondary">
+                                      {new Date(comment.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-text-secondary bg-overlay p-2 rounded-lg">
+                                    {comment.message}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Message Input - Fixed at bottom */}
+                      <div className="p-4 border-t border-border flex-shrink-0">
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={anomalyChatMessage}
+                            onChange={(e) => setAnomalyChatMessage(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && anomalyChatMessage.trim()) {
+                                onAddAnomalyComment && onAddAnomalyComment(selectedAnomaly, anomalyChatMessage.trim());
+                                setAnomalyChatMessage('');
+                              }
+                            }}
+                            placeholder="Nachricht schreiben..."
+                            className="flex-1 bg-overlay border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:ring-2 focus:ring-glow-purple outline-none"
+                          />
+                          <button
+                            onClick={() => {
+                              if (anomalyChatMessage.trim()) {
+                                onAddAnomalyComment && onAddAnomalyComment(selectedAnomaly, anomalyChatMessage.trim());
+                                setAnomalyChatMessage('');
+                              }
+                            }}
+                            disabled={!anomalyChatMessage.trim()}
+                            className="px-4 py-2 glow-button rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Senden
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-text-secondary">
+                    <div className="text-center">
+                      <AlertTriangleIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Wähle eine Auffälligkeit aus</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="w-full h-full flex">
               {/* Request List */}

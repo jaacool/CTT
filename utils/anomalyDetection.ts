@@ -1,44 +1,27 @@
 import { User, TimeEntry, AbsenceRequest, Anomaly, AnomalyType, AbsenceStatus } from '../types';
 import { getHolidays } from './holidays';
 
-// Helper: Datum explizit als Europe/Berlin interpretieren
-const toBerlinDate = (dateStr: string | Date): Date => {
-  const date = new Date(dateStr);
-  // Wir nutzen die Intl API um die Zeit in Berlin zu bekommen
-  const berlinDateStr = new Intl.DateTimeFormat('en-US', {
+// Helper: Datum zu YYYY-MM-DD String in Berlin Zeit
+const toBerlinISOString = (date: Date): string => {
+  // Nutze toLocaleString mit Europe/Berlin Zeitzone
+  const berlinStr = date.toLocaleString('en-CA', { 
     timeZone: 'Europe/Berlin',
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  }).format(date);
-  
-  // Parse den Berlin-String zurück in ein Date Objekt (lokal)
-  // Format von Intl ist MM/DD/YYYY, HH:mm:ss
-  const [datePart, timePart] = berlinDateStr.split(', ');
-  const [month, day, year] = datePart.split('/');
-  const [hour, minute, second] = timePart.split(':');
-  
-  return new Date(
-    parseInt(year),
-    parseInt(month) - 1,
-    parseInt(day),
-    parseInt(hour === '24' ? '0' : hour),
-    parseInt(minute),
-    parseInt(second)
-  );
+    day: '2-digit'
+  });
+  // en-CA gibt uns YYYY-MM-DD Format
+  return berlinStr;
 };
 
-// Helper: Datum zu YYYY-MM-DD String in Berlin Zeit
-const toBerlinISOString = (date: Date) => {
-  const berlinDate = toBerlinDate(date);
-  const year = berlinDate.getFullYear();
-  const month = String(berlinDate.getMonth() + 1).padStart(2, '0');
-  const day = String(berlinDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+// Helper: Hole Stunde in Berlin Zeit
+const getBerlinHour = (date: Date): number => {
+  const berlinStr = date.toLocaleString('en-US', {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    hour12: false
+  });
+  return parseInt(berlinStr);
 };
 
 export function detectAnomalies(
@@ -50,6 +33,9 @@ export function detectAnomalies(
 ): Anomaly[] {
   const anomalies: Anomaly[] = [];
   const holidays = getHolidays(startDate.getFullYear());
+  
+  // PERFORMANCE: Filtere timeEntries einmal am Anfang für diesen User
+  const userEntries = timeEntries.filter(e => e.user.id === user.id);
   
   // Klone Startdatum um nicht zu mutieren
   let currentDate = new Date(startDate);
@@ -64,10 +50,10 @@ export function detectAnomalies(
       
       // 1. Daten für diesen Tag sammeln
       // TimeEntry startTime ist ISO String (z.B. 2023-10-27T09:00:00)
-      const dailyEntries = timeEntries.filter(e => {
+      const dailyEntries = userEntries.filter(e => {
           // Prüfe ob der Eintrag in Berlin-Zeit an diesem Tag startet
           const berlinStart = toBerlinISOString(new Date(e.startTime));
-          return e.user.id === user.id && berlinStart === dateStr;
+          return berlinStart === dateStr;
       });
       
       // Summe Stunden
@@ -169,28 +155,36 @@ export function detectAnomalies(
           });
       }
 
-      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-9 Uhr) - Gilt für ALLE User inkl. Admins
+      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-9 Uhr ODER laufende Timer) - Gilt für ALLE User inkl. Admins
       // Prüfe ALLE Einträge des Users (nicht nur dailyEntries die am aktuellen Tag starten)
-      const allUserEntries = timeEntries.filter(e => e.user.id === user.id);
-      const hasNightEntry = allUserEntries.some(entry => {
-        if (!entry.endTime) return false; // Laufende Einträge ignorieren
+      const hasNightEntry = userEntries.some(entry => {
+        const startTime = new Date(entry.startTime);
         
-        // Parse Start- und Endzeit in Berlin-Zeit
-        const startTime = toBerlinDate(new Date(entry.startTime));
-        const endTime = toBerlinDate(new Date(entry.endTime));
+        // FALL 1: Laufender Timer (kein endTime)
+        if (!entry.endTime) {
+          // Prüfe ob der Timer am Vortag oder früher gestartet wurde
+          const startDateStr = toBerlinISOString(startTime);
+          const isOldTimer = startDateStr < dateStr;
+          
+          // Wenn Timer vor heute gestartet wurde UND heute ist, dann vergessen zu stoppen
+          return isOldTimer && isToday;
+        }
+        
+        // FALL 2: Beendeter Eintrag zwischen 0-9 Uhr
+        const endTime = new Date(entry.endTime);
         
         // Prüfe ob der Eintrag am aktuellen Tag zwischen 0-9 Uhr endet (Berlin Zeit)
-        const endDateStr = toBerlinISOString(new Date(entry.endTime));
+        const endDateStr = toBerlinISOString(endTime);
         if (endDateStr !== dateStr) return false; // Nur Einträge die an diesem Tag enden
         
-        // Verwende Stunden des Berlin-Dates
-        const endHour = endTime.getHours();
+        // Hole Stunde in Berlin Zeit
+        const endHour = getBerlinHour(endTime);
         
         // Prüfe ob Ende zwischen 0:00 und 8:59 Uhr liegt
         const endInNightRange = endHour >= 0 && endHour < 9;
         
         // Prüfe ob der Eintrag am Vortag gestartet wurde (über Nacht)
-        const startDateStr = toBerlinISOString(new Date(entry.startTime));
+        const startDateStr = toBerlinISOString(startTime);
         const isOvernight = startDateStr !== endDateStr;
         
         return endInNightRange && isOvernight;

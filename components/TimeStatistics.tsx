@@ -33,7 +33,9 @@ interface TimeStatisticsProps {
   onBillableChange: (taskId: string, billable: boolean) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
+  onEditEntry?: (entry: TimeEntry) => void;
   onResolveAnomaly?: (anomaly: Anomaly) => void;
+  onMuteAnomaly?: (anomaly: Anomaly) => void;
   onAddAnomalyComment?: (anomaly: Anomaly, message: string) => void;
 }
 
@@ -238,7 +240,9 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   onBillableChange,
   onDeleteTimeEntry,
   onDuplicateTimeEntry,
+  onEditEntry,
   onResolveAnomaly,
+  onMuteAnomaly,
   onAddAnomalyComment,
 }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(currentUser);
@@ -661,11 +665,11 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     const isForgotToStop = anomaly.type === AnomalyType.FORGOT_TO_STOP;
     if (!isForgotToStop && selectedUser?.role === 'role-1' && selectedUser.id === currentUser?.id) return null;
     
-    const isResolved = anomaly.status === AnomalyStatus.Resolved;
+    const isMuted = anomaly.status === AnomalyStatus.Muted;
     // FORGOT_TO_STOP = Rot (#EF4444), andere = Gelb (#EAB308)
     const baseColor = isForgotToStop ? '#EF4444' : '#EAB308'; // red-500 vs yellow-500
-    const color = isResolved ? '#9CA3AF' : baseColor; // gray-400 wenn erledigt
-    const canResolve = currentUser?.role === 'role-1';
+    const color = isMuted ? '#9CA3AF' : baseColor; // gray-400 wenn stumm geschaltet
+    const canMute = currentUser?.role === 'role-1';
     
     const centerX = x + width / 2;
     const centerY = y - 15;
@@ -673,24 +677,24 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
     return (
       <g
         onClick={(e) => {
-          if (canResolve && onResolveAnomaly) {
+          if (canMute && onMuteAnomaly) {
             e.stopPropagation();
-            onResolveAnomaly(anomaly);
+            onMuteAnomaly(anomaly);
           }
         }}
         style={{ 
-          cursor: canResolve ? 'pointer' : 'default',
+          cursor: canMute ? 'pointer' : 'default',
           pointerEvents: 'all'
         }}
       >
-        <title>{isResolved ? "Erledigt" : (canResolve ? "Als erledigt markieren" : "Auffälligkeit")}</title>
+        <title>{isMuted ? "Stummgeschaltet" : (canMute ? "Stumm schalten" : "Auffälligkeit")}</title>
         <circle 
           cx={centerX} 
           cy={centerY} 
           r="10" 
           fill="none"
           stroke={color}
-          opacity={isResolved ? 0.5 : 1}
+          opacity={isMuted ? 0.5 : 1}
           strokeWidth="2.25"
         />
         <line 
@@ -699,7 +703,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
           x2={centerX} 
           y2={centerY + 1}
           stroke={color}
-          opacity={isResolved ? 0.5 : 1}
+          opacity={isMuted ? 0.5 : 1}
           strokeWidth="2.25"
           strokeLinecap="round"
         />
@@ -709,7 +713,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
           x2={centerX + 0.01} 
           y2={centerY + 5}
           stroke={color}
-          opacity={isResolved ? 0.5 : 1}
+          opacity={isMuted ? 0.5 : 1}
           strokeWidth="2.25"
           strokeLinecap="round"
         />
@@ -1034,6 +1038,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               onBillableChange={onBillableChange}
               onDeleteEntry={onDeleteTimeEntry}
               onDuplicateEntry={onDuplicateTimeEntry}
+              onEditEntry={onEditEntry}
             />
           </div>
         )}
@@ -1099,6 +1104,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                           onBillableChange={onBillableChange}
                           onDeleteEntry={onDeleteTimeEntry}
                           onDuplicateEntry={onDuplicateTimeEntry}
+                          onEditEntry={onEditEntry}
                         />
                       </div>
                     )}

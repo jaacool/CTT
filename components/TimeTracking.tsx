@@ -30,13 +30,15 @@ interface TimeTrackingProps {
   onBillableChange?: (taskId: string, billable: boolean) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
+  onEditEntry?: (entry: TimeEntry) => void;
 }
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onDeleteTimeEntry, onDuplicateTimeEntry }) => {
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onDeleteTimeEntry, onDuplicateTimeEntry, onEditEntry }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [selectedUser, setSelectedUser] = useState<User>(currentUser);
+  const [overviewPage, setOverviewPage] = useState(0); // PERFORMANCE: Pagination für Übersicht
   
   // Navigation Effect für targetAnomaly
   useEffect(() => {
@@ -915,56 +917,108 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-text-primary">Alle Zeiteinträge</h3>
                 
-                {entriesByDate.map(({ dateKey, date, entries, total }) => {
-                  const isToday = date.toDateString() === new Date().toDateString();
-                  const isYesterday = new Date(date.getTime() + 86400000).toDateString() === new Date().toDateString();
+                {(() => {
+                  // PERFORMANCE: Pagination - max 10 Tage pro Seite
+                  const DAYS_PER_PAGE = 10;
+                  const totalDays = entriesByDate.length;
+                  const totalPages = Math.max(1, Math.ceil(totalDays / DAYS_PER_PAGE));
+                  const currentPage = Math.min(overviewPage, totalPages - 1);
+                  const startIndex = currentPage * DAYS_PER_PAGE;
+                  const endIndex = startIndex + DAYS_PER_PAGE;
+                  const pagedDays = entriesByDate.slice(startIndex, endIndex);
                   
                   return (
-                    <div key={dateKey} className="bg-surface rounded-lg border border-border overflow-hidden">
-                      {/* Tag Header */}
-                      <div className={`px-4 py-3 border-b border-border flex items-center justify-between ${
-                        isToday ? 'bg-glow-cyan/10' : ''
-                      }`}>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h4 className={`font-semibold ${isToday ? 'text-glow-cyan' : 'text-text-primary'}`}>
-                              {date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                            </h4>
-                            {isToday && (
-                              <span className="px-2 py-0.5 text-xs font-bold bg-glow-cyan text-background rounded">
-                                HEUTE
-                              </span>
-                            )}
-                            {isYesterday && (
-                              <span className="px-2 py-0.5 text-xs font-bold bg-overlay text-text-secondary rounded">
-                                GESTERN
-                              </span>
+                    <>
+                      {pagedDays.map(({ dateKey, date, entries, total }) => {
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        const isYesterday = new Date(date.getTime() + 86400000).toDateString() === new Date().toDateString();
+                        
+                        return (
+                          <div key={dateKey} className="bg-surface rounded-lg border border-border overflow-hidden">
+                            {/* Tag Header */}
+                            <div className={`px-4 py-3 border-b border-border flex items-center justify-between ${
+                              isToday ? 'bg-glow-cyan/10' : ''
+                            }`}>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <h4 className={`font-semibold ${isToday ? 'text-glow-cyan' : 'text-text-primary'}`}>
+                                    {date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                  </h4>
+                                  {isToday && (
+                                    <span className="px-2 py-0.5 text-xs font-bold bg-glow-cyan text-background rounded">
+                                      HEUTE
+                                    </span>
+                                  )}
+                                  {isYesterday && (
+                                    <span className="px-2 py-0.5 text-xs font-bold bg-overlay text-text-secondary rounded">
+                                      GESTERN
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-text-secondary mt-0.5">
+                                  {entries.length} {entries.length === 1 ? 'Eintrag' : 'Einträge'}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-primary">{formatTime(total)}</div>
+                              </div>
+                            </div>
+                            
+                            {/* Einträge Liste */}
+                            {onUpdateTimeEntry && onBillableChange && (
+                              <TimeView
+                                project={{ id: 'time-tracking-overview', name: 'Übersicht', taskLists: [] } as Project}
+                                timeEntries={entries}
+                                currentUser={currentUser}
+                                onUpdateEntry={onUpdateTimeEntry}
+                                onBillableChange={onBillableChange}
+                                onDeleteEntry={onDeleteTimeEntry}
+                                onDuplicateEntry={onDuplicateTimeEntry}
+                                onEditEntry={onEditEntry}
+                              />
                             )}
                           </div>
-                          <div className="text-sm text-text-secondary mt-0.5">
-                            {entries.length} {entries.length === 1 ? 'Eintrag' : 'Einträge'}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">{formatTime(total)}</div>
-                        </div>
-                      </div>
+                        );
+                      })}
                       
-                      {/* Einträge Liste */}
-                      {onUpdateTimeEntry && onBillableChange && (
-                        <TimeView
-                          project={{ id: 'time-tracking-overview', name: 'Übersicht', taskLists: [] } as Project}
-                          timeEntries={entries}
-                          currentUser={currentUser}
-                          onUpdateEntry={onUpdateTimeEntry}
-                          onBillableChange={onBillableChange}
-                          onDeleteEntry={onDeleteTimeEntry}
-                          onDuplicateEntry={onDuplicateTimeEntry}
-                        />
+                      {/* Pagination Controls */}
+                      {totalDays > DAYS_PER_PAGE && (
+                        <div className="flex items-center justify-between mt-6 p-4 bg-surface rounded-lg border border-border">
+                          <div className="text-sm text-text-secondary">
+                            Tage {startIndex + 1}-{Math.min(endIndex, totalDays)} von {totalDays}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setOverviewPage(p => Math.max(0, p - 1))}
+                              disabled={currentPage === 0}
+                              className={`px-4 py-2 rounded-lg border border-border ${
+                                currentPage === 0 
+                                  ? 'opacity-50 cursor-not-allowed bg-overlay text-text-secondary' 
+                                  : 'bg-surface hover:bg-overlay text-text-primary'
+                              }`}
+                            >
+                              Zurück
+                            </button>
+                            <span className="px-4 py-2 text-sm text-text-secondary">
+                              Seite {currentPage + 1} von {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setOverviewPage(p => Math.min(totalPages - 1, p + 1))}
+                              disabled={currentPage >= totalPages - 1}
+                              className={`px-4 py-2 rounded-lg border border-border ${
+                                currentPage >= totalPages - 1
+                                  ? 'opacity-50 cursor-not-allowed bg-overlay text-text-secondary'
+                                  : 'bg-surface hover:bg-overlay text-text-primary'
+                              }`}
+                            >
+                              Weiter
+                            </button>
+                          </div>
+                        </div>
                       )}
-                    </div>
+                    </>
                   );
-                })}
+                })()}
                 
                 {entriesByDate.length === 0 && (
                   <div className="text-center py-12 text-text-secondary">
@@ -1259,6 +1313,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     onBillableChange={onBillableChange}
                     onDeleteEntry={onDeleteTimeEntry}
                     onDuplicateEntry={onDuplicateTimeEntry}
+                    onEditEntry={onEditEntry}
                   />
                 </div>
               )}

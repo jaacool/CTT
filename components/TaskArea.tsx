@@ -40,17 +40,21 @@ interface TaskAreaProps {
     onOpenChat?: () => void;
     onOpenTimeTracking?: () => void;
     unreadMessagesCount?: number;
+    onEditEntry?: (entry: TimeEntry) => void;
 }
 
 const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
     
-    const allTasks = project.taskLists.flatMap(list => list.tasks);
+    const allTasks = useMemo(() => project.taskLists.flatMap(list => list.tasks), [project.taskLists]);
     const totalTasks = allTasks.length;
-    const completedTasks = allTasks.filter(task => task.status === TaskStatus.Done).length;
+    const completedTasks = useMemo(() => allTasks.filter(task => task.status === TaskStatus.Done).length, [allTasks]);
     const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
     
-    // Summiere alle TimeEntries für dieses Projekt
-    const totalTrackedSeconds = timeEntries.filter(e => e.projectId === project.id).reduce((sum, entry) => sum + entry.duration, 0);
+    // PERFORMANCE: Summiere alle TimeEntries für dieses Projekt (memoized)
+    const totalTrackedSeconds = useMemo(() => 
+        timeEntries.filter(e => e.projectId === project.id).reduce((sum, entry) => sum + entry.duration, 0),
+        [timeEntries, project.id]
+    );
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -494,19 +498,29 @@ const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: 
 const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { taskList: ITaskList }> = (props) => {
     const { taskList, onRenameItem, project, taskTimers, activeTimerTaskId } = props;
     
-    // Berechne summierte Zeit aus TimeEntries für alle Aufgaben in dieser Liste
-    const taskIds = taskList.tasks.flatMap(task => [task.id, ...task.subtasks.map(st => st.id)]);
-    const timeEntriesSum = props.timeEntries
-        .filter(entry => entry.projectId === project.id && taskIds.includes(entry.taskId))
-        .reduce((sum, entry) => sum + entry.duration, 0);
+    // PERFORMANCE: Berechne summierte Zeit aus TimeEntries für alle Aufgaben in dieser Liste (memoized)
+    const taskIds = useMemo(() => 
+        taskList.tasks.flatMap(task => [task.id, ...task.subtasks.map(st => st.id)]),
+        [taskList.tasks]
+    );
+    
+    const timeEntriesSum = useMemo(() => 
+        props.timeEntries
+            .filter(entry => entry.projectId === project.id && taskIds.includes(entry.taskId))
+            .reduce((sum, entry) => sum + entry.duration, 0),
+        [props.timeEntries, project.id, taskIds]
+    );
     
     // Addiere aktuelle Timer
-    const currentTimerSum = taskIds.reduce((sum, id) => {
-        if (activeTimerTaskId === id) {
-            return sum + (taskTimers[id] || 0);
-        }
-        return sum;
-    }, 0);
+    const currentTimerSum = useMemo(() => 
+        taskIds.reduce((sum, id) => {
+            if (activeTimerTaskId === id) {
+                return sum + (taskTimers[id] || 0);
+            }
+            return sum;
+        }, 0),
+        [taskIds, activeTimerTaskId, taskTimers]
+    );
     
     const totalTrackedSeconds = timeEntriesSum + currentTimerSum;
     
@@ -663,11 +677,11 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     })}
                     onUpdateEntry={props.onUpdateTimeEntry}
                     onBillableChange={props.onBillableChange}
-                    onStartTimer={props.onToggleTimer}
                     onDeleteEntry={props.onDeleteTimeEntry}
                     onDuplicateEntry={props.onDuplicateTimeEntry}
                     onImportEntries={props.onImportEntries}
                     onImportAbsences={props.onImportAbsences}
+                    onEditEntry={props.onEditEntry}
                     currentUser={props.currentUser}
                 />
             )}
