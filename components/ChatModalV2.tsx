@@ -372,7 +372,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState<number>(0);
   // Minimum space for hover menu: menu height (40px) + bottom offset (8px) + safety margin (8px) = 56px
-  const HOVER_MENU_MIN_SPACE = 56;
+  const HOVER_MENU_MIN_SPACE = 40;
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
