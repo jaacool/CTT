@@ -39,6 +39,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [contextMenuEntry, setContextMenuEntry] = useState<TimeEntry | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number; y: number} | null>(null);
   const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<TimeEntry | null>(null);
+  const [showAllEntries, setShowAllEntries] = useState(false);
 
   // PERFORMANCE: Erstelle Lookup-Map für billable Status (nur einmal pro projects-Änderung)
   const billableMap = useMemo(() => {
@@ -164,9 +165,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Heute's Einträge */}
+            {/* Heute's Einträge - Initial 4, dann alle mit Scrollbar */}
             <div className="space-y-2" data-testid="today-entries">
-              {todayEntries.map(entry => {
+              <div className={showAllEntries ? "space-y-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-overlay scrollbar-track-transparent" : "space-y-2"}>
+              {(showAllEntries ? todayEntries : todayEntries.slice(0, 4)).map(entry => {
                 const isActive = activeTimerTaskId === entry.taskId && !entry.endTime;
                 const currentSeconds = taskTimers[entry.taskId] || 0;
                 const project = projectMap.get(entry.projectId);
@@ -356,6 +358,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="text-center text-text-secondary py-8">
                   Noch keine Zeiteinträge heute
                 </div>
+              )}
+              </div>
+              
+              {/* Mehr anzeigen Button */}
+              {todayEntries.length > 4 && (
+                <button
+                  onClick={() => setShowAllEntries(!showAllEntries)}
+                  className="w-full mt-3 px-4 py-2 text-sm text-text-secondary hover:text-text-primary bg-overlay hover:bg-surface rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>{showAllEntries ? 'Weniger anzeigen' : `${todayEntries.length - 4} weitere anzeigen`}</span>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={`transition-transform ${showAllEntries ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
               )}
             </div>
           </div>
