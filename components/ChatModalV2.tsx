@@ -210,14 +210,16 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Generate fake waveform bars (in production, you'd analyze the audio)
-  const waveformBars = Array.from({ length: 60 }, (_, i) => {
-    // Create a more natural waveform pattern
-    const position = i / 60;
-    const baseHeight = 0.3 + Math.sin(position * Math.PI * 4) * 0.3;
-    const noise = Math.random() * 0.4;
-    return Math.min(1, baseHeight + noise);
-  });
+  // Generate fake waveform bars ONCE - useMemo verhindert Re-Rendering
+  const waveformBars = React.useMemo(() => {
+    return Array.from({ length: 60 }, (_, i) => {
+      // Create a more natural waveform pattern
+      const position = i / 60;
+      const baseHeight = 0.3 + Math.sin(position * Math.PI * 4) * 0.3;
+      const noise = Math.random() * 0.4;
+      return Math.min(1, baseHeight + noise);
+    });
+  }, []); // Leeres Array = nur einmal beim Mount generieren
 
   return (
     <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
