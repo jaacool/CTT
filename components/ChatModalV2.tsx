@@ -2291,7 +2291,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx} className="w-full flex justify-center">
                                             {attachment.url.startsWith('blob:') ? (
-                                              // Uploading - Show clean loader animation only with more padding
+                                              // Uploading - Show clean loader animation only
                                               <div className="flex items-center justify-center py-12 px-16">
                                                 <div className="upload-loader" style={{ transform: 'scale(0.7)' }}></div>
                                               </div>
