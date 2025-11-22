@@ -1721,7 +1721,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div 
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
-              style={{ paddingBottom: `${composerHeight}px` }}
+              style={{ paddingBottom: `${composerHeight + 48}px` }}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
               {(() => {
