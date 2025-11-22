@@ -2022,30 +2022,31 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 id: m.id,
                                                 content: m.content.substring(0, 50),
                                                 hasAttachments: !!m.attachments,
-                                                attachments: m.attachments?.map(a => ({ name: a.name, url: a.url.substring(0, 50) }))
+                                                attachments: m.attachments?.map(a => ({ name: a.name, type: a.type }))
                                               });
+                                              
+                                              // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
+                                              if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                const match = m.attachments.some(att => {
+                                                  // Prüfe nach Medien-Typ
+                                                  if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                  if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                  if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                  if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                  // Für Dateien: prüfe nach Namen
+                                                  if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                  return false;
+                                                });
+                                                if (match) {
+                                                  console.log('✅ Medien-Match gefunden!');
+                                                  return true;
+                                                }
+                                              }
                                               
                                               // Für Text-Nachrichten
                                               if (m.content.includes(reply.replyContent)) {
                                                 console.log('✅ Text-Match gefunden!');
                                                 return true;
-                                              }
-                                              
-                                              // Für Medien-Nachrichten (Dateien, Bilder, Audio, etc.)
-                                              if (reply.mediaType && m.attachments && m.attachments.length > 0) {
-                                                const match = m.attachments.some(att => {
-                                                  const nameMatch = att.name === reply.replyContent;
-                                                  const urlMatch = att.url.includes(reply.replyContent);
-                                                  console.log('🔎 Attachment-Check:', { 
-                                                    attName: att.name, 
-                                                    replyContent: reply.replyContent,
-                                                    nameMatch, 
-                                                    urlMatch 
-                                                  });
-                                                  return nameMatch || urlMatch;
-                                                });
-                                                if (match) console.log('✅ Medien-Match gefunden!');
-                                                return match;
                                               }
                                               
                                               return false;
@@ -2576,16 +2577,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 const originalMsg = messages.find(m => {
                                                   if (m.sender.name !== reply.senderName) return false;
                                                   
+                                                  // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
+                                                  if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                    const match = m.attachments.some(att => {
+                                                      // Prüfe nach Medien-Typ
+                                                      if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                      if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                      if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                      if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                      // Für Dateien: prüfe nach Namen
+                                                      if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                      return false;
+                                                    });
+                                                    if (match) return true;
+                                                  }
+                                                  
                                                   // Für Text-Nachrichten
                                                   if (m.content.includes(reply.replyContent)) return true;
-                                                  
-                                                  // Für Medien-Nachrichten (Dateien, Bilder, Audio, etc.)
-                                                  if (reply.mediaType && m.attachments && m.attachments.length > 0) {
-                                                    return m.attachments.some(att => 
-                                                      att.name === reply.replyContent || 
-                                                      att.url.includes(reply.replyContent)
-                                                    );
-                                                  }
                                                   
                                                   return false;
                                                 });
