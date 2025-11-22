@@ -1344,12 +1344,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   // Scroll to message with glow effect
   const scrollToMessage = (messageId: string) => {
+    console.log('📜 scrollToMessage aufgerufen:', messageId);
     const messageElement = document.getElementById(`message-${messageId}`);
+    console.log('🎯 Element gefunden:', messageElement ? 'JA' : 'NEIN', messageElement);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+      console.log('✅ Scroll durchgeführt');
       // Add glow effect
       setHighlightedMessageId(messageId);
-      setTimeout(() => setHighlightedMessageId(null), 2000);
+      console.log('✨ Glow-Effekt aktiviert für:', messageId);
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+        console.log('💤 Glow-Effekt deaktiviert');
+      }, 2000);
+    } else {
+      console.error('❌ Element nicht gefunden! ID:', `message-${messageId}`);
+      console.log('📋 Alle message-* IDs im DOM:', 
+        Array.from(document.querySelectorAll('[id^="message-"]')).map(el => el.id)
+      );
     }
   };
 
@@ -1957,6 +1969,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Wrapper für Bubble und Hover-Menü */}
                               <div 
+                                id={`message-${message.id}`}
                                 className="relative transition-all duration-500"
                                 onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                 onMouseLeave={handleMessageMouseLeave}
@@ -2524,6 +2537,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <>
                                 {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
+                                  id={`message-${message.id}`}
                                   className="relative transition-all duration-500"
                                   onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                   onMouseLeave={handleMessageMouseLeave}
