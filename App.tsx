@@ -2228,6 +2228,8 @@ const App: React.FC = () => {
             allUsers={MOCK_USERS}
             onUpdateTaskAssignees={handleUpdateTaskAssignees}
             onUpdateProject={handleUpdateProject}
+            favoriteProjectIds={favoriteProjectIds}
+            onToggleFavorite={handleToggleFavorite}
             onOpenChat={() => {
               setShowChat(true);
               // Setze das aktuelle Projekt für den Chat

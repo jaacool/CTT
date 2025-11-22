@@ -41,6 +41,9 @@ interface TaskAreaProps {
     onOpenTimeTracking?: () => void;
     unreadMessagesCount?: number;
     onEditEntry?: (entry: TimeEntry) => void;
+    onUpdateProject?: (project: Project) => void;
+    favoriteProjectIds?: string[];
+    onToggleFavorite?: (projectId: string) => void;
 }
 
 const ProjectHeader: React.FC<{ 
@@ -51,7 +54,9 @@ const ProjectHeader: React.FC<{
     onToggleDefaultBillable: () => void;
     allUsers: User[];
     onUpdateProjectMembers: (members: User[]) => void;
-}> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers }) => {
+    isFavorite?: boolean;
+    onToggleFavorite?: (projectId: string) => void;
+}> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers, isFavorite, onToggleFavorite }) => {
     
     const allTasks = useMemo(() => project.taskLists.flatMap(list => list.tasks), [project.taskLists]);
     const totalTasks = allTasks.length;
@@ -69,8 +74,35 @@ const ProjectHeader: React.FC<{
     return (
         <header className="mb-6 bg-surface p-4 rounded-xl">
             <div className="flex justify-between items-start">
-                <div>
+                <div className="flex items-center space-x-3">
                     <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
+                    {onToggleFavorite && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(project.id);
+                            }}
+                            className="p-2 rounded-md hover:bg-overlay transition-colors"
+                            title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                        >
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                width="20" 
+                                height="20" 
+                                viewBox="0 0 24 24" 
+                                fill={isFavorite ? 'currentColor' : 'none'}
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                                className={isFavorite ? 'text-yellow-500' : 'text-text-secondary'}
+                            >
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </button>
+                    )}
+                </div>
+                <div>
                     <div className="flex items-center space-x-4 text-text-secondary text-xs mt-2">
                         <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'glow-button' : 'bg-overlay'}`}>{project.status}</span>
                          <div className="flex items-center space-x-1.5">
@@ -646,6 +678,8 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                         props.onUpdateProject({ ...props.project, members });
                     }
                 }}
+                isFavorite={props.favoriteProjectIds?.includes(props.project.id)}
+                onToggleFavorite={props.onToggleFavorite}
             />
             
             {/* Tab Navigation */}
