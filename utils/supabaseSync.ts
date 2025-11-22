@@ -199,7 +199,7 @@ export async function saveChatMessage(message: ChatMessage): Promise<boolean> {
 
     const { error } = await supabase!
       .from('chat_messages')
-      .insert({
+      .upsert({
         id: message.id,
         channel_id: message.channelId,
         project_id: message.projectId || null,
@@ -207,8 +207,11 @@ export async function saveChatMessage(message: ChatMessage): Promise<boolean> {
         content: message.content,
         timestamp: message.timestamp,
         data: message,
+      }, {
+        onConflict: 'id', // Bei Konflikt auf ID updaten statt Fehler
       });
     if (error) throw error;
+    console.log('✅ Chat-Nachricht gespeichert:', message.id);
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Speichern der Chat-Nachricht:', error);
@@ -230,7 +233,9 @@ export async function updateChatMessageAttachments(messageId: string, attachment
       .single();
     
     if (fetchError || !existingMessage) {
-      console.error('❌ Nachricht nicht gefunden:', messageId);
+      // Nachricht existiert noch nicht - das ist OK bei neuen Uploads
+      // Die Nachricht wird später mit echten URLs gespeichert
+      console.log('ℹ️ Nachricht noch nicht in DB (wird nach Upload gespeichert):', messageId);
       return false;
     }
 
