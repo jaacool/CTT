@@ -2105,6 +2105,8 @@ const App: React.FC = () => {
               projects={projects}
               onSelectProject={handleSelectProject}
               onDeleteProject={handleDeleteProject}
+              favoriteProjectIds={favoriteProjectIds}
+              onToggleFavorite={handleToggleFavorite}
             />
           ) : (
             <LoadingScreen message="Projekte werden geladen..." />

@@ -142,11 +142,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
     );
   }, [projects, currentUser, isAdmin]);
   
-  // Suche anwenden
-  const filteredProjects = useMemo(() => 
-      myProjectsList.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())),
-      [myProjectsList, searchTerm]
-  );
+  // Suche anwenden - ALLE Projekte durchsuchen wenn Suchterm vorhanden
+  const filteredProjects = useMemo(() => {
+    if (searchTerm) {
+      // Bei Suche: Alle Projekte durchsuchen (nicht nur eigene)
+      return projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    // Ohne Suche: Nur eigene Projekte
+    return myProjectsList;
+  }, [projects, myProjectsList, searchTerm]);
   
   // Favoriten: Projekte die in favoriteProjectIds sind
   const favoriteProjects = useMemo(() => 
