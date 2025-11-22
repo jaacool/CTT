@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, ChatAttachment, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
-import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, loadAllChatData } from './utils/supabaseSync';
+import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, updateChatMessageAttachments as supaUpdateChatMessageAttachments, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
 import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
 import { hasPermission } from './utils/permissions';
@@ -1246,11 +1246,14 @@ const App: React.FC = () => {
   };
 
   const handleUpdateMessageAttachments = (messageId: string, attachments: ChatAttachment[]) => {
+    // Optimistic update - sofort im UI anzeigen
     setChatMessages(prev => prev.map(msg =>
       msg.id === messageId
         ? { ...msg, attachments }
         : msg
     ));
+    // Persist to Supabase - damit es nach Reload nicht verschwindet
+    supaUpdateChatMessageAttachments(messageId, attachments);
     console.log('Updated message attachments:', messageId, attachments);
   };
 

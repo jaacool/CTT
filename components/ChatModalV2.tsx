@@ -2260,8 +2260,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''}`}>
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx} className="w-full flex justify-center">
-                                            {!attachment.url ? (
-                                              // Uploading - Show progress with preview
+                                            {attachment.url.startsWith('blob:') ? (
+                                              // Uploading - Show progress with preview (Blob URL = noch nicht hochgeladen)
                                               <div className="relative max-w-xs rounded-lg overflow-hidden">
                                                 {isImageFile(attachment.type) ? (
                                                   // Image preview while uploading

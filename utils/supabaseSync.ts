@@ -1,5 +1,5 @@
 import { supabase, isSupabaseAvailable } from './supabaseClient';
-import { Project, TimeEntry, User, AbsenceRequest } from '../types';
+import { Project, TimeEntry, User, AbsenceRequest, ChatAttachment } from '../types';
 
 /**
  * Auto-Save Service für Supabase
@@ -212,6 +212,46 @@ export async function saveChatMessage(message: ChatMessage): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Speichern der Chat-Nachricht:', error);
+    return false;
+  }
+}
+
+/**
+ * Aktualisiert die Attachments einer Chat-Nachricht in Supabase
+ */
+export async function updateChatMessageAttachments(messageId: string, attachments: ChatAttachment[]): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  try {
+    // Hole die aktuelle Nachricht aus Supabase
+    const { data: existingMessage, error: fetchError } = await supabase!
+      .from('chat_messages')
+      .select('data')
+      .eq('id', messageId)
+      .single();
+    
+    if (fetchError || !existingMessage) {
+      console.error('❌ Nachricht nicht gefunden:', messageId);
+      return false;
+    }
+
+    // Aktualisiere das data-Objekt mit neuen Attachments
+    const updatedData = {
+      ...existingMessage.data,
+      attachments
+    };
+
+    // Speichere zurück in Supabase
+    const { error: updateError } = await supabase!
+      .from('chat_messages')
+      .update({ data: updatedData })
+      .eq('id', messageId);
+    
+    if (updateError) throw updateError;
+    
+    console.log('✅ Attachments aktualisiert für Nachricht:', messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Aktualisieren der Attachments:', error);
     return false;
   }
 }
