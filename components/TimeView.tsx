@@ -36,6 +36,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
   const [taskSearchTerm, setTaskSearchTerm] = useState('');
+  const [showProjectList, setShowProjectList] = useState(false);
+  const [showTaskList, setShowTaskList] = useState(false);
 
   // Reset Pagination wenn sich die Anzahl der Einträge ändert
   useEffect(() => {
@@ -829,6 +831,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 onClick={() => {
                   setShowBulkActionModal(false);
                   setShowReassignModal(true);
+                  setShowProjectList(true);
+                  setShowTaskList(false);
                 }}
                 className="w-full px-4 py-3 text-left hover:bg-overlay rounded-lg flex items-center space-x-3 transition-colors"
               >
@@ -888,27 +892,32 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 placeholder="Projekt suchen..."
                 value={projectSearchTerm}
                 onChange={(e) => setProjectSearchTerm(e.target.value)}
+                onFocus={() => setShowProjectList(true)}
                 className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
               />
-              <div className="max-h-40 overflow-y-auto space-y-1 border border-overlay rounded-lg">
-                {filteredProjects.map(proj => (
-                  <div
-                    key={proj.id}
-                    onClick={() => {
-                      setSelectedProjectId(proj.id);
-                      setSelectedTaskId('');
-                      setTaskSearchTerm('');
-                    }}
-                    className={`px-3 py-2 cursor-pointer transition-colors ${
-                      selectedProjectId === proj.id
-                        ? 'bg-glow-purple/20 text-glow-purple font-semibold'
-                        : 'hover:bg-overlay text-text-primary'
-                    }`}
-                  >
-                    {proj.name}
-                  </div>
-                ))}
-              </div>
+              {showProjectList && (
+                <div className="max-h-40 overflow-y-auto space-y-1 border border-overlay rounded-lg">
+                  {filteredProjects.map(proj => (
+                    <div
+                      key={proj.id}
+                      onClick={() => {
+                        setSelectedProjectId(proj.id);
+                        setSelectedTaskId('');
+                        setTaskSearchTerm('');
+                        setShowProjectList(false);
+                        setShowTaskList(false);
+                      }}
+                      className={`px-3 py-2 cursor-pointer transition-colors ${
+                        selectedProjectId === proj.id
+                          ? 'bg-glow-purple/20 text-glow-purple font-semibold'
+                          : 'hover:bg-overlay text-text-primary'
+                      }`}
+                    >
+                      {proj.name}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Task Selection */}
@@ -920,29 +929,35 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                   placeholder="Aufgabe suchen..."
                   value={taskSearchTerm}
                   onChange={(e) => setTaskSearchTerm(e.target.value)}
+                  onFocus={() => setShowTaskList(true)}
                   className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
                 />
-                <div className="max-h-60 overflow-y-auto space-y-1 border border-overlay rounded-lg">
-                  {availableTasks.length > 0 ? (
-                    availableTasks.map(task => (
-                      <div
-                        key={task.id}
-                        onClick={() => setSelectedTaskId(task.id)}
-                        className={`px-3 py-2 cursor-pointer transition-colors ${
-                          selectedTaskId === task.id
-                            ? 'bg-glow-purple/20 text-glow-purple font-semibold'
-                            : 'hover:bg-overlay text-text-primary'
-                        } ${task.isSubtask ? 'pl-6 text-sm' : ''}`}
-                      >
-                        {task.title}
+                {showTaskList && (
+                  <div className="max-h-60 overflow-y-auto space-y-1 border border-overlay rounded-lg">
+                    {availableTasks.length > 0 ? (
+                      availableTasks.map(task => (
+                        <div
+                          key={task.id}
+                          onClick={() => {
+                            setSelectedTaskId(task.id);
+                            setShowTaskList(false);
+                          }}
+                          className={`px-3 py-2 cursor-pointer transition-colors ${
+                            selectedTaskId === task.id
+                              ? 'bg-glow-purple/20 text-glow-purple font-semibold'
+                              : 'hover:bg-overlay text-text-primary'
+                          } ${task.isSubtask ? 'pl-6 text-sm' : ''}`}
+                        >
+                          {task.title}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-4 text-center text-text-secondary text-sm">
+                        Keine Aufgaben gefunden
                       </div>
-                    ))
-                  ) : (
-                    <div className="px-3 py-4 text-center text-text-secondary text-sm">
-                      Keine Aufgaben gefunden
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             
