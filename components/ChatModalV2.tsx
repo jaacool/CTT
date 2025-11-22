@@ -2179,15 +2179,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       </button>
                                       
                                       {/* Emoji Picker Dropdown */}
-                                      {(() => {
-                                        const shouldShow = showEmojiPicker === message.id;
-                                        console.log('Emoji Picker render check:', {
-                                          showEmojiPicker,
-                                          messageId: message.id,
-                                          shouldShow
-                                        });
-                                        return shouldShow;
-                                      })() && (
+                                      {/* TEST MODE: ALWAYS SHOW */}
+                                      {true && (
                                         <div 
                                           className="emoji-picker-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
                                           onClick={(e) => e.stopPropagation()}
