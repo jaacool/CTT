@@ -180,28 +180,13 @@ const App: React.FC = () => {
     setAnomalies(allAnomalies);
   }, [timeEntries, absenceRequests, users, currentUser, anomalyRecords]);
 
-  // Berechne ungelesene Nachrichten
+  // Berechne ungelesene Nachrichten (Gesamt-Badge)
   const unreadMessagesCount = useMemo(() => {
     if (!currentUser) return 0;
-    const unreadMessages = chatMessages.filter(msg => 
+    return chatMessages.filter(msg => 
       msg.sender.id !== currentUser.id && // Nicht eigene Nachrichten
       !msg.readBy.includes(currentUser.id) // Noch nicht gelesen
-    );
-    
-    // Debug: Zeige welche Nachrichten als ungelesen gezählt werden
-    if (unreadMessages.length > 0) {
-      console.warn('🔴 UNGELESENE NACHRICHTEN:', unreadMessages.length);
-      console.table(unreadMessages.map(m => ({
-        Channel: m.channelId,
-        Sender: m.sender.name,
-        Inhalt: m.content.substring(0, 30),
-        ReadBy: JSON.stringify(m.readBy)
-      })));
-    } else {
-      console.info('✅ Keine ungelesenen Nachrichten');
-    }
-    
-    return unreadMessages.length;
+    ).length;
   }, [chatMessages, currentUser]);
 
   // Initialize chat channels (Group channels + Direct message channels for each user pair)
@@ -1325,10 +1310,12 @@ const App: React.FC = () => {
     }
   }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject, chatProjectLocked]);
 
-  // Markiere Nachrichten als gelesen wenn Channel gewechselt wird
+  // Markiere Nachrichten als gelesen nach 2 Sekunden wenn Channel geöffnet ist
   useEffect(() => {
-    if (showChat && currentChatChannel && currentUser) {
-      // Markiere nur Nachrichten des aktuellen Channels als gelesen
+    if (!showChat || !currentChatChannel || !currentUser) return;
+
+    // Warte 2 Sekunden bevor Nachrichten als gelesen markiert werden
+    const timer = setTimeout(() => {
       setChatMessages(prev => {
         const hasUnread = prev.some(msg => 
           msg.channelId === currentChatChannel.id && 
@@ -1339,6 +1326,8 @@ const App: React.FC = () => {
         // Nur updaten wenn es tatsächlich ungelesene Nachrichten gibt
         if (!hasUnread) return prev;
         
+        console.log(`✅ Markiere Nachrichten in Channel ${currentChatChannel.name} als gelesen (nach 2 Sek.)`);
+        
         return prev.map(msg => {
           if (msg.channelId === currentChatChannel.id && 
               msg.sender.id !== currentUser.id && 
@@ -1348,8 +1337,11 @@ const App: React.FC = () => {
           return msg;
         });
       });
-    }
-  }, [showChat, currentChatChannel, currentUser, chatMessages]);
+    }, 2000); // 2 Sekunden warten
+
+    // Cleanup: Timer abbrechen wenn Channel gewechselt wird
+    return () => clearTimeout(timer);
+  }, [showChat, currentChatChannel?.id, currentUser?.id]);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
     setAbsenceRequests(prev => prev.map(req => 
