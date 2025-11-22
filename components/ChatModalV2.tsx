@@ -371,6 +371,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Dynamic composer measurement
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState<number>(0);
+  // Minimum space for hover menu: menu height (40px) + bottom offset (8px) + safety margin (8px) = 56px
+  const HOVER_MENU_MIN_SPACE = 56;
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -1721,7 +1723,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div 
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
-              style={{ paddingBottom: `${composerHeight - 8}px` }}
+              style={{ paddingBottom: `${composerHeight + HOVER_MENU_MIN_SPACE}px` }}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
               {(() => {
