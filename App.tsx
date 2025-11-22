@@ -2004,8 +2004,10 @@ const App: React.FC = () => {
         style={{
           opacity: isDataLoaded ? 0 : 1,
           pointerEvents: isDataLoaded ? 'none' : 'auto',
-          transition: 'opacity 1.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
-          willChange: 'opacity'
+          transition: 'opacity 2s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'opacity',
+          backfaceVisibility: 'hidden',
+          transform: 'translateZ(0)'
         }}
       >
         <LoadingScreen message="Projekte werden geladen..." />
