@@ -22,6 +22,12 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   const [contextMenuEntryId, setContextMenuEntryId] = useState<string | null>(null);
   const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  
+  // Multi-Selection State
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showBulkActionModal, setShowBulkActionModal] = useState(false);
 
   // Reset Pagination wenn sich die Anzahl der Einträge ändert
   useEffect(() => {
@@ -88,6 +94,57 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     setEditingEntryId(null);
   };
 
+  // Multi-Selection Handlers
+  const handleLongPressStart = (entryId: string) => {
+    const timer = setTimeout(() => {
+      setSelectionMode(true);
+      setSelectedEntries(new Set([entryId]));
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const toggleEntrySelection = (entryId: string) => {
+    if (!selectionMode) return;
+    
+    setSelectedEntries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(entryId)) {
+        newSet.delete(entryId);
+      } else {
+        newSet.add(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedEntries(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    if (onDeleteEntry) {
+      selectedEntries.forEach(entryId => onDeleteEntry(entryId));
+    }
+    exitSelectionMode();
+    setShowBulkActionModal(false);
+  };
+
+  const selectAll = () => {
+    setSelectedEntries(new Set(pagedEntries.map(e => e.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedEntries(new Set());
+  };
+
   const totalDuration = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
   // Check if user can edit time entries (only admins and producers)
@@ -135,6 +192,53 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
 
   return (
     <div className="space-y-3">
+      {/* Selection Mode Toolbar */}
+      {selectionMode && (
+        <div className="sticky top-0 z-10 bg-surface border border-border rounded-lg p-3 flex items-center justify-between shadow-lg">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={exitSelectionMode}
+              className="p-2 hover:bg-overlay rounded-lg transition-colors"
+              title="Abbrechen"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <span className="text-text-primary font-semibold">
+              {selectedEntries.size} {selectedEntries.size === 1 ? 'Eintrag' : 'Einträge'} ausgewählt
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {selectedEntries.size < pagedEntries.length ? (
+              <button
+                onClick={selectAll}
+                className="px-3 py-2 text-sm text-text-primary hover:bg-overlay rounded-lg transition-colors"
+              >
+                Alle auswählen
+              </button>
+            ) : (
+              <button
+                onClick={deselectAll}
+                className="px-3 py-2 text-sm text-text-primary hover:bg-overlay rounded-lg transition-colors"
+              >
+                Alle abwählen
+              </button>
+            )}
+            
+            <button
+              onClick={() => setShowBulkActionModal(true)}
+              disabled={selectedEntries.size === 0}
+              className="px-4 py-2 glow-button text-text-primary rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Aktionen
+            </button>
+          </div>
+        </div>
+      )}
+      
       {sortedDateEntries.map(([date, entries]: [string, TimeEntry[]]) => (
         <div key={date} className="space-y-1">
           <div className="px-1 text-xs font-semibold text-text-secondary mt-1">
@@ -200,12 +304,34 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 </div>
               ) : (
                 <div
-                  onClick={() => handleEditClick(entry)}
-                  className="cursor-pointer"
+                  onMouseDown={() => !selectionMode && handleLongPressStart(entry.id)}
+                  onMouseUp={handleLongPressEnd}
+                  onMouseLeave={handleLongPressEnd}
+                  onTouchStart={() => !selectionMode && handleLongPressStart(entry.id)}
+                  onTouchEnd={handleLongPressEnd}
+                  onClick={() => selectionMode ? toggleEntrySelection(entry.id) : handleEditClick(entry)}
+                  className={`cursor-pointer transition-all duration-200 ${selectionMode ? 'pl-2' : ''}`}
                 >
                   {/* Mobile: Compact Layout */}
                   <div className="flex items-start justify-between gap-2 sm:hidden">
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      {/* Checkbox im Selection Mode */}
+                      {selectionMode && (
+                        <div 
+                          className="flex-shrink-0 w-5 h-5 rounded border-2 border-glow-purple flex items-center justify-center cursor-pointer"
+                          style={{ backgroundColor: selectedEntries.has(entry.id) ? 'var(--glow-purple)' : 'transparent' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleEntrySelection(entry.id);
+                          }}
+                        >
+                          {selectedEntries.has(entry.id) && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          )}
+                        </div>
+                      )}
                       <img
                         src={entry.user.avatarUrl}
                         alt={entry.user.name}
@@ -292,6 +418,23 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                   
                   {/* Tablet/Desktop: Horizontal Layout */}
                   <div className="hidden sm:flex items-center space-x-3">
+                    {/* Checkbox im Selection Mode */}
+                    {selectionMode && (
+                      <div 
+                        className="flex-shrink-0 w-5 h-5 rounded border-2 border-glow-purple flex items-center justify-center cursor-pointer"
+                        style={{ backgroundColor: selectedEntries.has(entry.id) ? 'var(--glow-purple)' : 'transparent' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleEntrySelection(entry.id);
+                        }}
+                      >
+                        {selectedEntries.has(entry.id) && (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        )}
+                      </div>
+                    )}
                     <img
                       src={entry.user.avatarUrl}
                       alt={entry.user.name}
@@ -504,6 +647,62 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
           </div>
         );
       })()}
+      
+      {/* Bulk Action Modal */}
+      {showBulkActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowBulkActionModal(false)} />
+          <div className="relative z-50 bg-surface border border-overlay rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-text-primary font-bold text-lg mb-4">
+              Aktionen für {selectedEntries.size} {selectedEntries.size === 1 ? 'Eintrag' : 'Einträge'}
+            </h3>
+            
+            <div className="space-y-2 mb-6">
+              <button
+                onClick={() => {
+                  // TODO: Implement bulk task reassignment
+                  alert('Aufgabe zuordnen - Feature kommt bald!');
+                }}
+                className="w-full px-4 py-3 text-left hover:bg-overlay rounded-lg flex items-center space-x-3 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-glow-purple">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                <div>
+                  <div className="text-text-primary font-semibold">Aufgabe zuordnen</div>
+                  <div className="text-xs text-text-secondary">Alle Einträge einer neuen Aufgabe zuordnen</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={handleBulkDelete}
+                className="w-full px-4 py-3 text-left hover:bg-overlay rounded-lg flex items-center space-x-3 transition-colors text-red-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <div>
+                  <div className="font-semibold">Alle löschen</div>
+                  <div className="text-xs text-text-secondary">Ausgewählte Einträge unwiderruflich löschen</div>
+                </div>
+              </button>
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowBulkActionModal(false)}
+                className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-primary transition-colors"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {timeEntries.length === 0 && (
         <div className="text-center py-12 text-text-secondary">
