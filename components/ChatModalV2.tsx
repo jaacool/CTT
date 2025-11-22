@@ -2758,21 +2758,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           }`}
                                           onClick={(e) => e.stopPropagation()}
                                         >
-                                          {/* Zitat in Antwort */}
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleReplyToMessage(message);
-                                              setShowMoreMenu(null);
-                                            }}
-                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
-                                          >
-                                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                            </svg>
-                                            <span className="text-text-primary">Zitat in Antwort</span>
-                                          </button>
-                                          
                                           {/* Als ungelesen markieren */}
                                           <button
                                             onClick={(e) => {
@@ -2801,21 +2786,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             <span className="text-text-primary">Markieren</span>
                                           </button>
                                           
-                                          {/* An Pinnwand anheften */}
+                                          <div className="border-t border-border my-1"></div>
+                                          
+                                          {/* Kopieren */}
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handlePinMessage(message.id);
+                                              navigator.clipboard.writeText(message.content);
+                                              setShowMoreMenu(null);
                                             }}
                                             className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
                                           >
                                             <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                             </svg>
-                                            <span className="text-text-primary">An Pinnwand anheften</span>
+                                            <span className="text-text-primary">Kopieren</span>
                                           </button>
-                                          
-                                          <div className="border-t border-border my-1"></div>
                                           
                                           {/* Nachrichtenlink kopieren */}
                                           <button
@@ -3327,21 +3313,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               }`}
                                               onClick={(e) => e.stopPropagation()}
                                             >
-                                              {/* Zitat in Antwort */}
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleReplyToMessage(message);
-                                                  setShowMoreMenu(null);
-                                                }}
-                                                className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
-                                              >
-                                                <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                </svg>
-                                                <span className="text-text-primary">Zitat in Antwort</span>
-                                              </button>
-                                              
                                               {/* Als ungelesen markieren */}
                                               <button
                                                 onClick={(e) => {
@@ -3370,21 +3341,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 <span className="text-text-primary">Markieren</span>
                                               </button>
                                               
-                                              {/* An Pinnwand anheften */}
+                                              <div className="border-t border-border my-0.5"></div>
+                                              
+                                              {/* Kopieren */}
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  handlePinMessage(message.id);
+                                                  navigator.clipboard.writeText(message.content);
+                                                  setShowMoreMenu(null);
                                                 }}
                                                 className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
                                               >
                                                 <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                 </svg>
-                                                <span className="text-text-primary">An Pinnwand anheften</span>
+                                                <span className="text-text-primary">Kopieren</span>
                                               </button>
-                                              
-                                              <div className="border-t border-border my-0.5"></div>
                                               
                                               {/* Nachrichtenlink kopieren */}
                                               <button
