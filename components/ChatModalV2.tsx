@@ -1169,7 +1169,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleMessageMouseLeave = () => {
     // Delay 300ms before closing to allow moving to menu
     hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredMessageId(null);
+      // Don't close if a submenu is open
+      if (!showEmojiPicker && !showMoreMenu) {
+        setHoveredMessageId(null);
+      }
     }, 300);
   };
   
