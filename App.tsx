@@ -22,6 +22,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { TopBar } from './components/TopBar';
 import { SettingsPage } from './components/SettingsPage';
 import { BottomBar } from './components/BottomBar';
+import { LoadingScreen } from './components/LoadingScreen';
 import { statusToText, formatTime } from './components/utils';
 import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
@@ -101,6 +102,9 @@ const App: React.FC = () => {
   const [showVacationAbsence, setShowVacationAbsence] = useState(false);
   const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [showTimeStatistics, setShowTimeStatistics] = useState(false);
+  
+  // Loading State für optimistisches UI
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -339,6 +343,7 @@ const App: React.FC = () => {
         }
         
         console.log('✅ Daten aus Cache geladen!');
+        setIsDataLoaded(true);
         return; // Fertig, kein Supabase-Load nötig
       }
       
@@ -370,6 +375,7 @@ const App: React.FC = () => {
         }
         
         console.log('✅ Daten aus Supabase Backup geladen!');
+        setIsDataLoaded(true);
         
         // Speichere auch in localStorage Cache
         saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests);
@@ -423,6 +429,7 @@ const App: React.FC = () => {
         }
         
         console.log('🎉 Daten aus Supabase geladen!');
+        setIsDataLoaded(true);
         
         // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
         if (data.users.length > 0) {
@@ -2059,13 +2066,18 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
           />
         ) : showProjectsOverview ? (
-          <ProjectsOverview
-            projects={projects}
-            onSelectProject={handleSelectProject}
-            onDeleteProject={handleDeleteProject}
-          />
+          isDataLoaded ? (
+            <ProjectsOverview
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onDeleteProject={handleDeleteProject}
+            />
+          ) : (
+            <LoadingScreen message="Projekte werden geladen..." />
+          )
         ) : showVacationAbsence ? (
-          <VacationAbsence
+          isDataLoaded ? (
+            <VacationAbsence
             absenceRequests={absenceRequests}
             currentUser={currentUser}
             allUsers={users}
@@ -2084,8 +2096,12 @@ const App: React.FC = () => {
             selectedState={selectedState}
             separateHomeOffice={separateHomeOffice}
           />
+          ) : (
+            <LoadingScreen message="Urlaub & Abwesenheit werden geladen..." />
+          )
         ) : showTimeTracking ? (
-          <TimeTracking
+          isDataLoaded ? (
+            <TimeTracking
             timeEntries={timeEntries}
             currentUser={currentUser}
             absenceRequests={absenceRequests}
@@ -2097,8 +2113,12 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
+          ) : (
+            <LoadingScreen message="Zeiterfassung wird geladen..." />
+          )
         ) : showTimeStatistics ? (
-          <TimeStatistics
+          isDataLoaded ? (
+            <TimeStatistics
             users={users}
             timeEntries={timeEntries}
             absenceRequests={absenceRequests}
@@ -2114,6 +2134,9 @@ const App: React.FC = () => {
             onMuteAnomaly={handleMuteAnomaly}
             onAddAnomalyComment={handleAddAnomalyComment}
           />
+          ) : (
+            <LoadingScreen message="Zeitauswertungen werden geladen..." />
+          )
         ) : selectedProject ? (
           <TaskArea 
             project={selectedProject}
