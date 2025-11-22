@@ -372,7 +372,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState<number>(0);
   // Minimum space for hover menu: menu height (40px) + bottom offset (8px) + safety margin (8px) = 56px
-  const HOVER_MENU_MIN_SPACE = 40;
+  const HOVER_MENU_MIN_SPACE = -40;
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -2000,7 +2000,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                               {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
-                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[300] overflow-hidden">
+                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-10 overflow-hidden">
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                     {quickReactions.map((emoji) => (
@@ -2400,7 +2400,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                                   {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[200] overflow-hidden">
+                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-10 overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
