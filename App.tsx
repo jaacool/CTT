@@ -110,6 +110,12 @@ const App: React.FC = () => {
   const [selectedState, setSelectedState] = useState<import('./utils/holidays').GermanState | undefined>('BE'); // Default: Berlin
   const [separateHomeOffice, setSeparateHomeOffice] = useState(false);
   
+  // Favoriten-System mit localStorage Caching
+  const [favoriteProjectIds, setFavoriteProjectIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('ctt_favorite_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   // Chat State
   const [showChat, setShowChat] = useState(false);
   const [chatChannels, setChatChannels] = useState<ChatChannel[]>([]);
@@ -1771,6 +1777,19 @@ const App: React.FC = () => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+  // Favoriten Toggle Handler mit localStorage Sync
+  const handleToggleFavorite = useCallback((projectId: string) => {
+    setFavoriteProjectIds(prev => {
+      const newFavorites = prev.includes(projectId)
+        ? prev.filter(id => id !== projectId) // Entfernen
+        : [...prev, projectId]; // Hinzufügen
+      
+      // Speichere in localStorage
+      localStorage.setItem('ctt_favorite_projects', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  }, []);
+
   // Removed login screen - always logged in as admin
 
   const findItemContext = (itemId: string): { projectName: string; listTitle: string } | null => {
@@ -2015,6 +2034,8 @@ const App: React.FC = () => {
           setSelectedTask(null);
           setIsSidebarOpen(false); // Close sidebar
         }}
+        favoriteProjectIds={favoriteProjectIds}
+        onToggleFavorite={handleToggleFavorite}
       />
       
         <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto transition-all duration-300">
