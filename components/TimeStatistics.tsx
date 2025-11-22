@@ -976,21 +976,25 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                 {chartData.map((entry: any, index: number) => {
                   const isTargetDate = entry.date === targetAnomaly?.date;
                   const isMissingEntry = entry.anomaly?.type === AnomalyType.MISSING_ENTRY;
+                  const hasTimeEntries = entry.hours > 0;
 
-                  // Standard: Balken immer in worked-Farbe, außer Spezialfall "Keine Zeit erfasst"
-                  const fill = isTargetDate && isMissingEntry
-                    ? 'transparent'
+                  // Highlight-Logik:
+                  // 1. Target-Anomalie mit Zeiteinträgen → Gelb (#EAB308)
+                  // 2. Target-Anomalie OHNE Zeiteinträge (MISSING_ENTRY) → Transparent mit gestricheltem Rand
+                  // 3. Sonst → Standard worked-Farbe
+                  const fill = isTargetDate
+                    ? (isMissingEntry ? 'transparent' : '#EAB308')
                     : COLORS.worked;
 
-                  const stroke = isTargetDate && isMissingEntry
-                    ? COLORS.anomaly
+                  const stroke = isTargetDate
+                    ? (isMissingEntry ? COLORS.anomaly : '#EAB308')
                     : 'none';
 
                   const strokeDasharray = isTargetDate && isMissingEntry
                     ? '5 5'
                     : undefined;
 
-                  const strokeWidth = isTargetDate && isMissingEntry ? 2 : 0;
+                  const strokeWidth = isTargetDate ? 2 : 0;
 
                   return (
                     <Cell
