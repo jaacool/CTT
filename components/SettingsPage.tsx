@@ -34,6 +34,8 @@ interface SettingsPageProps {
   showAdminsInDMs?: boolean;
   onToggleShowAdminsInDMs?: (show: boolean) => void;
   onDeleteAllMessages?: () => void;
+  maxUploadSize?: number;
+  onMaxUploadSizeChange?: (size: number) => void;
 }
 
 const UserRow: React.FC<{ 
@@ -236,7 +238,7 @@ const UserRow: React.FC<{
   );
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onChangeUserStatus, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange, showAdminsInDMs, onToggleShowAdminsInDMs, onDeleteAllMessages }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEntries, projects, absenceRequests, onAddUser, onUpdateUser, onDeleteUser, onChangeRole, onChangeUserStatus, onImportComplete, chatChannels, currentUser, onCreateChannel, onUpdateChannel, onDeleteChannel, selectedState, onSelectedStateChange, separateHomeOffice, onSeparateHomeOfficeChange, showAdminsInDMs, onToggleShowAdminsInDMs, onDeleteAllMessages, maxUploadSize, onMaxUploadSizeChange }) => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'appearance' | 'import-export' | 'supabase' | 'channels' | 'calendar'>('users');
@@ -382,6 +384,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
             showAdminsInDMs={showAdminsInDMs}
             onToggleShowAdminsInDMs={onToggleShowAdminsInDMs}
             onDeleteAllMessages={onDeleteAllMessages}
+            maxUploadSize={maxUploadSize}
+            onMaxUploadSizeChange={onMaxUploadSizeChange}
           />
         ) : (
           <div className="text-center py-12 text-text-secondary">

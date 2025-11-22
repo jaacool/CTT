@@ -2059,6 +2059,8 @@ const App: React.FC = () => {
               showAdminsInDMs={showAdminsInDMs}
               onToggleShowAdminsInDMs={handleToggleShowAdminsInDMs}
               onDeleteAllMessages={handleDeleteAllMessages}
+              maxUploadSize={maxUploadSize}
+              onMaxUploadSizeChange={handleMaxUploadSizeChange}
               onImportComplete={(result) => {
                 // Merge neue Projekte
                 const updatedProjects = [...projects];

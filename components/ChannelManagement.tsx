@@ -13,6 +13,8 @@ interface ChannelManagementProps {
   showAdminsInDMs?: boolean;
   onToggleShowAdminsInDMs?: (show: boolean) => void;
   onDeleteAllMessages?: () => void;
+  maxUploadSize?: number;
+  onMaxUploadSizeChange?: (size: number) => void;
 }
 
 export const ChannelManagement: React.FC<ChannelManagementProps> = ({
@@ -25,6 +27,8 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
   showAdminsInDMs = true,
   onToggleShowAdminsInDMs,
   onDeleteAllMessages,
+  maxUploadSize = 100,
+  onMaxUploadSizeChange,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<ChatChannel | null>(null);
@@ -133,6 +137,40 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
               />
               <div className="w-11 h-6 bg-overlay peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-glow-purple/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-glow-purple"></div>
             </label>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Limit Setting */}
+      {onMaxUploadSizeChange && (
+        <div className="mb-6 p-4 bg-surface border border-border rounded-lg">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary mb-1">
+              Upload-Limit
+            </h3>
+            <p className="text-xs text-text-secondary mb-3">
+              Maximale Dateigröße für Uploads im Chat
+            </p>
+            <div className="flex items-center space-x-3">
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={maxUploadSize}
+                onChange={(e) => {
+                  const newSize = parseInt(e.target.value) || 100;
+                  onMaxUploadSizeChange(newSize);
+                }}
+                className="w-32 px-3 py-2 bg-overlay border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+              />
+              <span className="text-sm text-text-secondary font-semibold">MB</span>
+            </div>
+            <div className="mt-2 flex items-center space-x-2 text-xs text-text-secondary">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Empfohlen: 100 MB</span>
+            </div>
           </div>
         </div>
       )}
