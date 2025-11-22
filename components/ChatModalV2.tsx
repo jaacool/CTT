@@ -386,11 +386,50 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
   
-  // All emojis for picker
-  const allEmojis = [
-    '👍', '❤️', '😊', '🎉', '🔥', '😂', '😍', '🤔', '👏', '🙏',
-    '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
-  ];
+  // All emojis for picker - organized by categories
+  const emojiCategories = {
+    'Häufig genutzt': ['👍', '❤️', '😊', '🎉'],
+    'Smileys & Emotionen': [
+      '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', 
+      '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+      '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪',
+      '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨',
+      '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
+      '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕',
+      '🤢', '🤮', '🤧', '🥵', '🥶', '😵', '🤯', '🤠',
+      '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️',
+      '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨',
+      '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞'
+    ],
+    'Gesten & Körper': [
+      '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
+      '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+      '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜',
+      '👏', '🙌', '👐', '🤲', '🤝', '🙏', '💪', '🦾'
+    ],
+    'Herzen': [
+      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+      '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+      '💘', '💝', '💟'
+    ],
+    'Objekte': [
+      '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉',
+      '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱',
+      '🎯', '🎮', '🎲', '🎰', '🎳', '🎸', '🎹', '🎺',
+      '🎻', '🥁', '🎤', '🎧', '🎬', '🎨', '🎭', '🎪',
+      '💡', '🔦', '🕯️', '💰', '💵', '💴', '💶', '💷',
+      '⏰', '⏱️', '⏲️', '🕐', '📱', '💻', '⌨️', '🖥️',
+      '🖨️', '🖱️', '🖲️', '📷', '📹', '🎥', '📞', '☎️'
+    ],
+    'Symbole': [
+      '✨', '⭐', '🌟', '💫', '✅', '❌', '⚠️', '🚀',
+      '🔥', '💯', '💢', '💥', '💦', '💨', '🌈', '☀️',
+      '⛅', '☁️', '⚡', '❄️', '🔔', '🔕', '🎵', '🎶',
+      '♻️', '⚡', '🔋', '🔌', '💡', '🔦', '🕯️'
+    ]
+  };
+  
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
   // Scroll to bottom when opening chat or switching channels (instant, no animation)
   // useLayoutEffect runs before browser paint, preventing flash of old scroll position
@@ -1080,6 +1119,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setShowMoreMenu(null);
     setHoveredMessageId(null);
     // TODO: Implement mark as unread functionality
+    alert('Funktion "Als ungelesen markieren" wird noch implementiert.');
   };
   
   // Handle star message (placeholder)
@@ -1088,6 +1128,25 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setShowMoreMenu(null);
     setHoveredMessageId(null);
     // TODO: Implement star message functionality
+    alert('Funktion "Markieren" wird noch implementiert.');
+  };
+  
+  // Handle copy message link
+  const handleCopyMessageLink = (messageId: string) => {
+    const link = `${window.location.origin}/chat/${currentChannel?.id}/${messageId}`;
+    navigator.clipboard.writeText(link);
+    setShowMoreMenu(null);
+    setHoveredMessageId(null);
+    alert('Link kopiert!');
+  };
+  
+  // Handle pin message
+  const handlePinMessage = (messageId: string) => {
+    console.log('Pin message:', messageId);
+    setShowMoreMenu(null);
+    setHoveredMessageId(null);
+    // TODO: Implement pin message functionality
+    alert('Funktion "An Pinnwand anheften" wird noch implementiert.');
   };
   
   // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
@@ -2084,22 +2143,53 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       
                                       {/* Emoji Picker Dropdown */}
                                       {showEmojiPicker === message.id && (
-                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
-                                          <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
-                                          <div className="grid grid-cols-5 gap-2">
-                                            {allEmojis.map((emoji) => (
+                                        <div 
+                                          className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {/* Search Bar */}
+                                          <div className="p-3 border-b border-border">
+                                            <input
+                                              type="text"
+                                              placeholder="Suchen"
+                                              className="w-full px-3 py-2 bg-overlay rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                                            />
+                                          </div>
+                                          
+                                          {/* Category Tabs */}
+                                          <div className="flex items-center space-x-1 px-3 py-2 border-b border-border overflow-x-auto">
+                                            {Object.keys(emojiCategories).map((category) => (
                                               <button
-                                                key={emoji}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleReaction(message.id, emoji);
-                                                }}
-                                                className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
-                                                title={`Mit ${emoji} reagieren`}
+                                                key={category}
+                                                onClick={() => setSelectedEmojiCategory(category)}
+                                                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                                                  selectedEmojiCategory === category
+                                                    ? 'bg-glow-purple text-white'
+                                                    : 'text-text-secondary hover:bg-overlay'
+                                                }`}
                                               >
-                                                {emoji}
+                                                {category}
                                               </button>
                                             ))}
+                                          </div>
+                                          
+                                          {/* Emoji Grid */}
+                                          <div className="p-3 max-h-64 overflow-y-auto">
+                                            <div className="grid grid-cols-8 gap-1">
+                                              {emojiCategories[selectedEmojiCategory as keyof typeof emojiCategories].map((emoji) => (
+                                                <button
+                                                  key={emoji}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleReaction(message.id, emoji);
+                                                  }}
+                                                  className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-125"
+                                                  title={`Mit ${emoji} reagieren`}
+                                                >
+                                                  {emoji}
+                                                </button>
+                                              ))}
+                                            </div>
                                           </div>
                                         </div>
                                       )}
@@ -2133,7 +2223,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       
                                       {/* More Options Menu */}
                                       {showMoreMenu === message.id && (
-                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
+                                        <div 
+                                          className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {/* Zitat in Antwort */}
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleReplyToMessage(message);
+                                              setShowMoreMenu(null);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                          >
+                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                            </svg>
+                                            <span className="text-text-primary">Zitat in Antwort</span>
+                                          </button>
+                                          
+                                          {/* Als ungelesen markieren */}
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -2146,6 +2255,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </svg>
                                             <span className="text-text-primary">Als ungelesen markieren</span>
                                           </button>
+                                          
+                                          {/* Markieren */}
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -2158,6 +2269,71 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             </svg>
                                             <span className="text-text-primary">Markieren</span>
                                           </button>
+                                          
+                                          {/* An Pinnwand anheften */}
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handlePinMessage(message.id);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                          >
+                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                            <span className="text-text-primary">An Pinnwand anheften</span>
+                                          </button>
+                                          
+                                          <div className="border-t border-border my-1"></div>
+                                          
+                                          {/* Nachrichtenlink kopieren */}
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleCopyMessageLink(message.id);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                          >
+                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            </svg>
+                                            <span className="text-text-primary">Nachrichtenlink kopieren</span>
+                                          </button>
+                                          
+                                          <div className="border-t border-border my-1"></div>
+                                          
+                                          {/* Bearbeiten (nur eigene Nachrichten) */}
+                                          {isOwnMessage && canEditMessage(message.timestamp) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingMessageId(message.id);
+                                                setEditingContent(message.content);
+                                                setShowMoreMenu(null);
+                                                setHoveredMessageId(null);
+                                              }}
+                                              className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                            >
+                                              <EditIcon className="w-4 h-4 text-text-secondary" />
+                                              <span className="text-text-primary">Nachricht bearbeiten</span>
+                                            </button>
+                                          )}
+                                          
+                                          {/* Löschen (nur eigene Nachrichten) */}
+                                          {isOwnMessage && canEditMessage(message.timestamp) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirmMessageId(message.id);
+                                                setShowMoreMenu(null);
+                                                setHoveredMessageId(null);
+                                              }}
+                                              className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3 text-red-500"
+                                            >
+                                              <TrashIcon className="w-4 h-4" />
+                                              <span>Löschen</span>
+                                            </button>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -2509,22 +2685,53 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
-                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
-                                              <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
-                                              <div className="grid grid-cols-5 gap-2">
-                                                {allEmojis.map((emoji) => (
+                                            <div 
+                                              className="absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {/* Search Bar */}
+                                              <div className="p-3 border-b border-border">
+                                                <input
+                                                  type="text"
+                                                  placeholder="Suchen"
+                                                  className="w-full px-3 py-2 bg-overlay rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
+                                                />
+                                              </div>
+                                              
+                                              {/* Category Tabs */}
+                                              <div className="flex items-center space-x-1 px-3 py-2 border-b border-border overflow-x-auto">
+                                                {Object.keys(emojiCategories).map((category) => (
                                                   <button
-                                                    key={emoji}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleReaction(message.id, emoji);
-                                                    }}
-                                                    className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
-                                                    title={`Mit ${emoji} reagieren`}
+                                                    key={category}
+                                                    onClick={() => setSelectedEmojiCategory(category)}
+                                                    className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                                                      selectedEmojiCategory === category
+                                                        ? 'bg-glow-purple text-white'
+                                                        : 'text-text-secondary hover:bg-overlay'
+                                                    }`}
                                                   >
-                                                    {emoji}
+                                                    {category}
                                                   </button>
                                                 ))}
+                                              </div>
+                                              
+                                              {/* Emoji Grid */}
+                                              <div className="p-3 max-h-64 overflow-y-auto">
+                                                <div className="grid grid-cols-8 gap-1">
+                                                  {emojiCategories[selectedEmojiCategory as keyof typeof emojiCategories].map((emoji) => (
+                                                    <button
+                                                      key={emoji}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleReaction(message.id, emoji);
+                                                      }}
+                                                      className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-125"
+                                                      title={`Mit ${emoji} reagieren`}
+                                                    >
+                                                      {emoji}
+                                                    </button>
+                                                  ))}
+                                                </div>
                                               </div>
                                             </div>
                                           )}
@@ -2559,7 +2766,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
-                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
+                                            <div 
+                                              className="absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {/* Zitat in Antwort */}
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleReplyToMessage(message);
+                                                  setShowMoreMenu(null);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                              >
+                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                </svg>
+                                                <span className="text-text-primary">Zitat in Antwort</span>
+                                              </button>
+                                              
+                                              {/* Als ungelesen markieren */}
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
@@ -2572,6 +2798,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </svg>
                                                 <span className="text-text-primary">Als ungelesen markieren</span>
                                               </button>
+                                              
+                                              {/* Markieren */}
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
@@ -2583,6 +2811,36 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                                 </svg>
                                                 <span className="text-text-primary">Markieren</span>
+                                              </button>
+                                              
+                                              {/* An Pinnwand anheften */}
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handlePinMessage(message.id);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                              >
+                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                </svg>
+                                                <span className="text-text-primary">An Pinnwand anheften</span>
+                                              </button>
+                                              
+                                              <div className="border-t border-border my-1"></div>
+                                              
+                                              {/* Nachrichtenlink kopieren */}
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleCopyMessageLink(message.id);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                              >
+                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                                </svg>
+                                                <span className="text-text-primary">Nachrichtenlink kopieren</span>
                                               </button>
                                             </div>
                                           )}
