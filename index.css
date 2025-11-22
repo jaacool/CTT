@@ -1383,6 +1383,7 @@ textarea:focus {
   width: 65px;
   aspect-ratio: 1;
   position: relative;
+  will-change: transform;
 }
 
 .upload-loader:before,
@@ -1394,7 +1395,8 @@ textarea:focus {
               0 0 20px rgba(168, 85, 247, 0.9),
               0 0 40px rgba(168, 85, 247, 0.7),
               0 0 0px rgba(236, 72, 153, 0.5);
-  animation: uploadLoaderAnimation 3.25s infinite;
+  animation: uploadLoaderAnimation 3.25s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  will-change: inset;
 }
 
 .upload-loader:after {

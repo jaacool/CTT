@@ -2000,10 +2000,12 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen font-sans text-sm relative">
       {/* Loading Screen Overlay - fadet aus wenn Daten geladen */}
       <div 
-        className="absolute inset-0 z-50 transition-opacity duration-1000 ease-out"
+        className="absolute inset-0 z-50"
         style={{
           opacity: isDataLoaded ? 0 : 1,
-          pointerEvents: isDataLoaded ? 'none' : 'auto'
+          pointerEvents: isDataLoaded ? 'none' : 'auto',
+          transition: 'opacity 1.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
+          willChange: 'opacity'
         }}
       >
         <LoadingScreen message="Projekte werden geladen..." />

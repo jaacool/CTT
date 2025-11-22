@@ -6,7 +6,7 @@ interface LoadingScreenProps {
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...' }) => {
   return (
-    <div className="fixed inset-0 bg-background">
+    <div className="fixed inset-0 bg-background" style={{ willChange: 'opacity' }}>
       {/* Upload Loader Animation - absolut zentriert */}
       <div 
         className="upload-loader" 
@@ -15,7 +15,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%) scale(1.2)',
-          marginTop: '-40px' // Leicht nach oben verschieben für optische Balance
+          marginTop: '-40px', // Leicht nach oben verschieben für optische Balance
+          willChange: 'transform'
         }}
       ></div>
       
@@ -28,7 +29,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
           left: '50%',
           transform: 'translate(-50%, -50%)',
           marginTop: '80px',
-          animation: 'fadeIn 0.3s ease-in-out 0.5s forwards' // Verzögert einblenden
+          animation: 'fadeIn 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) 0.4s forwards', // Smooth fade-in
+          willChange: 'opacity'
         }}
       >
         <p className="text-text-primary font-medium text-base tracking-wide whitespace-nowrap">{message}</p>
