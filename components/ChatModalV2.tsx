@@ -248,29 +248,25 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
       </button>
 
       {/* Waveform Container */}
-      <div className="flex-1 flex items-center space-x-2">
-        {/* Waveform Bars */}
+      <div className="flex-1 flex items-center space-x-3">
+        {/* Waveform Bars - STATISCH */}
         <div 
           className="flex items-center justify-between flex-1 min-w-0 overflow-hidden cursor-pointer relative"
-          style={{ height: '32px' }}
+          style={{ height: '40px' }}
           onClick={handleSeek}
         >
+          {/* Statische graue Waveform */}
           {waveformBars.map((level, index) => {
-            const progress = duration > 0 ? currentTime / duration : 0;
-            const barProgress = index / waveformBars.length;
-            const isPassed = barProgress <= progress;
-            
             const amplifiedLevel = Math.min(1, level * 2);
-            const height = Math.max(3, amplifiedLevel * 32);
+            const height = Math.max(4, amplifiedLevel * 40);
             
             return (
               <div
                 key={index}
-                className="rounded-full transition-colors duration-100"
+                className="rounded-full"
                 style={{
                   height: `${height}px`,
-                  backgroundColor: isPassed ? '#A855F7' : '#6B7280',
-                  opacity: isPassed ? 1 : 0.4,
+                  backgroundColor: '#4B5563',
                   width: '2px',
                   flex: '1 1 0',
                 }}
@@ -278,13 +274,14 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
             );
           })}
           
-          {/* Playhead - weißer Strich */}
+          {/* Blauer Playhead - bewegt sich von links nach rechts */}
           {duration > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-[3px] bg-white rounded-full pointer-events-none"
+              className="absolute top-0 bottom-0 w-[3px] rounded-full pointer-events-none"
               style={{ 
                 left: `${(currentTime / duration) * 100}%`,
-                transform: 'translateX(-50%)'
+                backgroundColor: '#3B82F6',
+                boxShadow: '0 0 8px rgba(59, 130, 246, 0.6)'
               }}
             />
           )}
