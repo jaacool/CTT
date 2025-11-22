@@ -164,8 +164,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Heute's Einträge */}
-            <div className="space-y-2" data-testid="today-entries">
+            {/* Heute's Einträge - Max 5 sichtbar, Rest scrollbar */}
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-overlay scrollbar-track-transparent" data-testid="today-entries">
               {todayEntries.map(entry => {
                 const isActive = activeTimerTaskId === entry.taskId && !entry.endTime;
                 const currentSeconds = taskTimers[entry.taskId] || 0;
