@@ -368,6 +368,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -1155,6 +1156,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     alert('Funktion "An Pinnwand anheften" wird noch implementiert.');
   };
   
+  // Handle mouse enter on message - cancel any pending timeout
+  const handleMessageMouseEnter = (messageId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredMessageId(messageId);
+  };
+  
+  // Handle mouse leave on message - delay before closing
+  const handleMessageMouseLeave = () => {
+    // Delay 300ms before closing to allow moving to menu
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredMessageId(null);
+    }, 300);
+  };
+  
   // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
   const parseReply = (content: string) => {
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
@@ -1912,8 +1930,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Wrapper für Bubble und Hover-Menü */}
                               <div 
                                 className="relative transition-all duration-500"
-                                onMouseEnter={() => setHoveredMessageId(message.id)}
-                                onMouseLeave={() => setHoveredMessageId(null)}
+                                onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                onMouseLeave={handleMessageMouseLeave}
                               >
                                 {/* Message Content Bubble */}
                                 <div className={`rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent overflow-hidden ${
@@ -2116,7 +2134,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                               {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                               {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && isOwnMessage && !showThreadView && (
-                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                <div 
+                                  className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden"
+                                  onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                  onMouseLeave={handleMessageMouseLeave}
+                                >
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                     {quickReactions.map((emoji) => (
@@ -2439,8 +2461,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
                                   className="relative transition-all duration-500"
-                                  onMouseEnter={() => setHoveredMessageId(message.id)}
-                                  onMouseLeave={() => setHoveredMessageId(null)}
+                                  onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                  onMouseLeave={handleMessageMouseLeave}
                                 >
                                   {/* Message Content Bubble */}
                                   <div className={`rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md overflow-hidden ${
@@ -2656,7 +2678,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                                   {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                                   {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && !isOwnMessage && !showThreadView && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                    <div 
+                                      className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden"
+                                      onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                      onMouseLeave={handleMessageMouseLeave}
+                                    >
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
