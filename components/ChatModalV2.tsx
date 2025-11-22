@@ -223,7 +223,7 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
 
   return (
     <div className={`flex items-center space-x-3 p-3 bg-overlay rounded-lg ${
-      hasText ? 'max-w-[280px]' : 'max-w-[320px]'
+      hasText ? 'max-w-[360px]' : 'max-w-[400px]'
     }`}>
       <audio
         ref={audioRef}
