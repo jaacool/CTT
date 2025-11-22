@@ -1304,6 +1304,19 @@ const App: React.FC = () => {
     console.log('Delete message:', messageId);
   };
 
+  const handleDeleteAllMessages = async () => {
+    const { deleteAllChatMessages } = await import('./utils/supabaseSync');
+    const success = await deleteAllChatMessages();
+    
+    if (success) {
+      // Clear local state
+      setChatMessages([]);
+      console.log('✅ Alle Chat-Nachrichten gelöscht');
+    } else {
+      console.error('❌ Fehler beim Löschen der Nachrichten');
+    }
+  };
+
   const handleReactToMessage = (messageId: string, emoji: string) => {
     setChatMessages(prev => prev.map(msg => {
       if (msg.id !== messageId) return msg;
@@ -2340,6 +2353,7 @@ const App: React.FC = () => {
           showAdminsInDMs={showAdminsInDMs}
           maxUploadSize={maxUploadSize}
           onMaxUploadSizeChange={handleMaxUploadSizeChange}
+          onDeleteAllMessages={handleDeleteAllMessages}
         />
       )}
 

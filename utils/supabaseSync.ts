@@ -765,3 +765,24 @@ export async function loadAllData(): Promise<{
     return null;
   }
 }
+
+/**
+ * Löscht alle Chat-Nachrichten aus Supabase (Channels bleiben erhalten)
+ */
+export async function deleteAllChatMessages(): Promise<boolean> {
+  if (!isSupabaseAvailable()) return false;
+  
+  try {
+    const { error } = await supabase!
+      .from('chat_messages')
+      .delete()
+      .neq('id', ''); // Löscht alle Einträge (neq mit leerem String matched alle)
+    
+    if (error) throw error;
+    console.log('✅ Alle Chat-Nachrichten gelöscht');
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Löschen der Chat-Nachrichten:', error);
+    return false;
+  }
+}
