@@ -73,37 +73,37 @@ const ProjectHeader: React.FC<{
 
     return (
         <header className="mb-6 bg-surface p-4 rounded-xl">
-            <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                    <h1 className="text-2xl font-bold text-text-primary">{project.name}</h1>
-                    {onToggleFavorite && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleFavorite(project.id);
-                            }}
-                            className="p-2 rounded-md hover:bg-overlay transition-colors"
-                            title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
-                        >
-                            <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                width="20" 
-                                height="20" 
-                                viewBox="0 0 24 24" 
-                                fill={isFavorite ? 'currentColor' : 'none'}
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                                className={isFavorite ? 'text-yellow-500' : 'text-text-secondary'}
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-start space-x-3">
+                        <h1 className="text-2xl font-bold text-text-primary break-words">{project.name}</h1>
+                        {onToggleFavorite && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleFavorite(project.id);
+                                }}
+                                className="p-1.5 mt-1 rounded-md hover:bg-overlay transition-colors flex-shrink-0"
+                                title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
                             >
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                            </svg>
-                        </button>
-                    )}
-                </div>
-                <div>
-                    <div className="flex items-center space-x-4 text-text-secondary text-xs mt-2">
+                                <svg 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    width="20" 
+                                    height="20" 
+                                    viewBox="0 0 24 24" 
+                                    fill={isFavorite ? 'currentColor' : 'none'}
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                    className={isFavorite ? 'text-yellow-500' : 'text-text-secondary'}
+                                >
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 text-text-secondary text-xs mt-2">
                         <span className={`px-2 py-0.5 rounded-full text-text-primary ${project.status === 'AKTIV' ? 'glow-button' : 'bg-overlay'}`}>{project.status}</span>
                          <div className="flex items-center space-x-1.5">
                             <CalendarIcon className="w-4 h-4"/>
@@ -111,12 +111,14 @@ const ProjectHeader: React.FC<{
                         </div>
                     </div>
                 </div>
-                <AssigneeSelector
-                    assignees={project.members || []}
-                    allUsers={allUsers}
-                    onAssigneesChange={onUpdateProjectMembers}
-                    size="medium"
-                />
+                <div className="flex-shrink-0 pt-1">
+                    <AssigneeSelector
+                        assignees={project.members || []}
+                        allUsers={allUsers}
+                        onAssigneesChange={onUpdateProjectMembers}
+                        size="medium"
+                    />
+                </div>
             </div>
             <div className="mt-4">
                  <div className="flex justify-between items-center text-xs text-text-secondary mb-1">
