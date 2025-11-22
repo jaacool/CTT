@@ -2000,7 +2000,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                               {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
-                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[300] overflow-hidden">
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                     {quickReactions.map((emoji) => (
@@ -2400,7 +2400,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
                                   {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[200] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
@@ -2550,22 +2550,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {currentChannel && (
               <div 
                 ref={composerRef} 
-                className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border z-20"
+                className="absolute bottom-0 left-0 md:left-64 right-0 p-4 z-20"
                 style={{
                   background: 'transparent',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
                 }}
               >
-                {/* Gradient Blur Background */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
-                    WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
-                    zIndex: -1,
-                  }}
-                />
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
