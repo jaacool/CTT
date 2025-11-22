@@ -479,6 +479,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [currentProject?.id]);
 
+  // Scroll to bottom when composer height changes (messageInput, selectedFiles, replyToMessage)
+  // This ensures the distance from the newest message to the composer stays constant
+  useLayoutEffect(() => {
+    if (isOpen && currentChannel) {
+      // Use requestAnimationFrame to ensure DOM has updated with new composer height
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      });
+    }
+  }, [messageInput, selectedFiles.length, replyToMessage, isOpen, currentChannel?.id]);
+
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     if (!previewAttachment || !isImageFile(previewAttachment.type)) return;
