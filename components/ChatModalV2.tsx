@@ -713,20 +713,27 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               [filesToUpload[fileIndex].name]: progress
             }));
           }).then(uploadedAttachments => {
+            console.log('✅ Upload complete, updating messages with real URLs:', uploadedAttachments);
+            
             // Update each message with real Supabase URLs
             uploadedAttachments.forEach((attachment, idx) => {
-              // Find the message by looking for the one with matching filename
+              // Find the message by looking for the one with matching filename and blob URL
               const targetMessage = messages.find(msg => 
                 msg.attachments?.some(att => att.name === attachment.name && att.url.startsWith('blob:'))
               );
               
+              console.log('🔍 Looking for message with attachment:', attachment.name, 'Found:', !!targetMessage);
+              
               if (targetMessage) {
+                console.log('✅ Updating message:', targetMessage.id, 'with real URL:', attachment.url);
                 onUpdateMessageAttachments(targetMessage.id, [attachment]);
+              } else {
+                console.warn('⚠️ Could not find message for attachment:', attachment.name);
               }
             });
             setUploadProgress({});
           }).catch(error => {
-            console.error('Error uploading files:', error);
+            console.error('❌ Error uploading files:', error);
             alert('Fehler beim Hochladen der Dateien.');
             setUploadProgress({});
           });
@@ -2284,55 +2291,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx} className="w-full flex justify-center">
                                             {attachment.url.startsWith('blob:') ? (
-                                              // Uploading - Show progress with preview (Blob URL = noch nicht hochgeladen)
-                                              <div className="relative max-w-xs rounded-lg overflow-hidden">
-                                                {isImageFile(attachment.type) ? (
-                                                  // Image preview while uploading
-                                                  <div className="relative">
-                                                    <div className="w-full h-48 bg-surface/30 backdrop-blur-sm flex items-center justify-center">
-                                                      <div className="text-center">
-                                                        <div className="text-4xl mb-2">🖼️</div>
-                                                        <div className="text-sm text-text-primary font-medium">{attachment.name}</div>
-                                                        <div className="text-xs text-text-secondary">{formatFileSize(attachment.size)}</div>
-                                                      </div>
-                                                    </div>
-                                                    {/* Overlay with progress - Schicke neue Loader Animation */}
-                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                      <div className="text-center">
-                                                        {/* Neue schicke Loader Animation */}
-                                                        <div className="upload-loader mb-4 mx-auto"></div>
-                                                        <div className="text-white font-semibold text-lg mb-2">
-                                                          {Math.round(uploadProgress[attachment.name] || 0)}%
-                                                        </div>
-                                                        <div className="w-48 bg-white/20 rounded-full h-2 mb-2">
-                                                          <div 
-                                                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                                                            style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
-                                                          />
-                                                        </div>
-                                                        <div className="text-white/80 text-sm">Wird hochgeladen...</div>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ) : (
-                                                  // File upload progress
-                                                  <div className="flex items-center space-x-3 p-4 bg-surface/50 rounded-lg">
-                                                    <span className="text-3xl">{getFileIcon(attachment.type)}</span>
-                                                    <div className="flex-1 min-w-0">
-                                                      <div className="text-sm text-text-primary font-medium truncate">{attachment.name}</div>
-                                                      <div className="text-xs text-text-secondary mb-2">{formatFileSize(attachment.size)}</div>
-                                                      <div className="w-full bg-overlay rounded-full h-2 mb-1">
-                                                        <div 
-                                                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                                                          style={{ width: `${uploadProgress[attachment.name] || 0}%` }}
-                                                        />
-                                                      </div>
-                                                      <div className="text-xs text-text-secondary">
-                                                        {Math.round(uploadProgress[attachment.name] || 0)}% hochgeladen
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                )}
+                                              // Uploading - Show clean loader animation only
+                                              <div className="flex items-center justify-center py-8">
+                                                <div className="upload-loader" style={{ transform: 'scale(0.7)' }}></div>
                                               </div>
                                             ) : isImageFile(attachment.type) ? (
                                               // Image Preview - Click to enlarge
