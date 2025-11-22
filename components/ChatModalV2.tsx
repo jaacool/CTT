@@ -356,6 +356,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [channelContextMenu, setChannelContextMenu] = useState<{ x: number; y: number; channelId: string } | null>(null);
+  const [manuallyUnreadChannels, setManuallyUnreadChannels] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
   const [maxUploadSize, setMaxUploadSize] = useState<number>(maxUploadSizeProp); // MB
@@ -648,6 +650,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
   // Count unread messages per channel
   const getUnreadCountForChannel = (channelId: string) => {
+    // Wenn Channel manuell als ungelesen markiert wurde, zähle alle Nachrichten als ungelesen
+    if (manuallyUnreadChannels.has(channelId)) {
+      return messages.filter(msg =>
+        msg.channelId === channelId &&
+        msg.sender.id !== currentUser.id
+      ).length;
+    }
+    
+    // Normale Unread-Logik
     return messages.filter(msg =>
       msg.channelId === channelId &&
       msg.sender.id !== currentUser.id &&
@@ -1128,33 +1139,32 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
-  // Handle mark as unread
-  const handleMarkAsUnread = async (messageId: string) => {
-    try {
-      const message = messages.find(m => m.id === messageId);
-      if (!message) return;
-      
-      // Entferne User aus readBy Array
-      const updatedReadBy = (message.readBy || []).filter(id => id !== currentUser.id);
-      
-      // Update data JSON und read Spalte
-      const updatedData = { ...message, readBy: updatedReadBy };
-      
-      const { error } = await supabase
-        .from('chat_messages')
-        .update({ 
-          data: updatedData,
-          read: updatedReadBy
-        })
-        .eq('id', messageId);
-      
-      if (error) throw error;
-      
-      console.log('✅ Nachricht als ungelesen markiert:', messageId);
-      setShowMoreMenu(null);
-    } catch (error) {
-      console.error('❌ Fehler beim Markieren als ungelesen:', error);
-    }
+  // Handle mark channel as unread
+  const handleMarkChannelAsUnread = (channelId: string) => {
+    setManuallyUnreadChannels(prev => new Set(prev).add(channelId));
+    setChannelContextMenu(null);
+    console.log('✅ Channel als ungelesen markiert:', channelId);
+  };
+  
+  // Handle channel context menu
+  const handleChannelContextMenu = (e: React.MouseEvent, channelId: string) => {
+    e.preventDefault();
+    setChannelContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      channelId
+    });
+  };
+  
+  // Wrapper für onSwitchChannel - entfernt "ungelesen"-Markierung beim Wechsel
+  const handleSwitchChannel = (channelId: string) => {
+    // Entferne Channel aus manuell-ungelesen-Liste
+    setManuallyUnreadChannels(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(channelId);
+      return newSet;
+    });
+    onSwitchChannel(channelId);
   };
   
   // Handle star message
@@ -2033,7 +2043,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <button
                         key={message.id}
                         onClick={() => {
-                          onSwitchChannel(channel.id);
+                          handleSwitchChannel(channel.id);
                           setShowSidebar(false);
                           setChannelSearchQuery('');
                           // Highlight the message after switching
@@ -2141,9 +2151,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         console.log('Dropped', draggedChannelId, 'onto', channel.id);
                       }}
                       onClick={() => {
-                        onSwitchChannel(channel.id);
+                        handleSwitchChannel(channel.id);
                         setShowSidebar(false);
                       }}
+                      onContextMenu={(e) => handleChannelContextMenu(e, channel.id)}
                       className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors cursor-move ${
                         currentChannel?.id === channel.id ? 'glow-button' : 'hover-glow'
                       } ${draggedChannelId === channel.id ? 'opacity-50' : ''}`}
@@ -2249,12 +2260,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         onClick={() => {
                           // DM-Channel sollte bereits existieren (wird automatisch in App.tsx erstellt)
                           if (existingDM) {
-                            onSwitchChannel(existingDM.id);
+                            handleSwitchChannel(existingDM.id);
                             setShowSidebar(false);
                           } else {
                             console.warn(`⚠️ Kein DM-Channel gefunden für User ${user.name}`);
                           }
                         }}
+                        onContextMenu={(e) => existingDM && handleChannelContextMenu(e, existingDM.id)}
                         className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                           currentChannel?.id === existingDM?.id ? 'glow-button' : 'hover-glow'
                         }`}
@@ -2817,20 +2829,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           }`}
                                           onClick={(e) => e.stopPropagation()}
                                         >
-                                          {/* Als ungelesen markieren */}
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleMarkAsUnread(message.id);
-                                            }}
-                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
-                                          >
-                                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                            <span className="text-text-primary">Als ungelesen markieren</span>
-                                          </button>
-                                          
                                           {/* Markieren */}
                                           <button
                                             onClick={(e) => {
@@ -3365,20 +3363,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               }`}
                                               onClick={(e) => e.stopPropagation()}
                                             >
-                                              {/* Als ungelesen markieren */}
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleMarkAsUnread(message.id);
-                                                }}
-                                                className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
-                                              >
-                                                <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                </svg>
-                                                <span className="text-text-primary">Als ungelesen markieren</span>
-                                              </button>
-                                              
                                               {/* Markieren */}
                                               <button
                                                 onClick={(e) => {
@@ -3938,6 +3922,37 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           onCancel={() => setShowDeleteAllConfirm(false)}
           isDangerous={true}
         />
+      )}
+      
+      {/* Channel Context Menu */}
+      {channelContextMenu && (
+        <>
+          {/* Backdrop zum Schließen */}
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => setChannelContextMenu(null)}
+          />
+          
+          {/* Context Menu */}
+          <div
+            className="fixed bg-surface border border-border rounded-lg shadow-2xl py-1 z-[9999] min-w-[200px]"
+            style={{
+              left: `${channelContextMenu.x}px`,
+              top: `${channelContextMenu.y}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => handleMarkChannelAsUnread(channelContextMenu.channelId)}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-text-primary">Als ungelesen markieren</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
