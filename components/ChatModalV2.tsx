@@ -2548,7 +2548,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Message Input */}
             {currentChannel && (
-              <div ref={composerRef} className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border bg-surface/80 backdrop-blur-md z-20">
+              <div 
+                ref={composerRef} 
+                className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border z-20 relative"
+                style={{
+                  background: 'transparent',
+                  backdropFilter: 'blur(0px)',
+                }}
+              >
+                {/* Gradient Blur Background */}
+                <div 
+                  className="absolute inset-0 -z-10 pointer-events-none"
+                  style={{
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
+                    WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
+                  }}
+                />
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
