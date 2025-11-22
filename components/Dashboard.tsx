@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { Project, TimeEntry, Task, Subtask, User } from '../types';
 import { formatTime } from './utils';
 import { TimerMenu } from './TimerMenu';
@@ -126,7 +126,8 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   };
 
-  const renderProjectAvatar = (project: Project | undefined, sizeClasses: string, textSize: string = '') => {
+  // SAFARI PERFORMANCE: Memoize avatar rendering
+  const renderProjectAvatar = useCallback((project: Project | undefined, sizeClasses: string, textSize: string = '') => {
     const icon = project?.icon;
     const isHex = typeof icon === 'string' && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(icon);
     return (
@@ -137,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
         {!isHex ? (icon || '📋') : null}
       </span>
     );
-  };
+  }, []);
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
@@ -151,7 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
             {/* Kreis mit Zeit */}
             <div className="flex justify-center mb-8">
               <div className="relative w-48 h-48">
-                <svg className="w-full h-full transform -rotate-90">
+                <svg className="w-full h-full transform -rotate-90" style={{ willChange: 'auto' }}>
                   <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" style={{stopColor: '#00FFFF', stopOpacity: 1}} />
@@ -175,6 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
                     fill="none"
                     strokeDasharray={`${(totalTodaySeconds / 28800) * 552} 552`}
                     strokeLinecap="round"
+                    style={{ willChange: 'stroke-dasharray' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -250,23 +252,14 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
                           >
                             {isActive ? (
                               <>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                                   <circle cx="12" cy="12" r="10"></circle>
                                   <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
-                                  <rect x="6" y="4" width="4" height="16"></rect>
-                                  <rect x="14" y="4" width="4" height="16"></rect>
                                 </svg>
                                 <span>{formatDuration(currentSeconds)}</span>
                               </>
                             ) : (
-                              <>
-                                <span className="group-hover:hidden">{formatDuration(entry.duration)}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
-                                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                </svg>
-                              </>
+                              <span>{formatDuration(entry.duration)}</span>
                             )}
                           </div>
                           
@@ -331,23 +324,14 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
                         >
                           {isActive ? (
                             <>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
-                              </svg>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 hidden group-hover:block">
-                                <rect x="6" y="4" width="4" height="16"></rect>
-                                <rect x="14" y="4" width="4" height="16"></rect>
                               </svg>
                               <span>{formatDuration(currentSeconds)}</span>
                             </>
                           ) : (
-                            <>
-                              <span className="group-hover:hidden">{formatDuration(entry.duration)}</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                              </svg>
-                            </>
+                            <span>{formatDuration(entry.duration)}</span>
                           )}
                         </div>
                         
@@ -514,7 +498,7 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
                       </button>
                       <button
                         onClick={() => onUnpinTask(task.id)}
-                        className="p-1.5 hover:glow-card rounded text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-1.5 hover:glow-card rounded text-text-secondary"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -565,6 +549,8 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
             style={{
               left: `${contextMenuPosition.x}px`,
               top: `${contextMenuPosition.y}px`,
+              transform: 'translateZ(0)',
+              willChange: 'transform',
             }}
           >
             <button
