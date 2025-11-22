@@ -13,9 +13,10 @@ interface TimeViewProps {
   onDuplicateEntry?: (entry: TimeEntry) => void;
   onEditEntry?: (entry: TimeEntry) => void;
   activeTimerTaskId?: string | null;
+  projects?: Project[];
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry, activeTimerTaskId }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry, activeTimerTaskId, projects = [] }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
@@ -210,18 +211,20 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
 
   // Filtered projects based on search
   const filteredProjects = useMemo(() => {
-    if (!project.taskLists) return [];
-    const allProjects = [project]; // In real app, this would be all projects
+    const allProjects = projects.length > 0 ? projects : [project];
     if (!projectSearchTerm) return allProjects;
     return allProjects.filter(p => 
       p.name.toLowerCase().includes(projectSearchTerm.toLowerCase())
     );
-  }, [project, projectSearchTerm]);
+  }, [projects, project, projectSearchTerm]);
 
   // Get tasks from selected project
   const availableTasks = useMemo(() => {
     if (!selectedProjectId) return [];
-    const selectedProject = project.id === selectedProjectId ? project : null;
+    
+    // Find the selected project from all projects
+    const allProjects = projects.length > 0 ? projects : [project];
+    const selectedProject = allProjects.find(p => p.id === selectedProjectId);
     if (!selectedProject) return [];
     
     const tasks: Array<{id: string, title: string, isSubtask: boolean}> = [];
@@ -238,7 +241,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     return tasks.filter(t => 
       t.title.toLowerCase().includes(taskSearchTerm.toLowerCase())
     );
-  }, [selectedProjectId, project, taskSearchTerm]);
+  }, [selectedProjectId, projects, project, taskSearchTerm]);
 
   const totalDuration = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
 

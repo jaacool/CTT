@@ -11,6 +11,7 @@ type RenameFn = (id: string, newName: string, type: 'project' | 'list' | 'task' 
 
 interface TaskAreaProps {
     project: Project;
+    projects?: Project[];
     timeEntries: TimeEntry[];
     selectedItem: Task | Subtask | null;
     onSelectItem: (item: Task | Subtask | null) => void;
@@ -798,6 +799,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
             ) : (
                 <TimeView 
                     project={props.project}
+                    projects={props.projects}
                     timeEntries={props.timeEntries.filter(entry => {
                         // Admin hat role-ID 'role-1'
                         const isAdmin = props.currentUser?.role === 'role-1';

@@ -2268,6 +2268,7 @@ const App: React.FC = () => {
         ) : selectedProject ? (
           <TaskArea 
             project={selectedProject}
+            projects={projects}
             timeEntries={timeEntries}
             selectedItem={selectedTask}
             onSelectItem={handleSelectTask}
