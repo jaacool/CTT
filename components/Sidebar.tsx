@@ -152,13 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
     return myProjectsList;
   }, [projects, myProjectsList, searchTerm]);
   
-  // Favoriten: Projekte die in favoriteProjectIds sind
+  // Favoriten: IMMER alle favorisierten Projekte anzeigen (nicht filtern)
   const favoriteProjects = useMemo(() => 
-    filteredProjects.filter(p => favoriteProjectIds.includes(p.id)),
-    [filteredProjects, favoriteProjectIds]
+    projects.filter(p => favoriteProjectIds.includes(p.id)),
+    [projects, favoriteProjectIds]
   );
   
-  // Meine Projekte: Alle außer Favoriten
+  // Meine Projekte: Gefilterte Projekte außer Favoriten
   const myProjects = useMemo(() => 
     filteredProjects.filter(p => !favoriteProjectIds.includes(p.id)),
     [filteredProjects, favoriteProjectIds]
