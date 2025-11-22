@@ -149,6 +149,7 @@ const App: React.FC = () => {
   }, []);
 
   // PHASE 2: Calculate Anomalies (Background, Debounced)
+  // OPTIMIERT: Nur bei Datenänderung neu berechnen, nicht bei User-Wechsel
   useEffect(() => {
     if (!anomaliesLoaded || users.length === 0 || !currentUser) return;
 
@@ -191,7 +192,7 @@ const App: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [timeEntries, absenceRequests, users, currentUser, anomaliesLoaded]);
+  }, [timeEntries, absenceRequests, users, anomaliesLoaded]); // currentUser entfernt für Performance
 
   // PHASE 3: Realtime Sync (Safe)
   useEffect(() => {
@@ -1202,10 +1203,11 @@ const App: React.FC = () => {
     }
   }, [currentUser, users, chatChannels]);
 
-  // Stelle sicher, dass DM-Channels existieren wenn Users oder currentUser sich ändern
+  // Stelle sicher, dass DM-Channels existieren wenn Users sich ändern
+  // OPTIMIERT: Nicht bei jedem User-Wechsel neu erstellen
   useEffect(() => {
     ensureDirectMessageChannels();
-  }, [users, currentUser]);
+  }, [users]); // currentUser entfernt für Performance
 
   const handleCreateChannel = (name: string, description: string, memberIds: string[], isPrivate: boolean = false) => {
     if (!currentUser) return;
