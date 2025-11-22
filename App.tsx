@@ -1703,8 +1703,13 @@ const App: React.FC = () => {
 
   const handleDeleteUser = useCallback((userId: string) => {
     deleteUserFromSupabase(userId); // Auto-Delete from Supabase
-    setUsers(prev => prev.filter(u => u.id !== userId));
-  }, []);
+    setUsers(prev => {
+      const updatedUsers = prev.filter(u => u.id !== userId);
+      // Update localStorage Cache sofort
+      saveToLocalStorage(updatedUsers, projects, timeEntries, absenceRequests);
+      return updatedUsers;
+    });
+  }, [projects, timeEntries, absenceRequests]);
 
   const handleChangeRole = useCallback((userId: string, roleId: string) => {
     setUsers(prev => {
