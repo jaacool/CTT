@@ -608,28 +608,28 @@ const App: React.FC = () => {
       interval = setInterval(() => {
         tickCount++;
         
-        // PERFORMANCE: Nur taskTimers updaten (UI)
+        // PERFORMANCE: taskTimers updaten (UI für Floating Button)
         setTaskTimers(prev => ({
           ...prev,
           [activeTimerTaskId]: (prev[activeTimerTaskId] || 0) + 1,
         }));
         
-        // Update TimeEntry nur alle 5 Sekunden (DB-Sync)
-        if (tickCount % 5 === 0) {
-          setTimeEntries(prev => {
-            const index = prev.findIndex(entry => entry.id === activeTimeEntryId);
-            if (index === -1) return prev;
-            
-            const newEntries = [...prev];
-            const updatedEntry = { ...newEntries[index], duration: newEntries[index].duration + 5 };
-            newEntries[index] = updatedEntry;
-            
-            // Auto-Save alle 5 Sekunden
+        // Update TimeEntry duration jede Sekunde für Echtzeit-Anzeige
+        setTimeEntries(prev => {
+          const index = prev.findIndex(entry => entry.id === activeTimeEntryId);
+          if (index === -1) return prev;
+          
+          const newEntries = [...prev];
+          const updatedEntry = { ...newEntries[index], duration: newEntries[index].duration + 1 };
+          newEntries[index] = updatedEntry;
+          
+          // Auto-Save nur alle 5 Sekunden (DB-Sync)
+          if (tickCount % 5 === 0) {
             saveTimeEntry(updatedEntry);
-            
-            return newEntries;
-          });
-        }
+          }
+          
+          return newEntries;
+        });
       }, 1000);
     }
     return () => {
