@@ -251,16 +251,16 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
 
       {/* Waveform Container */}
       <div className="flex-1 flex items-center space-x-3">
-        {/* Waveform Bars - STATISCH */}
+        {/* Waveform Bars - STATISCH - Modernes Design wie Recorder */}
         <div 
           className="flex items-center justify-between flex-1 min-w-0 overflow-hidden cursor-pointer relative"
-          style={{ height: '40px' }}
+          style={{ height: '32px' }}
           onClick={handleSeek}
         >
-          {/* Statische graue Waveform */}
+          {/* Statische lila Waveform mit modernem Look */}
           {waveformBars.map((level, index) => {
             const amplifiedLevel = Math.min(1, level * 2);
-            const height = Math.max(4, amplifiedLevel * 40);
+            const height = Math.max(3, amplifiedLevel * 32);
             
             return (
               <div
@@ -268,22 +268,23 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
                 className="rounded-full"
                 style={{
                   height: `${height}px`,
-                  backgroundColor: '#4B5563',
-                  width: '2px',
+                  backgroundColor: '#A855F7',
+                  opacity: 0.6,
+                  width: '3px',
                   flex: '1 1 0',
                 }}
               />
             );
           })}
           
-          {/* Blauer Playhead - bewegt sich von links nach rechts */}
+          {/* Weißer Playhead - bewegt sich von links nach rechts */}
           {duration > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-[3px] rounded-full pointer-events-none"
+              className="absolute top-0 bottom-0 w-[2px] rounded-full pointer-events-none"
               style={{ 
                 left: `${(currentTime / duration) * 100}%`,
-                backgroundColor: '#3B82F6',
-                boxShadow: '0 0 8px rgba(59, 130, 246, 0.6)'
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 0 6px rgba(255, 255, 255, 0.8)'
               }}
             />
           )}
