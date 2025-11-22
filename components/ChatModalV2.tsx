@@ -637,12 +637,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     .filter(p => !projectSearchQuery || p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()));
   
   // Gruppiere Projekte nach Status und Favoriten
+  const favoriteProjectIds = currentUser.favoriteProjects || [];
+  
   const favoriteProjects = filteredProjects
-    .filter(p => p.isFavorite && p.status !== 'ARCHIVIERT')
+    .filter(p => favoriteProjectIds.includes(p.id) && p.status !== 'ARCHIVIERT')
     .sort((a, b) => a.name.localeCompare(b.name));
   
   const activeProjects = filteredProjects
-    .filter(p => !p.isFavorite && p.status === 'AKTIV')
+    .filter(p => !favoriteProjectIds.includes(p.id) && p.status === 'AKTIV')
     .sort((a, b) => a.name.localeCompare(b.name));
   
   const archivedProjects = filteredProjects
