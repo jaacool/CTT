@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Project, User, Role } from '../types';
 import { PlannerIcon, ClockIcon, ChartIcon, ChevronDownIcon, SearchIcon, StarIcon, PlusIcon, UmbrellaIcon } from './Icons';
 import { hasPermission } from '../utils/permissions';
@@ -132,25 +132,42 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, lab
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, selectedProject, currentUser, roles, onSelectProject, onAddNewProject, onRenameProject, onSelectDashboard, onSelectProjectsOverview, onSelectVacationAbsence, onSelectTimeTracking, onSelectTimeStatistics, onSelectSettings, favoriteProjectIds, onToggleFavorite }) => {
   const isAdmin = currentUser?.role === 'role-1';
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   
-  // Filter: Nur Projekte wo User Member ist (oder alle für Admin)
+  // Schließe Such-Modal beim Klick außerhalb
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchModal(false);
+      }
+    };
+    
+    if (showSearchModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSearchModal]);
+  
+  // Filter: Nur Projekte wo User Member ist (für ALLE User, auch Admins)
   const myProjectsList = useMemo(() => {
-    if (isAdmin) return projects; // Admin sieht alle
     return projects.filter(p => 
       p.members?.some(m => m.id === currentUser?.id) || 
       p.owner?.id === currentUser?.id
     );
-  }, [projects, currentUser, isAdmin]);
+  }, [projects, currentUser]);
   
-  // Suche anwenden - ALLE Projekte durchsuchen wenn Suchterm vorhanden
-  const filteredProjects = useMemo(() => {
-    if (searchTerm) {
-      // Bei Suche: Alle Projekte durchsuchen (nicht nur eigene)
-      return projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-    // Ohne Suche: Nur eigene Projekte
-    return myProjectsList;
-  }, [projects, myProjectsList, searchTerm]);
+  // Such-Ergebnisse: ALLE Projekte durchsuchen
+  const searchResults = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [projects, searchTerm]);
+  
+  // Zeige Such-Modal wenn Suchterm vorhanden
+  const shouldShowSearchModal = searchTerm.trim().length > 0;
+  
+  // Gefilterte Projekte für normale Anzeige (ohne Suche)
+  const filteredProjects = myProjectsList;
   
   // Favoriten: IMMER alle favorisierten Projekte anzeigen (nicht filtern)
   const favoriteProjects = useMemo(() => 
@@ -229,15 +246,64 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, projects, sel
         </nav>
       </div>
 
-      <div className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0" ref={searchContainerRef}>
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
         <input
           type="text"
           placeholder="Suchen..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={() => setShowSearchModal(true)}
           className="w-full bg-background/50 backdrop-blur-sm border border-border rounded-md pl-10 pr-4 py-2 text-text-primary outline-none focus:glow-border transition-all placeholder-text-secondary/50"
         />
+        
+        {/* Such-Modal */}
+        {shouldShowSearchModal && showSearchModal && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto">
+            <div className="p-2">
+              <div className="flex justify-between items-center px-3 py-2 border-b border-border">
+                <span className="text-xs font-bold text-text-secondary uppercase">
+                  Suchergebnisse ({searchResults.length})
+                </span>
+                <button
+                  onClick={() => {
+                    setShowSearchModal(false);
+                    setSearchTerm('');
+                  }}
+                  className="text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-1 mt-2">
+                {searchResults.length > 0 ? (
+                  searchResults.map(p => (
+                    <ProjectItem 
+                      key={p.id} 
+                      project={p} 
+                      isSelected={selectedProject?.id === p.id} 
+                      isFavorite={favoriteProjectIds.includes(p.id)}
+                      onClick={() => {
+                        onSelectProject(p.id);
+                        setShowSearchModal(false);
+                        setSearchTerm('');
+                      }} 
+                      onRename={onRenameProject}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-sm text-text-secondary text-center italic">
+                    Keine Projekte gefunden für "{searchTerm}"
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto pr-1">

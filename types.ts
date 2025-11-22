@@ -68,6 +68,7 @@ export interface User {
   password?: string;
   pinnedTasks?: string[]; // IDs of pinned tasks for dashboard
   dashboardNote?: string; // Personal note on dashboard
+  favoriteProjects?: string[]; // IDs of favorite projects (per user)
   workSchedule?: WorkSchedule; // Arbeitszeitregelung
   employmentStartDate?: string; // ISO 8601 string - Anstellungsdatum
 }

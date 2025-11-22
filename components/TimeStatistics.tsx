@@ -31,6 +31,7 @@ interface TimeStatisticsProps {
   anomalies?: Anomaly[]; // Anomalien aus App (inkl. Status)
   onUpdateTimeEntry: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange: (taskId: string, billable: boolean) => void;
+  onToggleTimer?: (taskId: string) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
   onEditEntry?: (entry: TimeEntry) => void;
@@ -238,6 +239,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
   anomalies,
   onUpdateTimeEntry,
   onBillableChange,
+  onToggleTimer,
   onDeleteTimeEntry,
   onDuplicateTimeEntry,
   onEditEntry,
@@ -1036,6 +1038,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
               })}
               onUpdateEntry={onUpdateTimeEntry}
               onBillableChange={onBillableChange}
+              onStartTimer={onToggleTimer}
               onDeleteEntry={onDeleteTimeEntry}
               onDuplicateEntry={onDuplicateTimeEntry}
               onEditEntry={onEditEntry}
@@ -1102,6 +1105,7 @@ export const TimeStatistics: React.FC<TimeStatisticsProps> = ({
                           timeEntries={dayEntries}
                           onUpdateEntry={onUpdateTimeEntry}
                           onBillableChange={onBillableChange}
+                          onStartTimer={onToggleTimer}
                           onDeleteEntry={onDeleteTimeEntry}
                           onDuplicateEntry={onDuplicateTimeEntry}
                           onEditEntry={onEditEntry}

@@ -28,9 +28,10 @@ import { GlowProvider } from './contexts/GlowContext';
 import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject as deleteProjectFromSupabase, deleteTimeEntry, deleteUser as deleteUserFromSupabase, deleteAbsenceRequest, loadAllData } from './utils/supabaseSync';
 import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
 import { loadCompressedBackupFromSupabase } from './utils/supabaseBackup';
-import { startPollingSync, stopPollingSync } from './utils/supabasePolling';
-import { detectAnomalies } from './utils/anomalyDetection'; // Safe Import - stürzt nicht ab
+import { startSequentialSync, stopSequentialSync } from './utils/sequentialSync';
 import { loadAllAnomalies, saveAnomaliesBatch, updateAnomalyStatus, startAnomalyRealtime, addAnomalyComment } from './utils/anomalySync';
+import { useDebouncedCallback } from './hooks/useDebouncedCallback';
+import { useAnomalyDetection } from './hooks/useAnomalyDetection';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -103,8 +104,8 @@ const App: React.FC = () => {
   const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [showTimeStatistics, setShowTimeStatistics] = useState(false);
   
-  // Loading State für optimistisches UI - initial true da MOCK_PROJECTS vorhanden
-  const [isDataLoaded, setIsDataLoaded] = useState(true);
+  // Loading State - initial false, wird auf true gesetzt sobald Daten geladen sind
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -114,11 +115,10 @@ const App: React.FC = () => {
   const [selectedState, setSelectedState] = useState<import('./utils/holidays').GermanState | undefined>('BE'); // Default: Berlin
   const [separateHomeOffice, setSeparateHomeOffice] = useState(false);
   
-  // Favoriten-System mit localStorage Caching
-  const [favoriteProjectIds, setFavoriteProjectIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('ctt_favorite_projects');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Favoriten-System pro User (aus currentUser.favoriteProjects)
+  const [favoriteProjectIds, setFavoriteProjectIds] = useState<string[]>(
+    currentUser?.favoriteProjects || []
+  );
   
   // Chat State
   const [showChat, setShowChat] = useState(false);
@@ -137,112 +137,41 @@ const App: React.FC = () => {
   });
   
   // Anomaly Detection State
-  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const {
+    anomalies,
+    isCalculating: isCalculatingAnomalies,
+    performanceMetrics: anomalyMetrics,
+    clearCache: clearAnomalyCache,
+    forceRecalculate: forceRecalculateAnomalies,
+    updateAnomalyStatus: updateAnomalyStatusLocal,
+    updateAnomalyComments: updateAnomalyCommentsLocal
+  } = useAnomalyDetection(currentUser, users, timeEntries, absenceRequests, {
+    debounceMs: 3000,
+    enableCache: true,
+    enablePerformanceMonitoring: true
+  });
+
+  const [notificationsReady, setNotificationsReady] = useState(false);
   const [targetAnomaly, setTargetAnomaly] = useState<Anomaly | null>(null);
-  const [anomaliesLoaded, setAnomaliesLoaded] = useState(false);
 
-  // PHASE 1: Load Anomalies from Supabase (Safe)
+  // OPTIMIZED: Anomaly detection now handled by useAnomalyDetection hook
+  // - Intelligent caching (nur geänderte Daten neu berechnen)
+  // - Pre-indexing (O(n) statt O(n²))
+  // - Performance monitoring
+  
+  // Sync anomalies to Supabase when they change
   useEffect(() => {
-    const load = async () => {
-      try {
-        const saved = await loadAllAnomalies();
-        if (saved.length > 0) {
-          setAnomalies(saved);
-        }
-        setAnomaliesLoaded(true);
-      } catch (error) {
-        console.error('Failed to load anomalies:', error);
-        setAnomaliesLoaded(true);
+    if (anomalies.length > 0) {
+      saveAnomaliesBatch(anomalies).catch(err => {
+        console.error('Failed to save anomalies batch:', err);
+      });
+      
+      // Erste Anomalien-Berechnung abgeschlossen → Notifications können angezeigt werden
+      if (!notificationsReady) {
+        setNotificationsReady(true);
       }
-    };
-    load();
-  }, []);
-
-  // PHASE 2: Calculate Anomalies (Background, Debounced)
-  // OPTIMIERT: Nur bei Datenänderung neu berechnen, nicht bei User-Wechsel
-  useEffect(() => {
-    if (!anomaliesLoaded || users.length === 0 || !currentUser) return;
-
-    const timer = setTimeout(async () => {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30); // Last 30 days
-
-      let newAnomalies: Anomaly[] = [];
-      
-      const isAdmin = currentUser.role === 'role-1' || currentUser.role === 'admin';
-      
-      const usersToCheck = isAdmin
-        ? users.filter(u => u.status === UserStatus.Active && u.role !== 'role-1' && u.role !== 'admin')
-        : [currentUser];
-      
-      usersToCheck.forEach(user => {
-        const userAnomalies = detectAnomalies(user, timeEntries, absenceRequests, startDate, endDate);
-        newAnomalies = [...newAnomalies, ...userAnomalies];
-      });
-      
-      setAnomalies(prev => {
-        const merged = newAnomalies.map(newA => {
-          const existing = prev.find(
-            a => a.userId === newA.userId && 
-                 a.date === newA.date && 
-                 a.type === newA.type
-          );
-          
-          return {
-            ...newA,
-            status: existing?.status || AnomalyStatus.Open,
-            comments: existing?.comments || []
-          };
-        });
-        
-        saveAnomaliesBatch(merged).catch(console.error);
-        return merged;
-      });
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [timeEntries, absenceRequests, users, anomaliesLoaded]); // currentUser entfernt für Performance
-
-  // PHASE 3: Realtime Sync (Safe)
-  useEffect(() => {
-    const cleanup = startAnomalyRealtime({
-      onAnomalyUpsert: (anomaly) => {
-        setAnomalies(prev => {
-          const exists = prev.find(a => 
-            a.userId === anomaly.userId && 
-            a.date === anomaly.date && 
-            a.type === anomaly.type
-          );
-          
-          if (exists) {
-            return prev.map(a => 
-              a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
-                ? anomaly
-                : a
-            );
-          } else {
-            return [...prev, anomaly];
-          }
-        });
-      },
-      onAnomalyDelete: (anomalyId) => {
-        setAnomalies(prev => prev.filter(a => {
-          const id = `${a.userId}-${a.date}-${a.type}`;
-          return id !== anomalyId;
-        }));
-      },
-      onCommentInsert: (userId, date, type, comment) => {
-        setAnomalies(prev => prev.map(a => 
-          a.userId === userId && a.date === date && a.type === type
-            ? { ...a, comments: [...(a.comments || []), comment] }
-            : a
-        ));
-      },
-    });
-
-    return cleanup;
-  }, []);
+    }
+  }, [anomalies, notificationsReady]);
 
   // Berechne ungelesene Nachrichten (Gesamt-Badge)
   const unreadMessagesCount = useMemo(() => {
@@ -303,6 +232,9 @@ const App: React.FC = () => {
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
     const loadFromSupabase = async () => {
+      // Setze Loading State
+      setIsDataLoaded(false);
+      
       // Versuche zuerst aus localStorage zu laden (instant!)
       console.log('🔍 Prüfe localStorage Cache...');
       let cachedData = null;
@@ -324,8 +256,12 @@ const App: React.FC = () => {
         // Lade aus Cache
         if (cachedData.users.length > 0) {
           setUsers(cachedData.users);
-          const adminUser = cachedData.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || cachedData.users[0]);
+          const activeUsers = cachedData.users.filter(u => u.status === UserStatus.Active);
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          const lastUser = lastUserId ? activeUsers.find(u => u.id === lastUserId) : null;
+          const adminUser = activeUsers.find(u => u.role === 'role-1' || u.role === 'admin');
+          const fallbackUser = activeUsers[0] || null;
+          setCurrentUser(lastUser || adminUser || fallbackUser || null);
         }
         
         if (cachedData.projects.length > 0) {
@@ -379,8 +315,12 @@ const App: React.FC = () => {
         // Lade aus Backup
         if (backupData.users.length > 0) {
           setUsers(backupData.users);
-          const adminUser = backupData.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || backupData.users[0]);
+          const activeUsers = backupData.users.filter(u => u.status === UserStatus.Active);
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          const lastUser = lastUserId ? activeUsers.find(u => u.id === lastUserId) : null;
+          const adminUser = activeUsers.find(u => u.role === 'role-1' || u.role === 'admin');
+          const fallbackUser = activeUsers[0] || null;
+          setCurrentUser(lastUser || adminUser || fallbackUser || null);
         }
         
         if (backupData.projects.length > 0) {
@@ -439,10 +379,14 @@ const App: React.FC = () => {
         setTimeEntries(data.timeEntries.length > 0 ? data.timeEntries : timeEntries);
         setAbsenceRequests(data.absenceRequests.length > 0 ? data.absenceRequests : absenceRequests);
         
-        // Setze currentUser wenn vorhanden
+        // Setze currentUser wenn vorhanden (nur aktive User, keine Maresa etc.)
         if (data.users.length > 0) {
-          const adminUser = data.users.find(u => u.role === 'admin');
-          setCurrentUser(adminUser || data.users[0]);
+          const activeUsers = data.users.filter(u => u.status === UserStatus.Active);
+          const lastUserId = localStorage.getItem('ctt_last_user_id');
+          const lastUser = lastUserId ? activeUsers.find(u => u.id === lastUserId) : null;
+          const adminUser = activeUsers.find(u => u.role === 'role-1' || u.role === 'admin');
+          const fallbackUser = activeUsers[0] || null;
+          setCurrentUser(lastUser || adminUser || fallbackUser || null);
         }
         
         // Setze History wenn Projekte vorhanden
@@ -494,11 +438,11 @@ const App: React.FC = () => {
     loadFromSupabase();
   }, []); // Leeres Dependency Array = nur beim Mount
 
-  // Polling Sync - Prüft alle 3 Sekunden auf Änderungen (ressourcenschonend)
+  // Sequential Sync - Intelligente Sync-Strategie mit gestaffelten Intervallen
   useEffect(() => {
-    console.log('🔄 Initialisiere Polling Sync (alle 3 Sekunden)...');
+    console.log('🔄 Initialisiere Sequential Sync...');
     
-    startPollingSync((data) => {
+    startSequentialSync((data) => {
       console.log('📥 Sync: Änderungen empfangen', {
         absenceRequests: data.absenceRequests.length,
         projects: data.projects.length,
@@ -506,7 +450,7 @@ const App: React.FC = () => {
         users: data.users.length,
       });
       
-      // Update State mit neuen Daten
+      // Update State mit neuen Daten (nur wenn vorhanden)
       if (data.absenceRequests.length > 0) {
         setAbsenceRequests(data.absenceRequests);
       }
@@ -514,12 +458,10 @@ const App: React.FC = () => {
         setProjects(data.projects);
       }
       if (data.timeEntries.length > 0) {
-        // WICHTIG: Nicht überschreiben, sondern MERGEN, damit lokal importierte Einträge erhalten bleiben
+        // WICHTIG: Nicht überschreiben, sondern MERGEN
         setTimeEntries(prev => {
           const map = new Map<string, TimeEntry>();
-          // Bestehende behalten
           prev.forEach(e => map.set(e.id, e));
-          // Eingehende updaten/hinzufügen
           data.timeEntries.forEach(e => map.set(e.id, e));
           return Array.from(map.values());
         });
@@ -528,16 +470,20 @@ const App: React.FC = () => {
         setUsers(data.users);
       }
       
-      // Update localStorage Cache (TimeEntries werden gemergt asynchron gesetzt)
-      // Wir speichern hier die vom Server empfangenen Daten; die gemergten Einträge
-      // werden beim nächsten Cache-Write mit übernommen.
-      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests, getSessionData());
-    }, 3); // 3 Sekunden Intervall
+      // Update localStorage Cache (debounced)
+      debouncedSaveToCache();
+    }, {
+      // Gestaffelte Intervalle für optimale Performance
+      timeEntries: { interval: 5, enabled: true },      // Alle 5s (häufig)
+      projects: { interval: 10, enabled: true },        // Alle 10s
+      absenceRequests: { interval: 20, enabled: true }, // Alle 20s
+      users: { interval: 30, enabled: true },           // Alle 30s (selten)
+    });
     
     // Cleanup beim Unmount
     return () => {
-      console.log('🛑 Stoppe Polling Sync (Component Unmount)');
-      stopPollingSync();
+      console.log('🛑 Stoppe Sequential Sync (Component Unmount)');
+      stopSequentialSync();
     };
   }, []); // Leeres Dependency Array = nur beim Mount/Unmount
 
@@ -652,41 +598,37 @@ const App: React.FC = () => {
     });
   }, [saveToHistory]);
 
+  // OPTIMIERT: Timer-Update mit reduziertem Re-Rendering
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
+    let tickCount = 0;
+    
     if (activeTimerTaskId && activeTimeEntryId) {
       interval = setInterval(() => {
+        tickCount++;
+        
+        // PERFORMANCE: Nur taskTimers updaten (UI)
         setTaskTimers(prev => ({
           ...prev,
           [activeTimerTaskId]: (prev[activeTimerTaskId] || 0) + 1,
         }));
         
-        // Update duration in the active TimeEntry
-        setTimeEntries(prev => prev.map(entry =>
-          entry.id === activeTimeEntryId
-            ? { ...entry, duration: entry.duration + 1 }
-            : entry
-        ));
-        
-        setProjects(prevProjects => prevProjects.map(p => ({
-          ...p,
-          taskLists: p.taskLists.map(list => ({
-            ...list,
-            tasks: list.tasks.map(t => {
-              if (t.id === activeTimerTaskId) {
-                return { ...t, timeTrackedSeconds: t.timeTrackedSeconds + 1 };
-              }
-              return {
-                ...t,
-                subtasks: t.subtasks.map(st => 
-                  st.id === activeTimerTaskId 
-                    ? { ...st, timeTrackedSeconds: st.timeTrackedSeconds + 1 }
-                    : st
-                )
-              };
-            })
-          }))
-        })));
+        // Update TimeEntry nur alle 5 Sekunden (DB-Sync)
+        if (tickCount % 5 === 0) {
+          setTimeEntries(prev => {
+            const index = prev.findIndex(entry => entry.id === activeTimeEntryId);
+            if (index === -1) return prev;
+            
+            const newEntries = [...prev];
+            const updatedEntry = { ...newEntries[index], duration: newEntries[index].duration + 5 };
+            newEntries[index] = updatedEntry;
+            
+            // Auto-Save alle 5 Sekunden
+            saveTimeEntry(updatedEntry);
+            
+            return newEntries;
+          });
+        }
       }, 1000);
     }
     return () => {
@@ -1240,10 +1182,17 @@ const App: React.FC = () => {
   }, [currentUser, users, chatChannels]);
 
   // Stelle sicher, dass DM-Channels existieren wenn Users sich ändern
-  // OPTIMIERT: Nicht bei jedem User-Wechsel neu erstellen
+  // OPTIMIERT: Debounced um häufige Updates zu vermeiden
+  const debouncedEnsureDMChannels = useDebouncedCallback(
+    () => {
+      ensureDirectMessageChannels();
+    },
+    1000 // 1 Sekunde Debounce
+  );
+
   useEffect(() => {
-    ensureDirectMessageChannels();
-  }, [users]); // currentUser entfernt für Performance
+    debouncedEnsureDMChannels();
+  }, [users, debouncedEnsureDMChannels]);
 
   const handleCreateChannel = (name: string, description: string, memberIds: string[], isPrivate: boolean = false) => {
     if (!currentUser) return;
@@ -1818,6 +1767,10 @@ const App: React.FC = () => {
     const newUser = users.find(u => u.id === userId);
     if (newUser) {
       setCurrentUser(newUser);
+      // Beim User-Wechsel Notifications kurz deaktivieren bis neu berechnet
+      setNotificationsReady(false);
+      // Lade Favoriten des neuen Users
+      setFavoriteProjectIds(newUser.favoriteProjects || []);
       // Save to localStorage
       localStorage.setItem('ctt_last_user_id', newUser.id);
     }
@@ -1827,6 +1780,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('ctt_last_user_id', currentUser.id);
+      // Update Favoriten wenn User sich ändert
+      setFavoriteProjectIds(currentUser.favoriteProjects || []);
     }
   }, [currentUser]);
 
@@ -1843,18 +1798,43 @@ const App: React.FC = () => {
     maxUploadSize
   }), [favoriteProjectIds, pinnedTasks, dashboardNote, selectedState, separateHomeOffice, showAdminsInDMs, maxUploadSize]);
 
-  // Favoriten Toggle Handler mit localStorage Sync
+  // Debounced Cache-Speicherung (verhindert zu häufige Schreibzugriffe)
+  const debouncedSaveToCache = useDebouncedCallback(
+    () => {
+      try {
+        saveToLocalStorage(users, projects, timeEntries, absenceRequests, getSessionData());
+        console.log('✅ Cache gespeichert (debounced)');
+      } catch (error) {
+        console.error('⚠️ Fehler beim Speichern des Cache:', error);
+      }
+    },
+    2000 // 2 Sekunden Debounce
+  );
+
+  // Favoriten Toggle Handler mit User-Update
   const handleToggleFavorite = useCallback((projectId: string) => {
+    if (!currentUser) return;
+    
     setFavoriteProjectIds(prev => {
       const newFavorites = prev.includes(projectId)
         ? prev.filter(id => id !== projectId) // Entfernen
         : [...prev, projectId]; // Hinzufügen
       
-      // Speichere in localStorage
-      localStorage.setItem('ctt_favorite_projects', JSON.stringify(newFavorites));
+      // Update User mit neuen Favoriten
+      const updatedUser = { ...currentUser, favoriteProjects: newFavorites };
+      setCurrentUser(updatedUser);
+      
+      // Update auch in users-Array
+      setUsers(prevUsers => prevUsers.map(u => 
+        u.id === currentUser.id ? updatedUser : u
+      ));
+      
+      // Sync mit Supabase
+      saveUser(updatedUser);
+      
       return newFavorites;
     });
-  }, []);
+  }, [currentUser]);
 
   // Removed login screen - always logged in as admin
 
@@ -1881,22 +1861,17 @@ const App: React.FC = () => {
       ? AnomalyStatus.Open
       : AnomalyStatus.Resolved;
     
-    // Update in Supabase
-    await updateAnomalyStatus(
-      anomaly.userId,
-      anomaly.date,
-      anomaly.type,
-      nextStatus,
-      currentUser?.id
-    );
+    // Update local state immediately for instant UI feedback
+    updateAnomalyStatusLocal(anomaly.userId, anomaly.date, anomaly.type, nextStatus);
     
-    // Update local state
-    setAnomalies(prev => prev.map(a => 
-      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
-        ? { ...a, status: nextStatus }
-        : a
-    ));
-  }, [currentUser]);
+    // Update in Supabase (Realtime sync will keep other clients in sync)
+    const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+    await updateAnomalyStatus(
+      anomalyId,
+      nextStatus,
+      currentUser?.id || ''
+    );
+  }, [currentUser, updateAnomalyStatusLocal]);
   
   const handleMuteAnomaly = useCallback(async (anomaly: Anomaly) => {
     // Toggle Status: OPEN <-> MUTED
@@ -1904,22 +1879,17 @@ const App: React.FC = () => {
       ? AnomalyStatus.Open
       : AnomalyStatus.Muted;
     
-    // Update in Supabase
-    await updateAnomalyStatus(
-      anomaly.userId,
-      anomaly.date,
-      anomaly.type,
-      nextStatus,
-      currentUser?.id
-    );
+    // Update local state immediately for instant UI feedback
+    updateAnomalyStatusLocal(anomaly.userId, anomaly.date, anomaly.type, nextStatus);
     
-    // Update local state
-    setAnomalies(prev => prev.map(a => 
-      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
-        ? { ...a, status: nextStatus }
-        : a
-    ));
-  }, [currentUser]);
+    // Update in Supabase (Realtime sync will keep other clients in sync)
+    const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+    await updateAnomalyStatus(
+      anomalyId,
+      nextStatus,
+      currentUser?.id || ''
+    );
+  }, [currentUser, updateAnomalyStatusLocal]);
 
   const handleAddAnomalyComment = useCallback(async (anomaly: Anomaly, message: string) => {
     if (!currentUser) return;
@@ -1936,16 +1906,14 @@ const App: React.FC = () => {
       }
     };
     
-    // Speichere in Supabase
-    await addAnomalyComment(anomaly.userId, anomaly.date, anomaly.type, newComment);
+    // Update local state immediately for instant UI feedback
+    const updatedComments = [...(anomaly.comments || []), newComment];
+    updateAnomalyCommentsLocal(anomaly.userId, anomaly.date, anomaly.type, updatedComments);
     
-    // Update local state
-    setAnomalies(prev => prev.map(a => 
-      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
-        ? { ...a, comments: [...(a.comments || []), newComment] }
-        : a
-    ));
-  }, [currentUser]);
+    // Speichere in Supabase (Realtime sync will keep other clients in sync)
+    const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
+    await addAnomalyComment(anomalyId, newComment);
+  }, [currentUser, updateAnomalyCommentsLocal]);
 
   const handleSelectAnomaly = useCallback((anomaly: Anomaly) => {
     setTargetAnomaly(anomaly);
@@ -1983,6 +1951,15 @@ const App: React.FC = () => {
     return <LoginScreen users={users} onLogin={setCurrentUser} />;
   }
 
+  // Zeige Lade-Animation während Daten geladen werden
+  if (!isDataLoaded) {
+    return (
+      <div className="flex flex-col h-screen font-sans text-sm bg-background">
+        <LoadingScreen message="Projekte werden geladen..." />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen font-sans text-sm">
       <TopBar
@@ -2015,6 +1992,7 @@ const App: React.FC = () => {
         absenceRequests={absenceRequests}
         anomalies={anomalies}
         onOpenNotifications={() => setShowNotifications(true)}
+        notificationsReady={notificationsReady}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -2171,6 +2149,7 @@ const App: React.FC = () => {
             targetAnomaly={targetAnomaly}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
+            onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
@@ -2189,6 +2168,7 @@ const App: React.FC = () => {
             anomalies={anomalies}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
+            onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
             onResolveAnomaly={handleResolveAnomaly}
