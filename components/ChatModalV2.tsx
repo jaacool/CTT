@@ -474,19 +474,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       
-      // Check if click is on a button or inside a menu/picker
-      const isInsideMenu = target.closest('.emoji-picker-menu') || 
-                          target.closest('.more-options-menu') ||
-                          target.closest('button[title="Weitere Reaktionen"]') ||
-                          target.closest('button[title="Mehr Optionen"]');
+      // Check if click is inside any menu or hover menu
+      const isInsideEmojiPicker = target.closest('.emoji-picker-menu');
+      const isInsideMoreMenu = target.closest('.more-options-menu');
+      const isInsideHoverMenu = target.closest('.message-hover-menu');
       
-      if (!isInsideMenu) {
+      if (!isInsideEmojiPicker && !isInsideMoreMenu && !isInsideHoverMenu) {
+        // Klick außerhalb aller Menüs - schließe alles
         setShowEmojiPicker(null);
         setShowMoreMenu(null);
+        setHoveredMessageId(null);
       }
     };
 
-    if (showEmojiPicker || showMoreMenu) {
+    if (showEmojiPicker || showMoreMenu || hoveredMessageId) {
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 0);
@@ -495,7 +496,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker, showMoreMenu]);
+  }, [showEmojiPicker, showMoreMenu, hoveredMessageId]);
 
   // Close context menu on escape or scroll
   useEffect(() => {
@@ -2631,7 +2632,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                               {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && isOwnMessage && !showThreadView && (
                                 <div 
-                                  className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
+                                  className="message-hover-menu absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
                                   onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                   onMouseLeave={handleMessageMouseLeave}
                                 >
@@ -2657,6 +2658,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           calculateMenuPosition(e);
+                                          // Schließe More Menu wenn Emoji Picker geöffnet wird
+                                          if (showEmojiPicker !== message.id) {
+                                            setShowMoreMenu(null);
+                                          }
                                           setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
                                           setEmojiSearchQuery(''); // Reset search when opening
                                         }}
@@ -2731,6 +2736,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           calculateMenuPosition(e);
+                                          // Schließe Emoji Picker wenn More Menu geöffnet wird
+                                          if (showMoreMenu !== message.id) {
+                                            setShowEmojiPicker(null);
+                                          }
                                           setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
@@ -3192,7 +3201,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                                   {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && !isOwnMessage && !showThreadView && (
                                     <div 
-                                      className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
+                                      className="message-hover-menu absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
                                       onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                       onMouseLeave={handleMessageMouseLeave}
                                     >
@@ -3218,6 +3227,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               calculateMenuPosition(e);
+                                              // Schließe More Menu wenn Emoji Picker geöffnet wird
+                                              if (showEmojiPicker !== message.id) {
+                                                setShowMoreMenu(null);
+                                              }
                                               setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
                                               setEmojiSearchQuery('');
                                             }}
@@ -3292,6 +3305,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               calculateMenuPosition(e);
+                                              // Schließe Emoji Picker wenn More Menu geöffnet wird
+                                              if (showMoreMenu !== message.id) {
+                                                setShowEmojiPicker(null);
+                                              }
                                               setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
