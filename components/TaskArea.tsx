@@ -250,8 +250,8 @@ const SubtaskItem: React.FC<{
     onSetTaskStatus: (id: string, newStatus: TaskStatus) => void;
     onRenameItem: RenameFn;
     allUsers?: User[];
-    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
-}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateAssignees }) => {
+    onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
+}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateTaskAssignees }) => {
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
     const [timerHovered, setTimerHovered] = useState(false);
     
@@ -311,7 +311,7 @@ const SubtaskItem: React.FC<{
                 <AssigneeSelector
                     assignees={subtask.assignees}
                     allUsers={allUsers || []}
-                    onAssigneesChange={(assignees) => onUpdateAssignees?.(subtask.id, assignees)}
+                    onAssigneesChange={(assignees) => onUpdateTaskAssignees?.(subtask.id, assignees)}
                     size="small"
                 />
             </div>
@@ -335,7 +335,7 @@ interface TaskItemProps {
     pinnedTaskIds?: string[];
     onDeleteTask?: (taskId: string) => void;
     allUsers?: User[];
-    onUpdateAssignees?: (taskId: string, assignees: User[]) => void;
+    onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = (props) => {
@@ -413,7 +413,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                     <AssigneeSelector
                         assignees={task.assignees}
                         allUsers={props.allUsers || []}
-                        onAssigneesChange={(assignees) => props.onUpdateAssignees?.(task.id, assignees)}
+                        onAssigneesChange={(assignees) => props.onUpdateTaskAssignees?.(task.id, assignees)}
                         size="small"
                     />
                 </div>
@@ -439,7 +439,7 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                         onSetTaskStatus={onSetTaskStatus}
                         onRenameItem={onRenameItem}
                         allUsers={props.allUsers}
-                        onUpdateAssignees={props.onUpdateAssignees}
+                        onUpdateTaskAssignees={props.onUpdateTaskAssignees}
                     />
                 );
             })}

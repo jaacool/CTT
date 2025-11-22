@@ -84,14 +84,14 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             {showMenu && (
                 <>
                     <div 
-                        className="fixed inset-0 z-40" 
+                        className="fixed inset-0 z-[9998]" 
                         onClick={(e) => {
                             e.stopPropagation();
                             setShowMenu(false);
                         }}
                     />
                     <div 
-                        className="absolute right-0 top-8 z-50 bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col"
+                        className="absolute right-0 top-8 z-[9999] bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-3 border-b border-overlay">
