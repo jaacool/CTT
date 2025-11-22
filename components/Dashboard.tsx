@@ -14,9 +14,11 @@ interface DashboardProps {
   onToggleTimer: (taskId: string) => void;
   activeTimerTaskId: string | null;
   taskTimers: { [taskId: string]: number };
-  onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string) => void;
+  onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string, note?: string, projectId?: string, taskId?: string) => void;
   onBillableChange?: (taskId: string, billable: boolean) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
+  onNavigateToTask?: (projectId: string, taskId: string) => void;
+  onProjectChange?: (projectId: string, taskId: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = React.memo(({
@@ -31,7 +33,9 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
   taskTimers,
   onUpdateTimeEntry,
   onBillableChange,
-  onDeleteTimeEntry
+  onDeleteTimeEntry,
+  onNavigateToTask,
+  onProjectChange
 }) => {
   const [note, setNote] = useState(user.dashboardNote || '');
   const [selectedTimeEntry, setSelectedTimeEntry] = useState<TimeEntry | null>(null);
@@ -531,6 +535,11 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
             setSelectedTimeEntry(null); setSelectedAnchorRect(null);
           }}
           anchorRect={selectedAnchorRect}
+          onNavigateToTask={onNavigateToTask}
+          projects={projects}
+          onProjectChange={onProjectChange}
+          taskBillable={billableMap.get(selectedTimeEntry.taskId) ?? true}
+          onBillableChange={onBillableChange}
         />
       )}
 

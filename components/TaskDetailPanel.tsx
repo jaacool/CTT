@@ -330,7 +330,7 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({ item, onItemUp
       <div className="grid grid-cols-2 gap-3">
           <InfoCard label="Fällig bis" value={item.dueDate ? new Date(item.dueDate).toLocaleDateString('de-DE') : '-'} color="glow-button-highlight-red-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-red-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
           <InfoCard label="Geplant" value={`${item.timeBudgetHours || 0}h`} color="glow-button-highlight-yellow-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-yellow-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
-          <InfoCard label="Erfasst" value={`${Math.floor(trackedTime / 3600)}h`} color="glow-button-highlight-green-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-green-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
+          <InfoCard label="Erfasst" value={formatTime(trackedTime)} color="glow-button-highlight-green-v5" textColor={themeMode === 'blue' ? 'text-white' : 'text-green-500'} icon={<ClockIcon className="w-3 h-3"/>}/>
           <div className="flex-1 p-3 rounded-lg glow-button-highlight-cyan-v5">
               <div className={`flex items-center space-x-2 text-xs mb-1 ${themeMode === 'blue' ? 'text-white' : 'text-cyan-500'}`}>
                   <ClockIcon className="w-3 h-3"/>

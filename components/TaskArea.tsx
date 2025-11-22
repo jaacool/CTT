@@ -813,6 +813,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     onImportAbsences={props.onImportAbsences}
                     onEditEntry={props.onEditEntry}
                     currentUser={props.currentUser}
+                    activeTimerTaskId={props.activeTimerTaskId}
                 />
             )}
             

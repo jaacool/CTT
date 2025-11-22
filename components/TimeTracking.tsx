@@ -32,11 +32,12 @@ interface TimeTrackingProps {
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
   onEditEntry?: (entry: TimeEntry) => void;
+  activeTimerTaskId?: string | null;
 }
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onToggleTimer, onDeleteTimeEntry, onDuplicateTimeEntry, onEditEntry }) => {
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onToggleTimer, onDeleteTimeEntry, onDuplicateTimeEntry, onEditEntry, activeTimerTaskId }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [selectedUser, setSelectedUser] = useState<User>(currentUser);
   const [overviewPage, setOverviewPage] = useState(0); // PERFORMANCE: Pagination für Übersicht
@@ -977,6 +978,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                                 onDeleteEntry={onDeleteTimeEntry}
                                 onDuplicateEntry={onDuplicateTimeEntry}
                                 onEditEntry={onEditEntry}
+                                activeTimerTaskId={activeTimerTaskId}
                               />
                             )}
                           </div>
@@ -1317,6 +1319,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     onDeleteEntry={onDeleteTimeEntry}
                     onDuplicateEntry={onDuplicateTimeEntry}
                     onEditEntry={onEditEntry}
+                    activeTimerTaskId={activeTimerTaskId}
                   />
                 </div>
               )}

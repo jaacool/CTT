@@ -1468,18 +1468,49 @@ const App: React.FC = () => {
 
   const isAdmin = currentUser?.role === 'role-1';
 
-  const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string) => {
+  const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string, projectId?: string, taskId?: string) => {
     setTimeEntries(prev => prev.map(entry => {
       if (entry.id === entryId) {
         const start = new Date(startTime);
+        
+        // Finde Projekt- und Task-Namen wenn IDs übergeben wurden
+        let projectName = entry.projectName;
+        let taskTitle = entry.taskTitle;
+        let actualProjectId = entry.projectId;
+        let actualTaskId = entry.taskId;
+        
+        if (projectId && taskId) {
+          const project = projects.find(p => p.id === projectId);
+          if (project) {
+            projectName = project.name;
+            actualProjectId = projectId;
+            actualTaskId = taskId;
+            
+            // Finde Task oder Subtask
+            for (const list of project.taskLists) {
+              const task = list.tasks.find(t => t.id === taskId);
+              if (task) {
+                taskTitle = task.title;
+                break;
+              }
+              for (const task of list.tasks) {
+                const subtask = task.subtasks.find(st => st.id === taskId);
+                if (subtask) {
+                  taskTitle = `${task.title} → ${subtask.title}`;
+                  break;
+                }
+              }
+            }
+          }
+        }
         
         // Wenn endTime leer ist, Timer läuft weiter - berechne duration bis jetzt
         if (!endTime) {
           const now = new Date();
           const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
           // Update taskTimers mit neuer duration
-          setTaskTimers(prev => ({ ...prev, [entry.taskId]: duration }));
-          const updatedEntry = { ...entry, startTime, duration, note };
+          setTaskTimers(prev => ({ ...prev, [actualTaskId]: duration }));
+          const updatedEntry = { ...entry, startTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
           saveTimeEntry(updatedEntry); // Auto-Save
           return updatedEntry;
         }
@@ -1487,13 +1518,13 @@ const App: React.FC = () => {
         // Ansonsten normale Berechnung mit endTime
         const end = new Date(endTime);
         const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
-        const updatedEntry = { ...entry, startTime, endTime, duration, note };
+        const updatedEntry = { ...entry, startTime, endTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
         saveTimeEntry(updatedEntry); // Auto-Save
         return updatedEntry;
       }
       return entry;
     }));
-  }, []);
+  }, [projects]);
 
   const handleDeleteTimeEntry = useCallback((entryId: string) => {
     // Stoppe aktiven Timer falls dieser Eintrag gerade läuft
@@ -2115,6 +2146,45 @@ const App: React.FC = () => {
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
             onDeleteTimeEntry={handleDeleteTimeEntry}
+            onNavigateToTask={(projectId, taskId) => {
+              // Finde das Projekt
+              const project = projects.find(p => p.id === projectId);
+              if (project) {
+                setSelectedProject(project);
+                
+                // Finde die Task oder Subtask
+                let foundTask: Task | Subtask | null = null;
+                for (const list of project.taskLists) {
+                  const task = list.tasks.find(t => t.id === taskId);
+                  if (task) {
+                    foundTask = task;
+                    break;
+                  }
+                  for (const task of list.tasks) {
+                    const subtask = task.subtasks.find(st => st.id === taskId);
+                    if (subtask) {
+                      foundTask = subtask;
+                      break;
+                    }
+                  }
+                  if (foundTask) break;
+                }
+                
+                if (foundTask) {
+                  setSelectedTask(foundTask);
+                }
+                
+                // Schließe Dashboard
+                setShowDashboard(false);
+              }
+            }}
+            onProjectChange={(projectId, taskId) => {
+              // Finde den aktuell bearbeiteten TimeEntry
+              const currentEntry = timeEntries.find(e => e.id === (editingTimeEntry?.id || activeTimeEntryId));
+              if (currentEntry) {
+                handleUpdateTimeEntry(currentEntry.id, currentEntry.startTime, currentEntry.endTime || '', currentEntry.note, projectId, taskId);
+              }
+            }}
           />
         ) : showProjectsOverview ? (
           isDataLoaded ? (
@@ -2167,6 +2237,7 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
             onEditEntry={handleEditTimeEntry}
+            activeTimerTaskId={activeTimerTaskId}
           />
           ) : (
             <LoadingScreen message="Zeiterfassung wird geladen..." />
@@ -2317,7 +2388,17 @@ const App: React.FC = () => {
             onItemUpdate={handleTaskUpdate}
             onDescriptionUpdate={handleDescriptionUpdate}
             onRenameItem={(id, newName) => handleRenameItem(id, newName, 'task')}
-            trackedTime={selectedTask ? taskTimers[selectedTask.id] : 0}
+            trackedTime={selectedTask ? (() => {
+              // Berechne Gesamtzeit aus allen TimeEntries für diese Task
+              const totalFromEntries = timeEntries
+                .filter(e => e.taskId === selectedTask.id)
+                .reduce((sum, e) => sum + e.duration, 0);
+              
+              // Addiere laufenden Timer falls vorhanden
+              const runningTimer = activeTimerTaskId === selectedTask.id ? (taskTimers[selectedTask.id] || 0) : 0;
+              
+              return totalFromEntries + runningTimer;
+            })() : 0}
             activeTimerTaskId={activeTimerTaskId}
             onToggleTimer={handleToggleTimer}
             onAddSubtask={handleAddSubtask}
@@ -2453,6 +2534,52 @@ const App: React.FC = () => {
             anchorRect={timerMenuAnchor}
             taskBillable={taskBillable}
             onBillableChange={handleBillableChange}
+            projects={projects}
+            onProjectChange={(projectId, taskId) => {
+              // Update den TimeEntry mit neuem Projekt und Task
+              handleUpdateTimeEntry(entryToEdit.id, entryToEdit.startTime, entryToEdit.endTime || '', entryToEdit.note, projectId, taskId);
+            }}
+            onNavigateToTask={(projectId, taskId) => {
+              // Finde das Projekt
+              const project = projects.find(p => p.id === projectId);
+              if (project) {
+                setSelectedProject(project);
+                
+                // Finde die Task oder Subtask
+                let foundTask: Task | Subtask | null = null;
+                for (const list of project.taskLists) {
+                  const task = list.tasks.find(t => t.id === taskId);
+                  if (task) {
+                    foundTask = task;
+                    break;
+                  }
+                  for (const task of list.tasks) {
+                    const subtask = task.subtasks.find(st => st.id === taskId);
+                    if (subtask) {
+                      foundTask = subtask;
+                      break;
+                    }
+                  }
+                  if (foundTask) break;
+                }
+                
+                if (foundTask) {
+                  setSelectedTask(foundTask);
+                }
+                
+                // Schließe alle anderen Views
+                setShowDashboard(false);
+                setShowProjectsOverview(false);
+                setShowVacationAbsence(false);
+                setShowTimeTracking(false);
+                setShowTimeStatistics(false);
+                setShowSettings(false);
+                
+                // Schließe das Timer Menu
+                setShowTimerMenu(false);
+                setEditingTimeEntry(null);
+              }
+            }}
           />
         );
       })()}

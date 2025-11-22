@@ -12,9 +12,10 @@ interface TimeViewProps {
   onDeleteEntry?: (entryId: string) => void;
   onDuplicateEntry?: (entry: TimeEntry) => void;
   onEditEntry?: (entry: TimeEntry) => void;
+  activeTimerTaskId?: string | null;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry, activeTimerTaskId }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
@@ -227,17 +228,10 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                             if (onStartTimer) onStartTimer(entry.taskId);
                           }}
                           className={`px-2 py-1 rounded-md font-bold text-xs cursor-pointer group flex items-center justify-center min-w-[50px] ${
-                            entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500 space-x-0' : 'glow-button-highlight text-text-primary space-x-2'
+                            (!entry.endTime && activeTimerTaskId === entry.taskId) ? 'glow-button-highlight text-text-primary space-x-2' : 'glow-button-highlight-pink-v5 text-pink-500 space-x-0'
                           }`}
                         >
-                          {entry.endTime ? (
-                            <>
-                              <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                              </svg>
-                            </>
-                          ) : (
+                          {(!entry.endTime && activeTimerTaskId === entry.taskId) ? (
                             <>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
                                 <circle cx="12" cy="12" r="10"></circle>
@@ -248,6 +242,13 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                                 <rect x="14" y="4" width="4" height="16"></rect>
                               </svg>
                               <span>{formatDuration(entry.duration, true)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                              </svg>
                             </>
                           )}
                         </div>
@@ -346,17 +347,10 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                         if (onStartTimer) onStartTimer(entry.taskId);
                       }}
                       className={`px-2 py-1 rounded-md font-bold text-sm cursor-pointer group flex items-center justify-center min-w-[70px] ${
-                        entry.endTime ? 'glow-button-highlight-pink-v5 text-pink-500 space-x-0' : 'glow-button-highlight text-text-primary space-x-2'
+                        (!entry.endTime && activeTimerTaskId === entry.taskId) ? 'glow-button-highlight text-text-primary space-x-2' : 'glow-button-highlight-pink-v5 text-pink-500 space-x-0'
                       }`}
                     >
-                      {entry.endTime ? (
-                        <>
-                          <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                          </svg>
-                        </>
-                      ) : (
+                      {(!entry.endTime && activeTimerTaskId === entry.taskId) ? (
                         <>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:hidden">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -367,6 +361,13 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                             <rect x="14" y="4" width="4" height="16"></rect>
                           </svg>
                           <span>{formatDuration(entry.duration, true)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="group-hover:hidden">{formatDuration(entry.duration, false)}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="hidden group-hover:block">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                          </svg>
                         </>
                       )}
                     </div>

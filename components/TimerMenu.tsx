@@ -5,16 +5,17 @@ interface TimerMenuProps {
   timeEntry: TimeEntry;
   elapsedSeconds: number;
   onClose: () => void;
-  onUpdate: (entryId: string, startTime: string, endTime: string, note?: string) => void;
+  onUpdate: (entryId: string, startTime: string, endTime: string, note?: string, projectId?: string, taskId?: string) => void;
   onStop: () => void;
   anchorRect?: { top: number; right: number; bottom: number; left: number } | null;
   taskBillable?: boolean;
   onBillableChange?: (taskId: string, billable: boolean) => void;
   projects?: Project[];
   onProjectChange?: (projectId: string, taskId: string) => void;
+  onNavigateToTask?: (projectId: string, taskId: string) => void;
 }
 
-export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange, projects = [], onProjectChange }) => {
+export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange, projects = [], onProjectChange, onNavigateToTask }) => {
   const [note, setNote] = useState(timeEntry.note || '');
   const isBillable = taskBillable ?? timeEntry.billable ?? true;
   const [startTime, setStartTime] = useState(new Date(timeEntry.startTime).toTimeString().slice(0, 5));
@@ -123,7 +124,20 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
         className={"glow-card rounded-2xl shadow-2xl p-6 " + (!inlineStyle ? 'fixed bottom-24 right-8 w-[600px] max-h-[calc(100vh-120px)] overflow-y-auto z-[1000]' : '')}
         style={inlineStyle}
       >
-        <h2 className="text-text-primary text-xl font-bold mb-6">Timer</h2>
+        {/* Header mit Close Button */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-text-primary text-xl font-bold">Timer</h2>
+          <button
+            onClick={onClose}
+            className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-overlay"
+            title="Schließen ohne Speichern"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
         
         {/* Projekt & Task Auswahl */}
         <div className="flex flex-wrap gap-2 mb-6">
@@ -276,6 +290,22 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
             })()}
           </div>
           
+          {/* Navigate to Task Button */}
+          {onNavigateToTask && (
+            <button
+              onClick={() => onNavigateToTask(timeEntry.projectId, timeEntry.taskId)}
+              className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg hover:bg-surface transition-colors"
+              title="Zur Aufgabe springen"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 16 16 12 12 8"></polyline>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+              <span className="text-text-primary text-sm font-semibold">Anzeigen</span>
+            </button>
+          )}
+          
           <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
               <circle cx="12" cy="12" r="10"></circle>
@@ -356,39 +386,6 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
           </div>
           
           <div>
-            <label className="text-text-secondary text-sm mb-2 block">End Zeit</label>
-            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 mb-2 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                disabled={isRunning}
-                className={`bg-transparent text-lg font-bold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
-                placeholder="--:--"
-              />
-            </div>
-            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                disabled={isRunning}
-                className={`bg-transparent text-sm font-semibold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
-              />
-            </div>
-          </div>
-          
-          <div>
             <label className="text-text-secondary text-sm mb-2 block">Gesamtzeit</label>
             <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
@@ -425,6 +422,39 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 style={{
                   background: isRunning ? undefined : `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(sliderMinutes / 720) * 100}%, rgb(30, 30, 46) ${(sliderMinutes / 720) * 100}%, rgb(30, 30, 46) 100%)`
                 }}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-text-secondary text-sm mb-2 block">End Zeit</label>
+            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 mb-2 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                disabled={isRunning}
+                className={`bg-transparent text-lg font-bold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
+                placeholder="--:--"
+              />
+            </div>
+            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                disabled={isRunning}
+                className={`bg-transparent text-sm font-semibold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
               />
             </div>
           </div>
