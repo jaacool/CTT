@@ -79,6 +79,7 @@ const App: React.FC = () => {
   const [activeTimeEntryId, setActiveTimeEntryId] = useState<string | null>(null);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [timerMenuAnchor, setTimerMenuAnchor] = useState<{top:number;right:number;bottom:number;left:number} | null>(null);
+  const [editingTimeEntry, setEditingTimeEntry] = useState<TimeEntry | null>(null);
   const [timerHovered, setTimerHovered] = useState(false);
   const [showDashboard, setShowDashboard] = useState(true);
   const [showProjectsOverview, setShowProjectsOverview] = useState(false);
@@ -1498,6 +1499,12 @@ const App: React.FC = () => {
     setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
   }, [activeTimeEntryId]);
 
+  const handleEditTimeEntry = useCallback((entry: TimeEntry) => {
+    setEditingTimeEntry(entry);
+    setTimerMenuAnchor(null); // Center on screen
+    setShowTimerMenu(true);
+  }, []);
+
   const handleDuplicateTimeEntry = useCallback((entry: TimeEntry) => {
     const now = new Date();
     const startTime = new Date(now.getTime() - (entry.duration * 1000)); // Berechne Startzeit basierend auf Original-Duration
@@ -2152,6 +2159,7 @@ const App: React.FC = () => {
             onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            onEditEntry={handleEditTimeEntry}
           />
           ) : (
             <LoadingScreen message="Zeiterfassung wird geladen..." />
@@ -2171,6 +2179,7 @@ const App: React.FC = () => {
             onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            onEditEntry={handleEditTimeEntry}
             onResolveAnomaly={handleResolveAnomaly}
             onMuteAnomaly={handleMuteAnomaly}
             onAddAnomalyComment={handleAddAnomalyComment}
@@ -2202,6 +2211,7 @@ const App: React.FC = () => {
             onOpenSearchProjects={() => setShowSearchModal(true)}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
+            onEditEntry={handleEditTimeEntry}
             onImportEntries={handleImportTimeEntries}
             onImportAbsences={handleImportAbsences}
             currentUser={currentUser}
@@ -2396,16 +2406,21 @@ const App: React.FC = () => {
             </div>
             
             {showTimerMenu && hasPermission(currentUser, MOCK_ROLES, 'Zeit bearbeiten') && (() => {
+              // Verwende entweder editingTimeEntry oder activeEntry
+              const entryToEdit = editingTimeEntry || activeEntry;
+              if (!entryToEdit) return null;
+              
               // Finde Task/Subtask für Billable-Status
               let taskBillable = true;
+              const taskIdToCheck = editingTimeEntry ? editingTimeEntry.taskId : activeTimerTaskId;
               projects.forEach(proj => {
                 proj.taskLists.forEach(list => {
                   list.tasks.forEach(task => {
-                    if (task.id === activeTimerTaskId) {
+                    if (task.id === taskIdToCheck) {
                       taskBillable = task.billable ?? true;
                     }
                     task.subtasks.forEach(subtask => {
-                      if (subtask.id === activeTimerTaskId) {
+                      if (subtask.id === taskIdToCheck) {
                         taskBillable = subtask.billable ?? task.billable ?? true;
                       }
                     });
@@ -2415,11 +2430,14 @@ const App: React.FC = () => {
               
               return (
                 <TimerMenu
-                  timeEntry={activeEntry}
-                  elapsedSeconds={taskTimers[activeTimerTaskId] || 0}
-                  onClose={() => setShowTimerMenu(false)}
+                  timeEntry={entryToEdit}
+                  elapsedSeconds={editingTimeEntry ? entryToEdit.duration : (taskTimers[activeTimerTaskId] || 0)}
+                  onClose={() => {
+                    setShowTimerMenu(false);
+                    setEditingTimeEntry(null);
+                  }}
                   onUpdate={handleUpdateTimeEntry}
-                  onStop={() => handleToggleTimer(activeTimerTaskId)}
+                  onStop={editingTimeEntry ? undefined : () => handleToggleTimer(activeTimerTaskId)}
                   anchorRect={timerMenuAnchor}
                   taskBillable={taskBillable}
                   onBillableChange={handleBillableChange}
