@@ -1599,25 +1599,42 @@ const App: React.FC = () => {
   }, []);
 
   const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: User[]) => {
-    updateProjects(prevProjects => prevProjects.map(p => ({
-      ...p,
-      taskLists: p.taskLists.map(list => ({
-        ...list,
-        tasks: list.tasks.map(t => {
-          if (t.id === taskId) {
-            return { ...t, assignees };
-          }
-          // Check subtasks
-          const subtaskIndex = t.subtasks.findIndex(st => st.id === taskId);
-          if (subtaskIndex > -1) {
-            const updatedSubtasks = [...t.subtasks];
-            updatedSubtasks[subtaskIndex] = { ...updatedSubtasks[subtaskIndex], assignees };
-            return { ...t, subtasks: updatedSubtasks };
-          }
-          return t;
-        })
-      }))
-    })));
+    updateProjects(prevProjects => {
+      const updatedProjects = prevProjects.map(p => {
+        const updatedProject = {
+          ...p,
+          taskLists: p.taskLists.map(list => ({
+            ...list,
+            tasks: list.tasks.map(t => {
+              if (t.id === taskId) {
+                return { ...t, assignees };
+              }
+              // Check subtasks
+              const subtaskIndex = t.subtasks.findIndex(st => st.id === taskId);
+              if (subtaskIndex > -1) {
+                const updatedSubtasks = [...t.subtasks];
+                updatedSubtasks[subtaskIndex] = { ...updatedSubtasks[subtaskIndex], assignees };
+                return { ...t, subtasks: updatedSubtasks };
+              }
+              return t;
+            })
+          }))
+        };
+        
+        // Sync to Supabase if this project was modified
+        const wasModified = updatedProject.taskLists.some(list => 
+          list.tasks.some(t => 
+            t.id === taskId || t.subtasks.some(st => st.id === taskId)
+          )
+        );
+        if (wasModified) {
+          saveProject(updatedProject);
+        }
+        
+        return updatedProject;
+      });
+      return updatedProjects;
+    });
   }, [updateProjects]);
 
   const handleUpdateProject = useCallback((updatedProject: Project) => {

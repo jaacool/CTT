@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { User, UserStatus } from '../types';
 
 interface AssigneeSelectorProps {
@@ -16,9 +17,22 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 }) => {
     const [showMenu, setShowMenu] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+    const buttonRef = useRef<HTMLDivElement>(null);
 
     const avatarSize = size === 'small' ? 'w-6 h-6' : 'w-8 h-8';
     const avatarOffset = size === 'small' ? '-ml-2' : '-ml-3';
+
+    // Berechne Menu-Position wenn es geöffnet wird
+    useEffect(() => {
+        if (showMenu && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + window.scrollY + 8,
+                left: rect.right + window.scrollX - 320 // 320px = w-80
+            });
+        }
+    }, [showMenu]);
 
     const toggleAssignee = (user: User) => {
         const isAssigned = assignees.some(a => a.id === user.id);
@@ -44,6 +58,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     return (
         <div className="relative">
             <div 
+                ref={buttonRef}
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -81,7 +96,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                 )}
             </div>
 
-            {showMenu && (
+            {showMenu && menuPosition && ReactDOM.createPortal(
                 <>
                     <div 
                         className="fixed inset-0 z-[9998]" 
@@ -91,7 +106,8 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                         }}
                     />
                     <div 
-                        className="absolute right-0 top-8 z-[9999] bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col"
+                        className="fixed z-[9999] bg-surface border border-overlay rounded-xl shadow-2xl w-80 max-h-96 overflow-hidden flex flex-col"
+                        style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-3 border-b border-overlay">
@@ -177,7 +193,8 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                             })}
                         </div>
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );
