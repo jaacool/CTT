@@ -339,6 +339,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [messageInput, setMessageInput] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [channelSearchQuery, setChannelSearchQuery] = useState('');
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -631,15 +632,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return partner?.name.toLowerCase().includes(channelSearchQuery.toLowerCase());
   });
 
-  // Filter projects by search
+  // Filter and sort projects by search
   const filteredProjects = projects
-    .filter(p => !projectSearchQuery || p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()))
-    .sort((a, b) => {
-      // Active projects first
-      if (a.status === 'AKTIV' && b.status !== 'AKTIV') return -1;
-      if (a.status !== 'AKTIV' && b.status === 'AKTIV') return 1;
-      return a.name.localeCompare(b.name);
-    });
+    .filter(p => !projectSearchQuery || p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()));
+  
+  // Gruppiere Projekte nach Status und Favoriten
+  const favoriteProjects = filteredProjects
+    .filter(p => p.isFavorite && p.status !== 'ARCHIVIERT')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  
+  const activeProjects = filteredProjects
+    .filter(p => !p.isFavorite && p.status === 'AKTIV')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  
+  const archivedProjects = filteredProjects
+    .filter(p => p.status === 'ARCHIVIERT')
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Filter messages: by channel and optionally by project
   const filteredMessages = messages.filter(msg => {
@@ -1967,44 +1975,148 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       Keine Projekte gefunden
                     </div>
                   ) : (
-                    filteredProjects.map(project => {
-                      // Prüfe ob icon ein Farbcode ist (wie in Sidebar)
-                      const isColorCode = project.icon?.startsWith('#');
+                    <>
+                      {/* Favorisierte Projekte */}
+                      {favoriteProjects.length > 0 && (
+                        <>
+                          {favoriteProjects.map(project => {
+                            const isColorCode = project.icon?.startsWith('#');
+                            return (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  onSwitchProject(project.id);
+                                  setShowProjectDropdown(false);
+                                  setProjectSearchQuery('');
+                                }}
+                                className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                                  currentProject?.id === project.id 
+                                    ? 'bg-glow-purple/20 text-text-primary' 
+                                    : 'hover:bg-overlay text-text-secondary'
+                                }`}
+                              >
+                                {isColorCode ? (
+                                  <div 
+                                    className="w-5 h-5 rounded-md flex-shrink-0" 
+                                    style={{ backgroundColor: project.icon }}
+                                  />
+                                ) : (
+                                  <span className="text-xl flex-shrink-0">{project.icon}</span>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate flex items-center gap-2">
+                                    {project.name}
+                                    <svg className="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                          {(activeProjects.length > 0 || archivedProjects.length > 0) && (
+                            <div className="border-t border-border/30 my-1"></div>
+                          )}
+                        </>
+                      )}
                       
-                      return (
-                        <button
-                          key={project.id}
-                          onClick={() => {
-                            onSwitchProject(project.id);
-                            setShowProjectDropdown(false);
-                            setProjectSearchQuery('');
-                          }}
-                          className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
-                            currentProject?.id === project.id 
-                              ? 'bg-glow-purple/20 text-text-primary' 
-                              : 'hover:bg-overlay text-text-secondary'
-                          }`}
-                        >
-                          {/* Icon-Rendering GENAU wie in Sidebar */}
-                          {isColorCode ? (
-                            <div 
-                              className="w-5 h-5 rounded-md flex-shrink-0" 
-                              style={{ backgroundColor: project.icon }}
-                            />
-                          ) : (
-                            <span className="text-xl flex-shrink-0">{project.icon}</span>
+                      {/* Aktive Projekte */}
+                      {activeProjects.map(project => {
+                        const isColorCode = project.icon?.startsWith('#');
+                        return (
+                          <button
+                            key={project.id}
+                            onClick={() => {
+                              onSwitchProject(project.id);
+                              setShowProjectDropdown(false);
+                              setProjectSearchQuery('');
+                            }}
+                            className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                              currentProject?.id === project.id 
+                                ? 'bg-glow-purple/20 text-text-primary' 
+                                : 'hover:bg-overlay text-text-secondary'
+                            }`}
+                          >
+                            {isColorCode ? (
+                              <div 
+                                className="w-5 h-5 rounded-md flex-shrink-0" 
+                                style={{ backgroundColor: project.icon }}
+                              />
+                            ) : (
+                              <span className="text-xl flex-shrink-0">{project.icon}</span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{project.name}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      
+                      {/* Archivierte Projekte */}
+                      {archivedProjects.length > 0 && (
+                        <>
+                          {(favoriteProjects.length > 0 || activeProjects.length > 0) && (
+                            <div className="border-t border-border/30 my-1"></div>
                           )}
                           
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{project.name}</div>
-                            {project.status === 'AKTIV' && (
-                              <div className="text-xs text-glow-purple">Aktiv</div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })
-                  
+                          {/* Toggle für archivierte Projekte (nur wenn nicht gesucht wird) */}
+                          {!projectSearchQuery && (
+                            <button
+                              onClick={() => setShowArchivedProjects(!showArchivedProjects)}
+                              className="w-full flex items-center justify-between p-3 text-left transition-colors hover:bg-overlay text-text-secondary"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                </svg>
+                                <span className="text-sm">Archivierte Projekte ({archivedProjects.length})</span>
+                              </div>
+                              <svg 
+                                className={`w-4 h-4 transition-transform ${showArchivedProjects ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {/* Archivierte Projekte Liste (ausgeklappt oder bei Suche immer sichtbar) */}
+                          {(showArchivedProjects || projectSearchQuery) && archivedProjects.map(project => {
+                            const isColorCode = project.icon?.startsWith('#');
+                            return (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  onSwitchProject(project.id);
+                                  setShowProjectDropdown(false);
+                                  setProjectSearchQuery('');
+                                }}
+                                className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                                  currentProject?.id === project.id 
+                                    ? 'bg-glow-purple/20 text-text-primary' 
+                                    : 'hover:bg-overlay text-text-secondary'
+                                }`}
+                              >
+                                {isColorCode ? (
+                                  <div 
+                                    className="w-5 h-5 rounded-md flex-shrink-0 opacity-60" 
+                                    style={{ backgroundColor: project.icon }}
+                                  />
+                                ) : (
+                                  <span className="text-xl flex-shrink-0 opacity-60">{project.icon}</span>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate opacity-60">{project.name}</div>
+                                  <div className="text-xs text-text-secondary">Archiviert</div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
