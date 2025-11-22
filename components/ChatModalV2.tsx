@@ -289,7 +289,7 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
                 left: `${(currentTime / duration) * 100}%`,
                 backgroundColor: '#FFFFFF',
                 boxShadow: '0 0 8px rgba(255, 255, 255, 0.9)',
-                zIndex: 10
+                zIndex: 5
               }}
             />
           )}
@@ -372,7 +372,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState<number>(0);
   // Minimum space for hover menu: menu height (40px) + bottom offset (8px) + safety margin (8px) = 56px
-  const HOVER_MENU_MIN_SPACE = -40;
+  const HOVER_MENU_MIN_SPACE = 0;
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
