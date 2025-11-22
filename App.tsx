@@ -1620,6 +1620,14 @@ const App: React.FC = () => {
     })));
   }, [updateProjects]);
 
+  const handleUpdateProject = useCallback((updatedProject: Project) => {
+    updateProjects(prevProjects => prevProjects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    ));
+    // Sync to Supabase
+    saveProject(updatedProject);
+  }, [updateProjects]);
+
   const handleStartTimeTracking = useCallback((projectId: string, taskId: string) => {
     // Stoppe aktiven Timer falls vorhanden
     if (activeTimerTaskId && activeTimeEntryId) {
@@ -2202,6 +2210,7 @@ const App: React.FC = () => {
             currentUser={currentUser}
             allUsers={MOCK_USERS}
             onUpdateTaskAssignees={handleUpdateTaskAssignees}
+            onUpdateProject={handleUpdateProject}
             onOpenChat={() => {
               setShowChat(true);
               // Setze das aktuelle Projekt für den Chat
