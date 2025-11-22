@@ -1131,15 +1131,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle mark as unread
   const handleMarkAsUnread = async (messageId: string) => {
     try {
-      // Markiere Nachricht als ungelesen in Supabase
+      const message = messages.find(m => m.id === messageId);
+      if (!message) return;
+      
+      // Entferne User aus readBy Array
+      const updatedReadBy = (message.readBy || []).filter(id => id !== currentUser.id);
+      
+      // Update data JSON und read Spalte
+      const updatedData = { ...message, readBy: updatedReadBy };
+      
       const { error } = await supabase
         .from('chat_messages')
         .update({ 
-          read: false,
-          read_at: null 
+          data: updatedData,
+          read: updatedReadBy
         })
-        .eq('id', messageId)
-        .eq('user_id', currentUser.id); // Nur für aktuellen User
+        .eq('id', messageId);
       
       if (error) throw error;
       
@@ -1157,21 +1164,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       if (!message) return;
       
       // Prüfe ob Nachricht bereits markiert ist
-      const isStarred = message.starred_by?.includes(currentUser.id);
+      const isStarred = message.starredBy?.includes(currentUser.id);
       
       let updatedStarredBy: string[];
       if (isStarred) {
         // Entferne Stern
-        updatedStarredBy = (message.starred_by || []).filter(id => id !== currentUser.id);
+        updatedStarredBy = (message.starredBy || []).filter(id => id !== currentUser.id);
       } else {
         // Füge Stern hinzu
-        updatedStarredBy = [...(message.starred_by || []), currentUser.id];
+        updatedStarredBy = [...(message.starredBy || []), currentUser.id];
       }
       
-      // Update in Supabase
+      // Update data JSON und starred_by Spalte
+      const updatedData = { ...message, starredBy: updatedStarredBy };
+      
       const { error } = await supabase
         .from('chat_messages')
-        .update({ starred_by: updatedStarredBy })
+        .update({ 
+          data: updatedData,
+          starred_by: updatedStarredBy 
+        })
         .eq('id', messageId);
       
       if (error) throw error;
@@ -2065,7 +2077,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             {!isOwnMessage && channel.type === ChatChannelType.Group && (
                               <div className="text-xs font-semibold text-glow-purple mb-1 flex items-center space-x-1">
                                 <span>{message.sender.name}</span>
-                                {message.starred_by?.includes(currentUser.id) && (
+                                {message.starredBy?.includes(currentUser.id) && (
                                   <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
                                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                   </svg>
@@ -2935,7 +2947,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 {currentChannel?.type !== ChatChannelType.Direct && (
                                   <div className="flex items-center space-x-1">
                                     <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
-                                    {message.starred_by?.includes(currentUser.id) && (
+                                    {message.starredBy?.includes(currentUser.id) && (
                                       <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
                                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                       </svg>
