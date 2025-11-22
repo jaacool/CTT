@@ -87,7 +87,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     entry.user.id === user.id
   ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
-  const totalTodaySeconds = todayEntries.reduce((sum, entry) => sum + entry.duration, 0);
+  // Gesamtzeit heute: abgeschlossene Einträge + laufender Timer in Echtzeit
+  const baseSeconds = todayEntries.reduce((sum, entry) => {
+    const isActive = activeTimerTaskId === entry.taskId && !entry.endTime;
+    // Laufender Eintrag wird separat über taskTimers gezählt
+    if (isActive) return sum;
+    return sum + entry.duration;
+  }, 0);
+
+  const activeTodayEntry = todayEntries.find(entry => activeTimerTaskId === entry.taskId && !entry.endTime);
+  const activeTodaySeconds = activeTodayEntry ? (taskTimers[activeTodayEntry.taskId] || 0) : 0;
+
+  const totalTodaySeconds = baseSeconds + activeTodaySeconds;
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
