@@ -19,7 +19,7 @@ interface DashboardProps {
   onDeleteTimeEntry?: (entryId: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({
+export const Dashboard: React.FC<DashboardProps> = React.memo(({
   user,
   projects,
   timeEntries,
@@ -64,22 +64,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return map;
   }, [projects]);
 
-  // Finde alle gepinnten Tasks
-  const pinnedTasks: (Task | Subtask)[] = [];
-  projects.forEach(project => {
-    project.taskLists.forEach(list => {
-      list.tasks.forEach(task => {
-        if (pinnedTaskIds.includes(task.id)) {
-          pinnedTasks.push(task);
-        }
-        task.subtasks.forEach(subtask => {
-          if (pinnedTaskIds.includes(subtask.id)) {
-            pinnedTasks.push(subtask);
-          }
+  // PERFORMANCE: Erstelle Task-zu-Projekt-Info-Map (nur einmal pro projects-Änderung)
+  const taskToProjectInfo = useMemo(() => {
+    const map = new Map<string, { project: Project; projectName: string; listTitle: string }>();
+    projects.forEach(project => {
+      project.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          map.set(task.id, { project, projectName: project.name, listTitle: list.title });
+          task.subtasks.forEach(subtask => {
+            map.set(subtask.id, { project, projectName: project.name, listTitle: list.title });
+          });
         });
       });
     });
-  });
+    return map;
+  }, [projects]);
+
+  // PERFORMANCE: Finde alle gepinnten Tasks mit useMemo (nur neu berechnen wenn sich pinnedTaskIds oder projects ändern)
+  const pinnedTasks = useMemo(() => {
+    const tasks: (Task | Subtask)[] = [];
+    projects.forEach(project => {
+      project.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          if (pinnedTaskIds.includes(task.id)) {
+            tasks.push(task);
+          }
+          task.subtasks.forEach(subtask => {
+            if (pinnedTaskIds.includes(subtask.id)) {
+              tasks.push(subtask);
+            }
+          });
+        });
+      });
+    });
+    return tasks;
+  }, [projects, pinnedTaskIds]);
 
   // Hole heute's TimeEntries - jeder User sieht nur seine eigenen
   const today = new Date().toLocaleDateString('de-DE');
@@ -446,32 +465,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const isActive = activeTimerTaskId === task.id;
                 const elapsedSeconds = taskTimers[task.id] || 0;
                 
-                // Finde Projekt und Liste für diese Aufgabe
-                let projectName = '';
-                let listTitle = '';
-                projects.forEach(p => {
-                  p.taskLists.forEach(list => {
-                    list.tasks.forEach(t => {
-                      if (t.id === task.id) {
-                        projectName = p.name;
-                        listTitle = list.title;
-                      }
-                      t.subtasks.forEach(st => {
-                        if (st.id === task.id) {
-                          projectName = p.name;
-                          listTitle = list.title;
-                        }
-                      });
-                    });
-                  });
-                });
-                
-                // Finde Projekt-Icon
-                const project = projects.find(p => p.id === task.id || 
-                  p.taskLists.some(list => 
-                    list.tasks.some(t => t.id === task.id || t.subtasks.some(st => st.id === task.id))
-                  )
-                );
+                // PERFORMANCE: O(1) Lookup statt nested loops
+                const projectInfo = taskToProjectInfo.get(task.id);
+                const projectName = projectInfo?.projectName || '';
+                const listTitle = projectInfo?.listTitle || '';
+                const project = projectInfo?.project;
                 
                 return (
                   <div 
@@ -605,4 +603,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       />
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison für React.memo - nur re-rendern wenn sich relevante Props ändern
+  return (
+    prevProps.user.id === nextProps.user.id &&
+    prevProps.user.dashboardNote === nextProps.user.dashboardNote &&
+    prevProps.projects === nextProps.projects &&
+    prevProps.timeEntries === nextProps.timeEntries &&
+    prevProps.pinnedTaskIds === nextProps.pinnedTaskIds &&
+    prevProps.activeTimerTaskId === nextProps.activeTimerTaskId &&
+    prevProps.taskTimers === nextProps.taskTimers
+  );
+});
