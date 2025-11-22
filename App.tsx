@@ -1310,37 +1310,32 @@ const App: React.FC = () => {
     }
   }, [showChat, currentChatChannel, chatChannels, currentChatProject, selectedProject, chatProjectLocked]);
 
-  // Markiere Nachrichten als gelesen nach 2 Sekunden wenn Channel geöffnet ist
+  // Markiere Nachrichten als gelesen sofort wenn Channel geöffnet wird
   useEffect(() => {
     if (!showChat || !currentChatChannel || !currentUser) return;
 
-    // Warte 2 Sekunden bevor Nachrichten als gelesen markiert werden
-    const timer = setTimeout(() => {
-      setChatMessages(prev => {
-        const hasUnread = prev.some(msg => 
-          msg.channelId === currentChatChannel.id && 
-          msg.sender.id !== currentUser.id && 
-          !msg.readBy.includes(currentUser.id)
-        );
-        
-        // Nur updaten wenn es tatsächlich ungelesene Nachrichten gibt
-        if (!hasUnread) return prev;
-        
-        console.log(`✅ Markiere Nachrichten in Channel ${currentChatChannel.name} als gelesen (nach 2 Sek.)`);
-        
-        return prev.map(msg => {
-          if (msg.channelId === currentChatChannel.id && 
-              msg.sender.id !== currentUser.id && 
-              !msg.readBy.includes(currentUser.id)) {
-            return { ...msg, readBy: [...msg.readBy, currentUser.id] };
-          }
-          return msg;
-        });
+    // Markiere Nachrichten sofort als gelesen (0 Sekunden)
+    setChatMessages(prev => {
+      const hasUnread = prev.some(msg => 
+        msg.channelId === currentChatChannel.id && 
+        msg.sender.id !== currentUser.id && 
+        !msg.readBy.includes(currentUser.id)
+      );
+      
+      // Nur updaten wenn es tatsächlich ungelesene Nachrichten gibt
+      if (!hasUnread) return prev;
+      
+      console.log(`✅ Markiere Nachrichten in Channel ${currentChatChannel.name} als gelesen (instant)`);
+      
+      return prev.map(msg => {
+        if (msg.channelId === currentChatChannel.id && 
+            msg.sender.id !== currentUser.id && 
+            !msg.readBy.includes(currentUser.id)) {
+          return { ...msg, readBy: [...msg.readBy, currentUser.id] };
+        }
+        return msg;
       });
-    }, 2000); // 2 Sekunden warten
-
-    // Cleanup: Timer abbrechen wenn Channel gewechselt wird
-    return () => clearTimeout(timer);
+    });
   }, [showChat, currentChatChannel?.id, currentUser?.id]);
 
   const handleAddComment = useCallback((requestId: string, message: string) => {
