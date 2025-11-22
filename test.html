@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+    <style>
+        body { 
+            background: red; 
+            color: white; 
+            font-family: monospace; 
+            padding: 40px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔴 TEST PAGE - Wenn du das siehst, funktioniert der Server!</h1>
+    <p>Timestamp: <span id="time"></span></p>
+    <script>
+        document.getElementById('time').textContent = new Date().toISOString();
+        console.log('✅ JavaScript funktioniert!');
+        
+        // Nach 2 Sekunden grün werden
+        setTimeout(() => {
+            document.body.style.background = 'green';
+            document.body.innerHTML = '<h1>✅ JavaScript funktioniert perfekt!</h1><p>Das Problem liegt in der React-App, nicht am Server.</p>';
+        }, 2000);
+    </script>
+</body>
+</html>

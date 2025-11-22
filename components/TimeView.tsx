@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Project, TimeEntry, User } from '../types';
 import { formatTime } from './utils';
 
@@ -11,14 +11,21 @@ interface TimeViewProps {
   onStartTimer?: (taskId: string) => void;
   onDeleteEntry?: (entryId: string) => void;
   onDuplicateEntry?: (entry: TimeEntry) => void;
+  onEditEntry?: (entry: TimeEntry) => void;
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
   const [contextMenuEntryId, setContextMenuEntryId] = useState<string | null>(null);
   const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+
+  // Reset Pagination wenn sich die Anzahl der Einträge ändert
+  useEffect(() => {
+    setPage(0);
+  }, [timeEntries.length]);
 
   // Build a lookup for billable by taskId from current project tasks/subtasks
   const billableByTaskId = useMemo(() => {
@@ -66,6 +73,10 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   };
 
   const handleEditClick = (entry: TimeEntry) => {
+    if (onEditEntry) {
+      onEditEntry(entry);
+      return;
+    }
     setEditingEntryId(entry.id);
     setEditStartTime(entry.startTime);
     setEditEndTime(entry.endTime || new Date().toISOString());
@@ -81,8 +92,29 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   // Check if user can edit time entries (only admins and producers)
   const canEditTimeEntries = currentUser && (currentUser.role === 'role-1' || currentUser.role === 'role-5');
 
-  // Group entries by date
-  const entriesByDate = timeEntries.reduce((acc, entry) => {
+  // Pagination Einstellungen
+  const PAGE_SIZE = 50;
+
+  // Einträge global nach Startzeit sortieren (neueste zuerst)
+  const sortedEntries = useMemo(() => {
+    return [...timeEntries].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  }, [timeEntries]);
+
+  const totalEntries = sortedEntries.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+
+  const pagedEntries = useMemo(() => {
+    const startIndex = currentPage * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    return sortedEntries.slice(startIndex, endIndex);
+  }, [sortedEntries, currentPage]);
+
+  const pageStartIndex = totalEntries === 0 ? 0 : currentPage * PAGE_SIZE + 1;
+  const pageEndIndex = Math.min(totalEntries, (currentPage + 1) * PAGE_SIZE);
+
+  // Group nur die Einträge der aktuellen Seite nach Datum
+  const entriesByDate = pagedEntries.reduce((acc, entry) => {
     const date = new Date(entry.startTime).toLocaleDateString('de-DE');
     if (!acc[date]) acc[date] = [];
     acc[date].push(entry);
@@ -387,6 +419,37 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
           ))}
         </React.Fragment>
       ))}
+      
+      {/* Pagination */}
+      {totalEntries > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-4 text-xs text-text-secondary">
+          <div>
+            Einträge {pageStartIndex}
+            {" "}-{" "}
+            {pageEndIndex} von {totalEntries}
+          </div>
+          <div className="space-x-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className={`px-3 py-1 rounded border border-overlay ${
+                currentPage === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-overlay'
+              }`}
+            >
+              Zurück
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              className={`px-3 py-1 rounded border border-overlay ${
+                currentPage >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-overlay'
+              }`}
+            >
+              Weiter
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Delete confirmation modal */}
       {deleteConfirmEntryId && (() => {

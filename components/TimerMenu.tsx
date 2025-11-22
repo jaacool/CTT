@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { TimeEntry } from '../types';
+import { TimeEntry, Project, Task, Subtask } from '../types';
 
 interface TimerMenuProps {
   timeEntry: TimeEntry;
@@ -10,16 +10,30 @@ interface TimerMenuProps {
   anchorRect?: { top: number; right: number; bottom: number; left: number } | null;
   taskBillable?: boolean;
   onBillableChange?: (taskId: string, billable: boolean) => void;
+  projects?: Project[];
+  onProjectChange?: (projectId: string, taskId: string) => void;
 }
 
-export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange }) => {
+export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange, projects = [], onProjectChange }) => {
   const [note, setNote] = useState(timeEntry.note || '');
   const isBillable = taskBillable ?? timeEntry.billable ?? true;
   const [startTime, setStartTime] = useState(new Date(timeEntry.startTime).toTimeString().slice(0, 5));
+  const [startDate, setStartDate] = useState(new Date(timeEntry.startTime).toISOString().split('T')[0]); // YYYY-MM-DD
   const originalStartTime = new Date(timeEntry.startTime).toTimeString().slice(0, 5);
+  const originalStartDate = new Date(timeEntry.startTime).toISOString().split('T')[0];
   const [totalMinutes, setTotalMinutes] = useState(Math.floor(elapsedSeconds / 60));
   const [endTime, setEndTime] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toTimeString().slice(0, 5) : '');
+  const [endDate, setEndDate] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [sliderMinutes, setSliderMinutes] = useState(0); // Slider für End Zeit (0-720 min = 0-12h)
   const isRunning = !timeEntry.endTime;
+  
+  // Dropdown States
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [showTaskDropdown, setShowTaskDropdown] = useState(false);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [taskSearch, setTaskSearch] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(timeEntry.projectId);
+  const [selectedTaskId, setSelectedTaskId] = useState(timeEntry.taskId);
 
   const inlineStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (anchorRect === undefined) return undefined; // use default CSS positioning
@@ -65,18 +79,27 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
     setStartTime(newStartTimeStr);
   };
 
+  const handleSliderChange = (minutes: number) => {
+    setSliderMinutes(minutes);
+    
+    // Berechne End Zeit basierend auf Start Zeit + Slider Wert
+    const [hours, mins] = startTime.split(':').map(Number);
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(hours, mins, 0, 0);
+    
+    const endDateTime = new Date(startDateTime.getTime() + minutes * 60 * 1000);
+    
+    // Setze End Zeit und Datum
+    setEndTime(endDateTime.toTimeString().slice(0, 5));
+    setEndDate(endDateTime.toISOString().split('T')[0]);
+  };
+
   const handleFinish = () => {
-    // Berechne neue Startzeit falls geändert
-    if (startTime !== originalStartTime) {
-      const now = new Date();
+    // Berechne neue Startzeit falls Zeit oder Datum geändert wurde
+    if (startTime !== originalStartTime || startDate !== originalStartDate) {
       const [hours, minutes] = startTime.split(':').map(Number);
-      const newStartDate = new Date(now);
+      const newStartDate = new Date(startDate);
       newStartDate.setHours(hours, minutes, 0, 0);
-      
-      // Wenn die neue Startzeit in der Zukunft liegt, setze auf gestern
-      if (newStartDate > now) {
-        newStartDate.setDate(newStartDate.getDate() - 1);
-      }
       
       // Update TimeEntry mit neuer Startzeit und Notiz (aber kein endTime - Timer läuft weiter)
       onUpdate(timeEntry.id, newStartDate.toISOString(), '', note);
@@ -102,48 +125,155 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
       >
         <h2 className="text-text-primary text-xl font-bold mb-6">Timer</h2>
         
-        {/* Search */}
-        <div className="mb-4">
-          <div className="relative">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              type="text"
-              placeholder="Nach Zeiterfassung, Projekt oder Aufgabe suchen"
-              className="w-full bg-overlay text-text-secondary placeholder-text-secondary/50 rounded-xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-glow-purple"
-            />
-          </div>
-        </div>
-        
-        {/* Tags */}
+        {/* Projekt & Task Auswahl */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span className="text-text-secondary text-sm">{timeEntry.projectName}</span>
-            <button className="text-text-secondary hover:text-text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+          {/* Projekt Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+              className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg hover:bg-surface transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span className="text-text-secondary text-sm">{timeEntry.projectName}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </button>
+            
+            {showProjectDropdown && (
+              <div className="absolute top-full left-0 mt-2 w-80 bg-surface border border-overlay rounded-lg shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
+                <div className="p-3 border-b border-overlay">
+                  <div className="relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Projekt suchen..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-lg pl-10 pr-3 py-2 outline-none focus:ring-2 focus:ring-glow-purple text-sm"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {projects
+                    .filter(p => p.name.toLowerCase().includes(projectSearch.toLowerCase()))
+                    .map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          setSelectedProjectId(project.id);
+                          setShowProjectDropdown(false);
+                          setProjectSearch('');
+                          if (onProjectChange) {
+                            // Wähle ersten Task des Projekts
+                            const firstTask = project.taskLists[0]?.tasks[0];
+                            if (firstTask) {
+                              onProjectChange(project.id, firstTask.id);
+                            }
+                          }
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-overlay transition-colors ${
+                          selectedProjectId === project.id ? 'bg-overlay' : ''
+                        }`}
+                      >
+                        <div className="text-text-primary font-medium text-sm">{project.name}</div>
+                        <div className="text-text-secondary text-xs mt-0.5">
+                          {project.taskLists.reduce((sum, list) => sum + list.tasks.length, 0)} Aufgaben
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
           
-          <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg">
-            <span className="text-xl">😊</span>
-            <span className="text-text-primary text-sm font-semibold">{timeEntry.taskTitle}</span>
-            <button className="text-text-secondary hover:text-text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+          {/* Task Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowTaskDropdown(!showTaskDropdown)}
+              className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg hover:bg-surface transition-colors"
+            >
+              <span className="text-xl">😊</span>
+              <span className="text-text-primary text-sm font-semibold">{timeEntry.taskTitle}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </button>
+            
+            {showTaskDropdown && (() => {
+              const currentProject = projects.find(p => p.id === selectedProjectId);
+              if (!currentProject) return null;
+              
+              const allTasks: Array<{id: string; title: string; listTitle: string}> = [];
+              currentProject.taskLists.forEach(list => {
+                list.tasks.forEach(task => {
+                  allTasks.push({ id: task.id, title: task.title, listTitle: list.title });
+                  task.subtasks.forEach(subtask => {
+                    allTasks.push({ id: subtask.id, title: `${task.title} → ${subtask.title}`, listTitle: list.title });
+                  });
+                });
+              });
+              
+              const filteredTasks = allTasks.filter(t => 
+                t.title.toLowerCase().includes(taskSearch.toLowerCase())
+              );
+              
+              return (
+                <div className="absolute top-full left-0 mt-2 w-96 bg-surface border border-overlay rounded-lg shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
+                  <div className="p-3 border-b border-overlay">
+                    <div className="relative">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Aufgabe suchen..."
+                        value={taskSearch}
+                        onChange={(e) => setTaskSearch(e.target.value)}
+                        className="w-full bg-overlay text-text-primary placeholder-text-secondary/50 rounded-lg pl-10 pr-3 py-2 outline-none focus:ring-2 focus:ring-glow-purple text-sm"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    {filteredTasks.map(task => (
+                      <button
+                        key={task.id}
+                        onClick={() => {
+                          setSelectedTaskId(task.id);
+                          setShowTaskDropdown(false);
+                          setTaskSearch('');
+                          if (onProjectChange) {
+                            onProjectChange(selectedProjectId, task.id);
+                          }
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-overlay transition-colors ${
+                          selectedTaskId === task.id ? 'bg-overlay' : ''
+                        }`}
+                      >
+                        <div className="text-text-primary font-medium text-sm">{task.title}</div>
+                        <div className="text-text-secondary text-xs mt-0.5">{task.listTitle}</div>
+                      </button>
+                    ))}
+                    {filteredTasks.length === 0 && (
+                      <div className="px-4 py-8 text-center text-text-secondary text-sm">
+                        Keine Aufgaben gefunden
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           
           <div className="flex items-center space-x-2 bg-overlay px-4 py-2 rounded-lg">
@@ -197,7 +327,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div>
             <label className="text-text-secondary text-sm mb-2 block">Timer Startzeit</label>
-            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3">
+            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -209,11 +339,25 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 className="bg-transparent text-text-primary text-lg font-bold outline-none flex-1"
               />
             </div>
+            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent text-text-primary text-sm font-semibold outline-none flex-1"
+              />
+            </div>
           </div>
           
           <div>
             <label className="text-text-secondary text-sm mb-2 block">End Zeit</label>
-            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
+            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 mb-2 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -227,11 +371,26 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 placeholder="--:--"
               />
             </div>
+            <div className={`flex items-center space-x-3 rounded-xl px-4 py-3 ${isRunning ? 'bg-overlay/50' : 'bg-overlay'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                disabled={isRunning}
+                className={`bg-transparent text-sm font-semibold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
+              />
+            </div>
           </div>
           
           <div>
             <label className="text-text-secondary text-sm mb-2 block">Gesamtzeit</label>
-            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3">
+            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -244,6 +403,29 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 min="0"
               />
               <span className="text-text-secondary text-sm">min</span>
+            </div>
+            {/* Slider für End Zeit (0-12h in 5min Schritten) */}
+            <div className="bg-overlay rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-text-secondary text-xs">0h</span>
+                <span className="text-text-primary text-xs font-semibold">
+                  {Math.floor(sliderMinutes / 60)}h {sliderMinutes % 60}m
+                </span>
+                <span className="text-text-secondary text-xs">12h</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="720"
+                step="5"
+                value={sliderMinutes}
+                onChange={(e) => handleSliderChange(parseInt(e.target.value))}
+                disabled={isRunning}
+                className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-glow-purple disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: isRunning ? undefined : `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(sliderMinutes / 720) * 100}%, rgb(30, 30, 46) ${(sliderMinutes / 720) * 100}%, rgb(30, 30, 46) 100%)`
+                }}
+              />
             </div>
           </div>
         </div>

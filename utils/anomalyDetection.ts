@@ -1,11 +1,27 @@
 import { User, TimeEntry, AbsenceRequest, Anomaly, AnomalyType, AbsenceStatus } from '../types';
 import { getHolidays } from './holidays';
 
-// Helper: Datum zu YYYY-MM-DD String
-const toISOString = (date: Date) => {
-  const offset = date.getTimezoneOffset();
-  const adjusted = new Date(date.getTime() - (offset * 60 * 1000));
-  return adjusted.toISOString().split('T')[0];
+// Helper: Datum zu YYYY-MM-DD String in Berlin Zeit
+const toBerlinISOString = (date: Date): string => {
+  // Nutze toLocaleString mit Europe/Berlin Zeitzone
+  const berlinStr = date.toLocaleString('en-CA', { 
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  // en-CA gibt uns YYYY-MM-DD Format
+  return berlinStr;
+};
+
+// Helper: Hole Stunde in Berlin Zeit
+const getBerlinHour = (date: Date): number => {
+  const berlinStr = date.toLocaleString('en-US', {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    hour12: false
+  });
+  return parseInt(berlinStr);
 };
 
 export function detectAnomalies(
@@ -18,21 +34,26 @@ export function detectAnomalies(
   const anomalies: Anomaly[] = [];
   const holidays = getHolidays(startDate.getFullYear());
   
+  // PERFORMANCE: Filtere timeEntries einmal am Anfang für diesen User
+  const userEntries = timeEntries.filter(e => e.user.id === user.id);
+  
   // Klone Startdatum um nicht zu mutieren
   let currentDate = new Date(startDate);
   const today = new Date();
-  const todayStr = toISOString(today);
+  const todayStr = toBerlinISOString(today);
 
   while (currentDate <= endDate) {
       // Nicht in die Zukunft schauen (außer für Überlast, aber das ist unwahrscheinlich)
       if (currentDate > today) break;
 
-      const dateStr = toISOString(currentDate);
+      const dateStr = toBerlinISOString(currentDate);
       
       // 1. Daten für diesen Tag sammeln
       // TimeEntry startTime ist ISO String (z.B. 2023-10-27T09:00:00)
-      const dailyEntries = timeEntries.filter(e => {
-          return e.user.id === user.id && e.startTime.startsWith(dateStr);
+      const dailyEntries = userEntries.filter(e => {
+          // Prüfe ob der Eintrag in Berlin-Zeit an diesem Tag startet
+          const berlinStart = toBerlinISOString(new Date(e.startTime));
+          return berlinStart === dateStr;
       });
       
       // Summe Stunden
@@ -132,6 +153,50 @@ export function detectAnomalies(
               type: AnomalyType.UNDER_PERFORMANCE,
               details: { trackedHours, targetHours: dailyTarget, hasShoot }
           });
+      }
+
+      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-9 Uhr ODER laufende Timer) - Gilt für ALLE User inkl. Admins
+      // Prüfe ALLE Einträge des Users (nicht nur dailyEntries die am aktuellen Tag starten)
+      const hasNightEntry = userEntries.some(entry => {
+        const startTime = new Date(entry.startTime);
+        
+        // FALL 1: Laufender Timer (kein endTime)
+        if (!entry.endTime) {
+          // Prüfe ob der Timer am Vortag oder früher gestartet wurde
+          const startDateStr = toBerlinISOString(startTime);
+          const isOldTimer = startDateStr < dateStr;
+          
+          // Wenn Timer vor heute gestartet wurde UND heute ist, dann vergessen zu stoppen
+          return isOldTimer && isToday;
+        }
+        
+        // FALL 2: Beendeter Eintrag zwischen 0-9 Uhr
+        const endTime = new Date(entry.endTime);
+        
+        // Prüfe ob der Eintrag am aktuellen Tag zwischen 0-9 Uhr endet (Berlin Zeit)
+        const endDateStr = toBerlinISOString(endTime);
+        if (endDateStr !== dateStr) return false; // Nur Einträge die an diesem Tag enden
+        
+        // Hole Stunde in Berlin Zeit
+        const endHour = getBerlinHour(endTime);
+        
+        // Prüfe ob Ende zwischen 0:00 und 8:59 Uhr liegt
+        const endInNightRange = endHour >= 0 && endHour < 9;
+        
+        // Prüfe ob der Eintrag am Vortag gestartet wurde (über Nacht)
+        const startDateStr = toBerlinISOString(startTime);
+        const isOvernight = startDateStr !== endDateStr;
+        
+        return endInNightRange && isOvernight;
+      });
+      
+      if (hasNightEntry) {
+        anomalies.push({
+          date: dateStr,
+          userId: user.id,
+          type: AnomalyType.FORGOT_TO_STOP,
+          details: { trackedHours, targetHours: dailyTarget, hasShoot }
+        });
       }
 
       // Nächster Tag

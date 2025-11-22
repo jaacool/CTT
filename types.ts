@@ -258,11 +258,13 @@ export enum AnomalyType {
   EXCESS_WORK_SHOOT = 'EXCESS_WORK_SHOOT', // Über 15h bei Dreh/Produktion
   EXCESS_WORK_REGULAR = 'EXCESS_WORK_REGULAR', // Über 9h ohne Dreh/Produktion
   UNDER_PERFORMANCE = 'UNDER_PERFORMANCE', // Unter 50% des Solls (ohne halben Urlaubstag)
+  FORGOT_TO_STOP = 'FORGOT_TO_STOP', // Zeiteintrag zwischen 0-9 Uhr (wahrscheinlich vergessen zu stoppen)
 }
 
 export enum AnomalyStatus {
   Open = 'OPEN',
-  Resolved = 'RESOLVED'
+  Resolved = 'RESOLVED',
+  Muted = 'MUTED' // Stummgeschaltet - wird nicht mehr angezeigt
 }
 
 export interface AnomalyComment {
@@ -270,6 +272,12 @@ export interface AnomalyComment {
   userId: string;
   message: string;
   timestamp: string;
+  // Optional: User-Objekt für bessere Darstellung (wird von Supabase geladen)
+  user?: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+  };
 }
 
 export interface AnomalyRecord {

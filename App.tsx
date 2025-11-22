@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, ChatAttachment, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
+import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, ChatAttachment, Anomaly, AnomalyType, AnomalyStatus, AnomalyComment, AnomalyRecord } from './types';
 import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, updateChatMessageAttachments as supaUpdateChatMessageAttachments, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
 import { MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
@@ -28,7 +28,8 @@ import { saveProject, saveTimeEntry, saveUser, saveAbsenceRequest, deleteProject
 import { saveToLocalStorage, loadFromLocalStorage } from './utils/dataBackup';
 import { loadCompressedBackupFromSupabase } from './utils/supabaseBackup';
 import { startPollingSync, stopPollingSync } from './utils/supabasePolling';
-import { detectAnomalies } from './utils/anomalyDetection';
+import { detectAnomalies } from './utils/anomalyDetection'; // Safe Import - stürzt nicht ab
+import { loadAllAnomalies, saveAnomaliesBatch, updateAnomalyStatus, startAnomalyRealtime, addAnomalyComment } from './utils/anomalySync';
 
 const addActivity = (projects: Project[], itemId: string, user: User, text: string): Project[] => {
   const newActivity: Activity = {
@@ -128,61 +129,109 @@ const App: React.FC = () => {
   // Anomaly Detection State
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [targetAnomaly, setTargetAnomaly] = useState<Anomaly | null>(null);
-  const [anomalyRecords, setAnomalyRecords] = useState<Record<string, AnomalyRecord>>({});
+  const [anomaliesLoaded, setAnomaliesLoaded] = useState(false);
 
-  // Load Anomaly Records
+  // PHASE 1: Load Anomalies from Supabase (Safe)
   useEffect(() => {
-    const saved = localStorage.getItem('ctt_anomaly_records');
-    if (saved) {
+    const load = async () => {
       try {
-        setAnomalyRecords(JSON.parse(saved));
-      } catch (e) { console.error('Failed to load anomaly records', e); }
-    }
+        const saved = await loadAllAnomalies();
+        if (saved.length > 0) {
+          setAnomalies(saved);
+        }
+        setAnomaliesLoaded(true);
+      } catch (error) {
+        console.error('Failed to load anomalies:', error);
+        setAnomaliesLoaded(true);
+      }
+    };
+    load();
   }, []);
 
-  // Save Anomaly Records
+  // PHASE 2: Calculate Anomalies (Background, Debounced)
   useEffect(() => {
-    localStorage.setItem('ctt_anomaly_records', JSON.stringify(anomalyRecords));
-  }, [anomalyRecords]);
+    if (!anomaliesLoaded || users.length === 0 || !currentUser) return;
 
-  // Calculate Anomalies Effect
+    const timer = setTimeout(async () => {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30); // Last 30 days
+
+      let newAnomalies: Anomaly[] = [];
+      
+      const isAdmin = currentUser.role === 'role-1' || currentUser.role === 'admin';
+      
+      const usersToCheck = isAdmin
+        ? users.filter(u => u.status === UserStatus.Active && u.role !== 'role-1' && u.role !== 'admin')
+        : [currentUser];
+      
+      usersToCheck.forEach(user => {
+        const userAnomalies = detectAnomalies(user, timeEntries, absenceRequests, startDate, endDate);
+        newAnomalies = [...newAnomalies, ...userAnomalies];
+      });
+      
+      setAnomalies(prev => {
+        const merged = newAnomalies.map(newA => {
+          const existing = prev.find(
+            a => a.userId === newA.userId && 
+                 a.date === newA.date && 
+                 a.type === newA.type
+          );
+          
+          return {
+            ...newA,
+            status: existing?.status || AnomalyStatus.Open,
+            comments: existing?.comments || []
+          };
+        });
+        
+        saveAnomaliesBatch(merged).catch(console.error);
+        return merged;
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [timeEntries, absenceRequests, users, currentUser, anomaliesLoaded]);
+
+  // PHASE 3: Realtime Sync (Safe)
   useEffect(() => {
-    if (users.length === 0 || !currentUser) return;
-
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30); // Last 30 days
-
-    let allAnomalies: Anomaly[] = [];
-    
-    const isAdmin = currentUser.role === 'role-1' || currentUser.role === 'admin';
-    
-    // Bestimme welche User geprüft werden:
-    // - Admin: Alle aktiven User AUSSER Admins
-    // - Normaler User: Nur sich selbst
-    const usersToCheck = isAdmin
-      ? users.filter(u => u.status === UserStatus.Active && u.role !== 'role-1' && u.role !== 'admin')
-      : [currentUser];
-    
-    usersToCheck.forEach(user => {
-       const userAnomalies = detectAnomalies(user, timeEntries, absenceRequests, startDate, endDate);
-       
-       // Merge with records
-       const merged = userAnomalies.map(a => {
-         const key = `${a.userId}-${a.date}-${a.type}`;
-         const record = anomalyRecords[key];
-         return {
-           ...a,
-           status: record?.status || AnomalyStatus.Open,
-           comments: record?.comments || []
-         };
-       });
-       
-       allAnomalies = [...allAnomalies, ...merged];
+    const cleanup = startAnomalyRealtime({
+      onAnomalyUpsert: (anomaly) => {
+        setAnomalies(prev => {
+          const exists = prev.find(a => 
+            a.userId === anomaly.userId && 
+            a.date === anomaly.date && 
+            a.type === anomaly.type
+          );
+          
+          if (exists) {
+            return prev.map(a => 
+              a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
+                ? anomaly
+                : a
+            );
+          } else {
+            return [...prev, anomaly];
+          }
+        });
+      },
+      onAnomalyDelete: (anomalyId) => {
+        setAnomalies(prev => prev.filter(a => {
+          const id = `${a.userId}-${a.date}-${a.type}`;
+          return id !== anomalyId;
+        }));
+      },
+      onCommentInsert: (userId, date, type, comment) => {
+        setAnomalies(prev => prev.map(a => 
+          a.userId === userId && a.date === date && a.type === type
+            ? { ...a, comments: [...(a.comments || []), comment] }
+            : a
+        ));
+      },
     });
-    
-    setAnomalies(allAnomalies);
-  }, [timeEntries, absenceRequests, users, currentUser, anomalyRecords]);
+
+    return cleanup;
+  }, []);
 
   // Berechne ungelesene Nachrichten (Gesamt-Badge)
   const unreadMessagesCount = useMemo(() => {
@@ -1734,36 +1783,77 @@ const App: React.FC = () => {
     return null;
   };
 
-  const handleResolveAnomaly = useCallback((anomaly: Anomaly) => {
-    const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
-    const currentRecord = anomalyRecords[key] || { id: key, status: AnomalyStatus.Open, comments: [] };
+  const handleResolveAnomaly = useCallback(async (anomaly: Anomaly) => {
     // Toggle Status: OPEN <-> RESOLVED
-    const nextStatus = currentRecord.status === AnomalyStatus.Resolved
+    const nextStatus = anomaly.status === AnomalyStatus.Resolved
       ? AnomalyStatus.Open
       : AnomalyStatus.Resolved;
-    const newRecord: AnomalyRecord = {
-      ...currentRecord,
-      status: nextStatus
-    };
-    setAnomalyRecords(prev => ({ ...prev, [key]: newRecord }));
-  }, [anomalyRecords]);
+    
+    // Update in Supabase
+    await updateAnomalyStatus(
+      anomaly.userId,
+      anomaly.date,
+      anomaly.type,
+      nextStatus,
+      currentUser?.id
+    );
+    
+    // Update local state
+    setAnomalies(prev => prev.map(a => 
+      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
+        ? { ...a, status: nextStatus }
+        : a
+    ));
+  }, [currentUser]);
+  
+  const handleMuteAnomaly = useCallback(async (anomaly: Anomaly) => {
+    // Toggle Status: OPEN <-> MUTED
+    const nextStatus = anomaly.status === AnomalyStatus.Muted
+      ? AnomalyStatus.Open
+      : AnomalyStatus.Muted;
+    
+    // Update in Supabase
+    await updateAnomalyStatus(
+      anomaly.userId,
+      anomaly.date,
+      anomaly.type,
+      nextStatus,
+      currentUser?.id
+    );
+    
+    // Update local state
+    setAnomalies(prev => prev.map(a => 
+      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
+        ? { ...a, status: nextStatus }
+        : a
+    ));
+  }, [currentUser]);
 
-  const handleAddAnomalyComment = useCallback((anomaly: Anomaly, message: string) => {
+  const handleAddAnomalyComment = useCallback(async (anomaly: Anomaly, message: string) => {
     if (!currentUser) return;
-    const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
-    const currentRecord = anomalyRecords[key] || { id: key, status: AnomalyStatus.Open, comments: [] };
+    
     const newComment: AnomalyComment = {
       id: `comment-${Date.now()}`,
       userId: currentUser.id,
       message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      user: {
+        id: currentUser.id,
+        name: currentUser.name,
+        avatarUrl: currentUser.avatarUrl
+      }
     };
-    const newRecord = {
-      ...currentRecord,
-      comments: [...currentRecord.comments, newComment]
-    };
-    setAnomalyRecords(prev => ({ ...prev, [key]: newRecord }));
-  }, [anomalyRecords, currentUser]);
+    
+    // Speichere in Supabase
+    await addAnomalyComment(anomaly.userId, anomaly.date, anomaly.type, newComment);
+    
+    // Update local state
+    setAnomalies(prev => prev.map(a => 
+      a.userId === anomaly.userId && a.date === anomaly.date && a.type === anomaly.type
+        ? { ...a, comments: [...(a.comments || []), newComment] }
+        : a
+    ));
+  }, [currentUser]);
 
   const handleSelectAnomaly = useCallback((anomaly: Anomaly) => {
     setTargetAnomaly(anomaly);
@@ -1993,6 +2083,7 @@ const App: React.FC = () => {
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
             onResolveAnomaly={handleResolveAnomaly}
+            onMuteAnomaly={handleMuteAnomaly}
             onAddAnomalyComment={handleAddAnomalyComment}
           />
         ) : selectedProject ? (
@@ -2270,6 +2361,7 @@ const App: React.FC = () => {
           anomalies={anomalies}
           onSelectAnomaly={handleSelectAnomaly}
           onResolveAnomaly={handleResolveAnomaly}
+          onMuteAnomaly={handleMuteAnomaly}
           onAddAnomalyComment={handleAddAnomalyComment}
           users={users}
           onApproveRequest={(requestId) => {
