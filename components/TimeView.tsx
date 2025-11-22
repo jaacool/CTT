@@ -121,11 +121,28 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     return acc;
   }, {} as Record<string, TimeEntry[]>);
 
+  // Sortiere Datum-Gruppen nach Datum (neueste zuerst)
+  const sortedDateEntries = useMemo(() => {
+    return Object.entries(entriesByDate).sort(([dateA], [dateB]) => {
+      const [dayA, monthA, yearA] = dateA.split('.');
+      const [dayB, monthB, yearB] = dateB.split('.');
+      const timeA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA)).getTime();
+      const timeB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB)).getTime();
+      return timeB - timeA; // Neueste zuerst
+    });
+  }, [entriesByDate]);
+
   return (
-    <div className="space-y-2">
-      {Object.entries(entriesByDate).reverse().map(([date, entries]: [string, TimeEntry[]]) => (
-        <React.Fragment key={date}>
-          {entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((entry) => (
+    <div className="space-y-3">
+      {sortedDateEntries.map(([date, entries]: [string, TimeEntry[]]) => (
+        <div key={date} className="space-y-1">
+          <div className="px-1 text-xs font-semibold text-text-secondary mt-1">
+            {date}
+          </div>
+          {entries
+            .slice()
+            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            .map((entry) => (
             <div
               key={entry.id}
               className="glow-card rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
@@ -417,7 +434,7 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
               )}
             </div>
           ))}
-        </React.Fragment>
+        </div>
       ))}
       
       {/* Pagination */}
