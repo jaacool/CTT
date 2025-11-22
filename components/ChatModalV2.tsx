@@ -251,39 +251,42 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
 
       {/* Waveform Container */}
       <div className="flex-1 flex items-center space-x-3">
-        {/* Waveform Bars - STATISCH - Balken nebeneinander, nicht verteilt */}
+        {/* WRAPPER für Waveform + Playhead - WICHTIG: relative position */}
         <div 
-          className="flex items-center gap-[2px] flex-1 min-w-0 overflow-hidden cursor-pointer relative"
+          className="flex-1 relative cursor-pointer"
           style={{ height: '32px' }}
           onClick={handleSeek}
         >
-          {/* Statische lila Waveform - Balken mit festem Abstand */}
-          {waveformBars.map((level, index) => {
-            const amplifiedLevel = Math.min(1, level * 2);
-            const height = Math.max(3, amplifiedLevel * 32);
-            
-            return (
-              <div
-                key={index}
-                className="rounded-full flex-shrink-0"
-                style={{
-                  height: `${height}px`,
-                  backgroundColor: '#A855F7',
-                  opacity: 0.6,
-                  width: '3px',
-                }}
-              />
-            );
-          })}
+          {/* Statische lila Waveform - Balken nebeneinander */}
+          <div className="flex items-center gap-[2px] h-full">
+            {waveformBars.map((level, index) => {
+              const amplifiedLevel = Math.min(1, level * 2);
+              const height = Math.max(3, amplifiedLevel * 32);
+              
+              return (
+                <div
+                  key={index}
+                  className="rounded-full flex-shrink-0"
+                  style={{
+                    height: `${height}px`,
+                    backgroundColor: '#A855F7',
+                    opacity: 0.6,
+                    width: '3px',
+                  }}
+                />
+              );
+            })}
+          </div>
           
-          {/* Weißer Playhead - bewegt sich ÜBER die Waveform */}
+          {/* Weißer Playhead - SEPARATER Layer, bewegt sich ÜBER die Waveform */}
           {duration > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-[2px] rounded-full pointer-events-none z-10"
+              className="absolute top-0 bottom-0 w-[2px] rounded-full pointer-events-none"
               style={{ 
                 left: `${(currentTime / duration) * 100}%`,
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 0 6px rgba(255, 255, 255, 0.8)'
+                boxShadow: '0 0 8px rgba(255, 255, 255, 0.9)',
+                zIndex: 10
               }}
             />
           )}
