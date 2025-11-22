@@ -1981,7 +1981,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       {/* Favorisierte Projekte */}
                       {favoriteProjects.length > 0 && (
                         <>
-                          <div className="px-3 py-2 text-xs text-text-secondary font-semibold uppercase">
+                          <div className="px-3 py-2 text-[0.65rem] text-text-secondary/60 font-semibold uppercase tracking-wider">
                             Favoriten
                           </div>
                           {favoriteProjects.map(project => {
@@ -2009,7 +2009,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   ) : (
                                     <span className="text-xl flex-shrink-0">{project.icon}</span>
                                   )}
-                                  <span className="text-sm truncate">{project.name}</span>
+                                  <span className="text-sm font-semibold truncate">{project.name}</span>
                                 </div>
                                 <svg className="w-3.5 h-3.5 text-yellow-400 fill-current flex-shrink-0" viewBox="0 0 24 24">
                                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -2025,7 +2025,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       
                       {/* Aktive Projekte */}
                       {activeProjects.length > 0 && (
-                        <div className="px-3 py-2 text-xs text-text-secondary font-semibold uppercase">
+                        <div className="px-3 py-2 text-[0.65rem] text-text-secondary/60 font-semibold uppercase tracking-wider">
                           Projekte
                         </div>
                       )}
@@ -2053,7 +2053,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             ) : (
                               <span className="text-xl flex-shrink-0">{project.icon}</span>
                             )}
-                            <span className="text-sm truncate">{project.name}</span>
+                            <span className="text-sm font-semibold truncate">{project.name}</span>
                           </button>
                         );
                       })}
@@ -2114,7 +2114,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   <span className="text-xl flex-shrink-0 opacity-50">{project.icon}</span>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-sm truncate opacity-60">{project.name}</span>
+                                  <span className="text-sm font-semibold truncate opacity-60">{project.name}</span>
                                 </div>
                               </button>
                             );
