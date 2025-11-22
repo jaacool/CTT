@@ -28,6 +28,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showBulkActionModal, setShowBulkActionModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartId, setDragStartId] = useState<string | null>(null);
 
   // Reset Pagination wenn sich die Anzahl der Einträge ändert
   useEffect(() => {
@@ -124,6 +126,42 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     });
   };
 
+  const handleDragStart = (entryId: string) => {
+    if (!selectionMode) return;
+    setIsDragging(true);
+    setDragStartId(entryId);
+    // Toggle the start entry
+    toggleEntrySelection(entryId);
+  };
+
+  const handleDragEnter = (entryId: string) => {
+    if (!selectionMode || !isDragging || !dragStartId) return;
+    
+    // Get all entries in order
+    const allEntries = pagedEntries.map(e => e.id);
+    const startIndex = allEntries.indexOf(dragStartId);
+    const currentIndex = allEntries.indexOf(entryId);
+    
+    if (startIndex === -1 || currentIndex === -1) return;
+    
+    // Select all entries between start and current
+    const minIndex = Math.min(startIndex, currentIndex);
+    const maxIndex = Math.max(startIndex, currentIndex);
+    
+    setSelectedEntries(prev => {
+      const newSet = new Set(prev);
+      for (let i = minIndex; i <= maxIndex; i++) {
+        newSet.add(allEntries[i]);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDragStartId(null);
+  };
+
   const exitSelectionMode = () => {
     setSelectionMode(false);
     setSelectedEntries(new Set());
@@ -190,6 +228,25 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     });
   }, [entriesByDate]);
 
+  // Helper: Check if entry is part of a selection group
+  const getSelectionGroupPosition = (entries: TimeEntry[], index: number): 'single' | 'first' | 'middle' | 'last' => {
+    if (!selectionMode) return 'single';
+    
+    const entry = entries[index];
+    const isSelected = selectedEntries.has(entry.id);
+    if (!isSelected) return 'single';
+    
+    const prevSelected = index > 0 && selectedEntries.has(entries[index - 1].id);
+    const nextSelected = index < entries.length - 1 && selectedEntries.has(entries[index + 1].id);
+    
+    if (!prevSelected && !nextSelected) return 'single';
+    if (!prevSelected && nextSelected) return 'first';
+    if (prevSelected && nextSelected) return 'middle';
+    if (prevSelected && !nextSelected) return 'last';
+    
+    return 'single';
+  };
+
   return (
     <div className="space-y-3">
       {/* Selection Mode Toolbar */}
@@ -247,17 +304,58 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
           {entries
             .slice()
             .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-            .map((entry) => (
+            .map((entry, index) => {
+              const sortedEntries = entries.slice().sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+              const groupPosition = getSelectionGroupPosition(sortedEntries, index);
+              const isSelected = selectedEntries.has(entry.id);
+              
+              return (
             <div
               key={entry.id}
-              className={`rounded-lg p-3 sm:p-4 transition-all ${
-                selectionMode && selectedEntries.has(entry.id)
-                  ? 'bg-glow-purple/10 border-2 border-glow-purple shadow-lg shadow-glow-purple/20'
-                  : 'glow-card hover:bg-overlay'
-              } ${
-                selectionMode && selectedEntries.has(entry.id) && entries.findIndex(e => e.id === entry.id) > 0 && selectedEntries.has(entries[entries.findIndex(e => e.id === entry.id) - 1]?.id)
-                  ? 'mt-0.5'
-                  : ''
+              onMouseDown={(e) => {
+                if (selectionMode) {
+                  handleDragStart(entry.id);
+                } else {
+                  handleLongPressStart(entry.id);
+                }
+              }}
+              onMouseEnter={() => selectionMode && handleDragEnter(entry.id)}
+              onMouseUp={() => {
+                handleDragEnd();
+                handleLongPressEnd();
+              }}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => {
+                if (selectionMode) {
+                  handleDragStart(entry.id);
+                } else {
+                  handleLongPressStart(entry.id);
+                }
+              }}
+              onTouchMove={(e) => {
+                if (!selectionMode || !isDragging) return;
+                const touch = e.touches[0];
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                const entryElement = element?.closest('[data-entry-id]');
+                if (entryElement) {
+                  const entryId = entryElement.getAttribute('data-entry-id');
+                  if (entryId) handleDragEnter(entryId);
+                }
+              }}
+              onTouchEnd={() => {
+                handleDragEnd();
+                handleLongPressEnd();
+              }}
+              data-entry-id={entry.id}
+              className={`p-3 sm:p-4 transition-all ${
+                isSelected && selectionMode
+                  ? `bg-glow-purple/10 border-2 border-glow-purple shadow-lg shadow-glow-purple/20 ${
+                      groupPosition === 'single' ? 'rounded-lg my-1' :
+                      groupPosition === 'first' ? 'rounded-t-lg border-b-0 mb-0' :
+                      groupPosition === 'middle' ? 'rounded-none border-y-0 my-0' :
+                      'rounded-b-lg border-t-0 mt-0 mb-1'
+                    }`
+                  : 'glow-card hover:bg-overlay rounded-lg'
               }`}
             >
               {editingEntryId === entry.id ? (
@@ -312,12 +410,12 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 </div>
               ) : (
                 <div
-                  onMouseDown={() => !selectionMode && handleLongPressStart(entry.id)}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
-                  onTouchStart={() => !selectionMode && handleLongPressStart(entry.id)}
-                  onTouchEnd={handleLongPressEnd}
-                  onClick={() => selectionMode ? toggleEntrySelection(entry.id) : handleEditClick(entry)}
+                  onClick={(e) => {
+                    if (!selectionMode && !isDragging) {
+                      handleEditClick(entry);
+                    }
+                    e.stopPropagation();
+                  }}
                   className={`cursor-pointer transition-all duration-200 ${selectionMode ? 'pl-2' : ''}`}
                 >
                   {/* Mobile: Compact Layout */}
@@ -585,7 +683,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 </div>
               )}
             </div>
-          ))}
+          );
+        })}
         </div>
       ))}
       
