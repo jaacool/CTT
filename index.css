@@ -1417,3 +1417,13 @@ textarea:focus {
   87.5% { inset: 0    0    35px 0; }
   100%  { inset: 0    35px 35px 0; }
 }
+
+/* Fade In Animation für Loading Screen Text */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

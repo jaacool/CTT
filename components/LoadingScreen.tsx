@@ -6,18 +6,32 @@ interface LoadingScreenProps {
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...' }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-screen bg-background">
-      {/* Logo/Icon mit subtiler Animation */}
-      <div className="text-7xl mb-12 animate-fade-in">
-        📊
-      </div>
+    <div className="fixed inset-0 bg-background">
+      {/* Upload Loader Animation - absolut zentriert */}
+      <div 
+        className="upload-loader" 
+        style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) scale(1.2)',
+          marginTop: '-40px' // Leicht nach oben verschieben für optische Balance
+        }}
+      ></div>
       
-      {/* Upload Loader Animation - gleiche wie im Chat */}
-      <div className="upload-loader mb-12" style={{ transform: 'scale(1.2)' }}></div>
-      
-      {/* Message - minimalistisch und clean */}
-      <div className="text-center space-y-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
-        <p className="text-text-primary font-medium text-base tracking-wide">{message}</p>
+      {/* Message - absolut positioniert unter der Animation */}
+      <div 
+        className="text-center opacity-0"
+        style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          marginTop: '80px',
+          animation: 'fadeIn 0.3s ease-in-out 0.5s forwards' // Verzögert einblenden
+        }}
+      >
+        <p className="text-text-primary font-medium text-base tracking-wide whitespace-nowrap">{message}</p>
       </div>
     </div>
   );
