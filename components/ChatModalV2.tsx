@@ -301,7 +301,7 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
       {/* Playback Speed Button */}
       <button
         onClick={togglePlaybackRate}
-        className="flex-shrink-0 w-10 h-8 flex items-center justify-center hover:bg-glow-purple/20 rounded-lg transition-colors text-xs font-semibold text-text-secondary hover:text-glow-purple"
+        className="flex-shrink-0 w-10 h-8 flex items-center justify-center bg-surface/50 hover:bg-glow-purple/20 rounded-lg transition-colors text-xs font-semibold text-text-secondary hover:text-glow-purple"
       >
         {playbackRate}x
       </button>
