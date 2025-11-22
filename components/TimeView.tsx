@@ -211,6 +211,14 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
     setTaskSearchTerm('');
   };
 
+  // Get selected project name
+  const selectedProjectName = useMemo(() => {
+    if (!selectedProjectId) return '';
+    const allProjects = projects.length > 0 ? projects : [project];
+    const proj = allProjects.find(p => p.id === selectedProjectId);
+    return proj?.name || '';
+  }, [selectedProjectId, projects, project]);
+
   // Filtered projects based on search
   const filteredProjects = useMemo(() => {
     const allProjects = projects.length > 0 ? projects : [project];
@@ -244,6 +252,13 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
       t.title.toLowerCase().includes(taskSearchTerm.toLowerCase())
     );
   }, [selectedProjectId, projects, project, taskSearchTerm]);
+
+  // Get selected task name
+  const selectedTaskName = useMemo(() => {
+    if (!selectedTaskId) return '';
+    const task = availableTasks.find(t => t.id === selectedTaskId);
+    return task?.title || '';
+  }, [selectedTaskId, availableTasks]);
 
   const totalDuration = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
@@ -890,9 +905,12 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
               <input
                 type="text"
                 placeholder="Projekt suchen..."
-                value={projectSearchTerm}
+                value={showProjectList ? projectSearchTerm : selectedProjectName}
                 onChange={(e) => setProjectSearchTerm(e.target.value)}
-                onFocus={() => setShowProjectList(true)}
+                onFocus={() => {
+                  setShowProjectList(true);
+                  setProjectSearchTerm('');
+                }}
                 className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
               />
               {showProjectList && (
@@ -927,9 +945,12 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 <input
                   type="text"
                   placeholder="Aufgabe suchen..."
-                  value={taskSearchTerm}
+                  value={showTaskList ? taskSearchTerm : selectedTaskName}
                   onChange={(e) => setTaskSearchTerm(e.target.value)}
-                  onFocus={() => setShowTaskList(true)}
+                  onFocus={() => {
+                    setShowTaskList(true);
+                    setTaskSearchTerm('');
+                  }}
                   className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
                 />
                 {showTaskList && (
