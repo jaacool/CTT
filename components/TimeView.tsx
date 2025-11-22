@@ -30,6 +30,11 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   const [showBulkActionModal, setShowBulkActionModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartId, setDragStartId] = useState<string | null>(null);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
+  const [projectSearchTerm, setProjectSearchTerm] = useState('');
+  const [taskSearchTerm, setTaskSearchTerm] = useState('');
 
   // Reset Pagination wenn sich die Anzahl der Einträge ändert
   useEffect(() => {
@@ -182,6 +187,58 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
   const deselectAll = () => {
     setSelectedEntries(new Set());
   };
+
+  const handleBulkReassign = () => {
+    if (!selectedProjectId || !selectedTaskId || !onUpdateEntry) return;
+    
+    // Update all selected entries
+    selectedEntries.forEach(entryId => {
+      const entry = timeEntries.find(e => e.id === entryId);
+      if (entry) {
+        onUpdateEntry(entryId, entry.startTime, entry.endTime || '', entry.note, selectedProjectId, selectedTaskId);
+      }
+    });
+    
+    exitSelectionMode();
+    setShowReassignModal(false);
+    setShowBulkActionModal(false);
+    setSelectedProjectId('');
+    setSelectedTaskId('');
+    setProjectSearchTerm('');
+    setTaskSearchTerm('');
+  };
+
+  // Filtered projects based on search
+  const filteredProjects = useMemo(() => {
+    if (!project.taskLists) return [];
+    const allProjects = [project]; // In real app, this would be all projects
+    if (!projectSearchTerm) return allProjects;
+    return allProjects.filter(p => 
+      p.name.toLowerCase().includes(projectSearchTerm.toLowerCase())
+    );
+  }, [project, projectSearchTerm]);
+
+  // Get tasks from selected project
+  const availableTasks = useMemo(() => {
+    if (!selectedProjectId) return [];
+    const selectedProject = project.id === selectedProjectId ? project : null;
+    if (!selectedProject) return [];
+    
+    const tasks: Array<{id: string, title: string, isSubtask: boolean}> = [];
+    selectedProject.taskLists.forEach(list => {
+      list.tasks.forEach(task => {
+        tasks.push({ id: task.id, title: task.title, isSubtask: false });
+        task.subtasks.forEach(subtask => {
+          tasks.push({ id: subtask.id, title: `${task.title} > ${subtask.title}`, isSubtask: true });
+        });
+      });
+    });
+    
+    if (!taskSearchTerm) return tasks;
+    return tasks.filter(t => 
+      t.title.toLowerCase().includes(taskSearchTerm.toLowerCase())
+    );
+  }, [selectedProjectId, project, taskSearchTerm]);
 
   const totalDuration = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
@@ -767,8 +824,8 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
             <div className="space-y-2 mb-6">
               <button
                 onClick={() => {
-                  // TODO: Implement bulk task reassignment
-                  alert('Aufgabe zuordnen - Feature kommt bald!');
+                  setShowBulkActionModal(false);
+                  setShowReassignModal(true);
                 }}
                 className="w-full px-4 py-3 text-left hover:bg-overlay rounded-lg flex items-center space-x-3 transition-colors"
               >
@@ -805,6 +862,107 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                 className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-primary transition-colors"
               >
                 Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Reassign Modal */}
+      {showReassignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowReassignModal(false)} />
+          <div className="relative z-50 bg-surface border border-overlay rounded-xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto">
+            <h3 className="text-text-primary font-bold text-lg mb-4">
+              Aufgabe zuordnen für {selectedEntries.size} {selectedEntries.size === 1 ? 'Eintrag' : 'Einträge'}
+            </h3>
+            
+            {/* Project Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-text-primary mb-2">Projekt auswählen</label>
+              <input
+                type="text"
+                placeholder="Projekt suchen..."
+                value={projectSearchTerm}
+                onChange={(e) => setProjectSearchTerm(e.target.value)}
+                className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
+              />
+              <div className="max-h-40 overflow-y-auto space-y-1 border border-overlay rounded-lg">
+                {filteredProjects.map(proj => (
+                  <div
+                    key={proj.id}
+                    onClick={() => {
+                      setSelectedProjectId(proj.id);
+                      setSelectedTaskId('');
+                      setTaskSearchTerm('');
+                    }}
+                    className={`px-3 py-2 cursor-pointer transition-colors ${
+                      selectedProjectId === proj.id
+                        ? 'bg-glow-purple/20 text-glow-purple font-semibold'
+                        : 'hover:bg-overlay text-text-primary'
+                    }`}
+                  >
+                    {proj.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Task Selection */}
+            {selectedProjectId && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-text-primary mb-2">Aufgabe auswählen</label>
+                <input
+                  type="text"
+                  placeholder="Aufgabe suchen..."
+                  value={taskSearchTerm}
+                  onChange={(e) => setTaskSearchTerm(e.target.value)}
+                  className="w-full bg-background border border-overlay rounded-lg px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-glow-purple mb-2"
+                />
+                <div className="max-h-60 overflow-y-auto space-y-1 border border-overlay rounded-lg">
+                  {availableTasks.length > 0 ? (
+                    availableTasks.map(task => (
+                      <div
+                        key={task.id}
+                        onClick={() => setSelectedTaskId(task.id)}
+                        className={`px-3 py-2 cursor-pointer transition-colors ${
+                          selectedTaskId === task.id
+                            ? 'bg-glow-purple/20 text-glow-purple font-semibold'
+                            : 'hover:bg-overlay text-text-primary'
+                        } ${task.isSubtask ? 'pl-6 text-sm' : ''}`}
+                      >
+                        {task.title}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-center text-text-secondary text-sm">
+                      Keine Aufgaben gefunden
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Actions */}
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowReassignModal(false);
+                  setSelectedProjectId('');
+                  setSelectedTaskId('');
+                  setProjectSearchTerm('');
+                  setTaskSearchTerm('');
+                }}
+                className="px-4 py-2 bg-overlay hover:bg-surface rounded-lg text-text-primary transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleBulkReassign}
+                disabled={!selectedProjectId || !selectedTaskId}
+                className="px-4 py-2 glow-button text-text-primary rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Zuordnen
               </button>
             </div>
           </div>
