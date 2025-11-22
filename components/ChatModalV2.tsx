@@ -368,6 +368,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Dynamic composer measurement
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [composerHeight, setComposerHeight] = useState<number>(0);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -478,6 +481,27 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   useLayoutEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [currentProject?.id]);
+
+  // Observe composer height changes and update padding for messages list
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+
+    // Initial measure
+    setComposerHeight(el.getBoundingClientRect().height);
+
+    const ro = new ResizeObserver(() => {
+      const h = el.getBoundingClientRect().height;
+      setComposerHeight(h);
+      // keep view anchored to bottom when composer grows
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 0);
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isOpen, currentChannel?.id]);
 
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -1697,6 +1721,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             <div 
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
+              style={{ paddingBottom: Math.max(16, Math.ceil(composerHeight)) }}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
               {(() => {
@@ -2523,7 +2548,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Message Input */}
             {currentChannel && (
-              <div className="p-4 border-t border-transparent bg-transparent">
+              <div ref={composerRef} className="p-4 border-t border-transparent bg-transparent">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
