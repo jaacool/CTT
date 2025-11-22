@@ -347,7 +347,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [editingContent, setEditingContent] = useState('');
   const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);
-  const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
@@ -2278,23 +2277,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   return (
                     <button
                       key={channel.id}
-                      draggable
-                      onDragStart={() => setDraggedChannelId(channel.id)}
-                      onDragEnd={() => setDraggedChannelId(null)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        // TODO: Implement channel reordering
-                        console.log('Dropped', draggedChannelId, 'onto', channel.id);
-                      }}
                       onClick={() => {
                         handleSwitchChannel(channel.id);
                         setShowSidebar(false);
                       }}
                       onContextMenu={(e) => handleChannelContextMenu(e, channel.id)}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors cursor-move ${
+                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                         currentChannel?.id === channel.id ? 'glow-button' : 'hover-glow'
-                      } ${draggedChannelId === channel.id ? 'opacity-50' : ''}`}
+                      }`}
                     >
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         <HashIcon className="w-4 h-4 flex-shrink-0" />
