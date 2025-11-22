@@ -43,7 +43,15 @@ interface TaskAreaProps {
     onEditEntry?: (entry: TimeEntry) => void;
 }
 
-const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; taskTimers: { [taskId: string]: number }; defaultBillable: boolean; onToggleDefaultBillable: () => void; }> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable }) => {
+const ProjectHeader: React.FC<{ 
+    project: Project; 
+    timeEntries: TimeEntry[]; 
+    taskTimers: { [taskId: string]: number }; 
+    defaultBillable: boolean; 
+    onToggleDefaultBillable: () => void;
+    allUsers: User[];
+    onUpdateProjectMembers: (members: User[]) => void;
+}> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers }) => {
     
     const allTasks = useMemo(() => project.taskLists.flatMap(list => list.tasks), [project.taskLists]);
     const totalTasks = allTasks.length;
@@ -71,12 +79,12 @@ const ProjectHeader: React.FC<{ project: Project; timeEntries: TimeEntry[]; task
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                    {project.members.map(member => (
-                        <img key={member.id} src={member.avatarUrl} alt={member.name} title={member.name} className="w-8 h-8 rounded-full border-2 border-surface ring-2 ring-overlay" />
-                    ))}
-                    <button className="w-8 h-8 rounded-full bg-overlay flex items-center justify-center text-text-secondary hover:bg-surface">+</button>
-                </div>
+                <AssigneeSelector
+                    assignees={project.members || []}
+                    allUsers={allUsers}
+                    onAssigneesChange={onUpdateProjectMembers}
+                    size="medium"
+                />
             </div>
             <div className="mt-4">
                  <div className="flex justify-between items-center text-xs text-text-secondary mb-1">
@@ -626,7 +634,19 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
     
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <ProjectHeader project={props.project} timeEntries={props.timeEntries} taskTimers={props.taskTimers} defaultBillable={props.defaultBillable} onToggleDefaultBillable={props.onToggleDefaultBillable} />
+            <ProjectHeader 
+                project={props.project} 
+                timeEntries={props.timeEntries} 
+                taskTimers={props.taskTimers} 
+                defaultBillable={props.defaultBillable} 
+                onToggleDefaultBillable={props.onToggleDefaultBillable}
+                allUsers={props.allUsers || []}
+                onUpdateProjectMembers={(members) => {
+                    if (props.onUpdateProject) {
+                        props.onUpdateProject({ ...props.project, members });
+                    }
+                }}
+            />
             
             {/* Tab Navigation */}
             <div className="flex space-x-1 mb-6 bg-overlay rounded-lg p-1 border border-border">
