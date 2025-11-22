@@ -1099,8 +1099,15 @@ const App: React.FC = () => {
     
     // Optimistic update
     setChatMessages(prev => [...prev, newMessage]);
-    // Persist to Supabase (safe no-op if disabled)
-    supaSaveChatMessage(newMessage);
+    
+    // WICHTIG: Nur in Supabase speichern wenn KEINE Blob-URLs vorhanden sind!
+    // Nachrichten mit Blob-URLs werden erst nach dem Upload gespeichert
+    const hasBlobUrls = attachments?.some(att => att.url.startsWith('blob:'));
+    if (!hasBlobUrls) {
+      supaSaveChatMessage(newMessage);
+    } else {
+      console.log('⏳ Nachricht mit Blob-URL wird NICHT gespeichert, warte auf Upload:', newMessage.id);
+    }
   };
 
   // Erstelle automatisch DM-Channels für alle User-Paare
@@ -1241,12 +1248,24 @@ const App: React.FC = () => {
 
   const handleUpdateMessageAttachments = (messageId: string, attachments: ChatAttachment[]) => {
     // Optimistic update - sofort im UI anzeigen
-    setChatMessages(prev => prev.map(msg =>
-      msg.id === messageId
-        ? { ...msg, attachments }
-        : msg
-    ));
-    // Persist to Supabase - damit es nach Reload nicht verschwindet
+    setChatMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        const updatedMsg = { ...msg, attachments };
+        
+        // WICHTIG: Jetzt wo wir echte URLs haben, speichere die Nachricht in Supabase!
+        // Das ist der erste Zeitpunkt wo die Nachricht mit echten URLs existiert
+        const hasBlobUrls = attachments.some(att => att.url.startsWith('blob:'));
+        if (!hasBlobUrls) {
+          console.log('✅ Speichere Nachricht mit echten URLs in Supabase:', messageId);
+          supaSaveChatMessage(updatedMsg);
+        }
+        
+        return updatedMsg;
+      }
+      return msg;
+    }));
+    
+    // Update auch die Attachments in Supabase (falls Nachricht schon existiert)
     supaUpdateChatMessageAttachments(messageId, attachments);
     console.log('Updated message attachments:', messageId, attachments);
   };

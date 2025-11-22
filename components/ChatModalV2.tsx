@@ -715,23 +715,30 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           }).then(uploadedAttachments => {
             console.log('✅ Upload complete, updating messages with real URLs:', uploadedAttachments);
             
-            // Update each message with real Supabase URLs
-            uploadedAttachments.forEach((attachment, idx) => {
-              // Find the message by looking for the one with matching filename and blob URL
-              const targetMessage = messages.find(msg => 
-                msg.attachments?.some(att => att.name === attachment.name && att.url.startsWith('blob:'))
-              );
-              
-              console.log('🔍 Looking for message with attachment:', attachment.name, 'Found:', !!targetMessage);
-              
-              if (targetMessage) {
-                console.log('✅ Updating message:', targetMessage.id, 'with real URL:', attachment.url);
-                onUpdateMessageAttachments(targetMessage.id, [attachment]);
-              } else {
-                console.warn('⚠️ Could not find message for attachment:', attachment.name);
-              }
-            });
-            setUploadProgress({});
+            // WICHTIG: Warte kurz damit die Nachrichten in den Props ankommen
+            setTimeout(() => {
+              // Update each message with real Supabase URLs
+              uploadedAttachments.forEach((attachment, idx) => {
+                // Find the message by looking for the one with matching filename and blob URL
+                const targetMessage = messages.find(msg => 
+                  msg.attachments?.some(att => att.name === attachment.name && att.url.startsWith('blob:'))
+                );
+                
+                console.log('🔍 Looking for message with attachment:', attachment.name, 'Found:', !!targetMessage);
+                
+                if (targetMessage) {
+                  console.log('✅ Updating message:', targetMessage.id, 'with real URL:', attachment.url);
+                  onUpdateMessageAttachments(targetMessage.id, [attachment]);
+                } else {
+                  console.warn('⚠️ Could not find message for attachment:', attachment.name);
+                  console.warn('Available messages:', messages.map(m => ({ 
+                    id: m.id, 
+                    attachments: m.attachments?.map(a => ({ name: a.name, url: a.url.substring(0, 20) }))
+                  })));
+                }
+              });
+              setUploadProgress({});
+            }, 100); // Kurze Verzögerung damit Props aktualisiert werden
           }).catch(error => {
             console.error('❌ Error uploading files:', error);
             alert('Fehler beim Hochladen der Dateien.');
