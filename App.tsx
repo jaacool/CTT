@@ -2058,6 +2058,7 @@ const App: React.FC = () => {
               onSeparateHomeOfficeChange={setSeparateHomeOffice}
               showAdminsInDMs={showAdminsInDMs}
               onToggleShowAdminsInDMs={handleToggleShowAdminsInDMs}
+              onDeleteAllMessages={handleDeleteAllMessages}
               onImportComplete={(result) => {
                 // Merge neue Projekte
                 const updatedProjects = [...projects];

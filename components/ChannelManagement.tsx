@@ -12,6 +12,7 @@ interface ChannelManagementProps {
   onDeleteChannel: (channelId: string) => void;
   showAdminsInDMs?: boolean;
   onToggleShowAdminsInDMs?: (show: boolean) => void;
+  onDeleteAllMessages?: () => void;
 }
 
 export const ChannelManagement: React.FC<ChannelManagementProps> = ({
@@ -23,6 +24,7 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
   onDeleteChannel,
   showAdminsInDMs = true,
   onToggleShowAdminsInDMs,
+  onDeleteAllMessages,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<ChatChannel | null>(null);
@@ -32,6 +34,7 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
   const [isPrivate, setIsPrivate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmChannel, setDeleteConfirmChannel] = useState<ChatChannel | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   // Filter nur Group Channels (keine Direct Messages)
   const groupChannels = channels.filter(c => c.type === ChatChannelType.Group);
@@ -130,6 +133,31 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
               />
               <div className="w-11 h-6 bg-overlay peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-glow-purple/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-glow-purple"></div>
             </label>
+          </div>
+        </div>
+      )}
+
+      {/* Dangerous Actions */}
+      {onDeleteAllMessages && (
+        <div className="mb-6 p-4 bg-surface border border-red-500/20 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-text-primary mb-1">
+                Gefährliche Aktionen
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Alle Chat-Nachrichten löschen (Channels bleiben erhalten)
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDeleteAllConfirm(true)}
+              className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors flex items-center space-x-2 ml-4"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="font-semibold">Alle Nachrichten löschen</span>
+            </button>
           </div>
         </div>
       )}
@@ -345,6 +373,25 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
             setDeleteConfirmChannel(null);
           }}
           onCancel={() => setDeleteConfirmChannel(null)}
+        />
+      )}
+
+      {/* Delete All Messages Confirmation Modal */}
+      {showDeleteAllConfirm && (
+        <ConfirmModal
+          isOpen={true}
+          title="Alle Nachrichten löschen?"
+          message="Möchtest du wirklich alle Chat-Nachrichten löschen? Diese Aktion kann nicht rückgängig gemacht werden. Die Channels bleiben erhalten."
+          confirmText="Alle löschen"
+          cancelText="Abbrechen"
+          onConfirm={() => {
+            if (onDeleteAllMessages) {
+              onDeleteAllMessages();
+            }
+            setShowDeleteAllConfirm(false);
+          }}
+          onCancel={() => setShowDeleteAllConfirm(false)}
+          isDangerous={true}
         />
       )}
     </div>
