@@ -2163,7 +2163,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          console.log('Emoji Picker clicked, current:', showEmojiPicker, 'message:', message.id);
+                                          console.log('hoveredMessageId:', hoveredMessageId);
+                                          console.log('isOwnMessage:', isOwnMessage);
+                                          console.log('showThreadView:', showThreadView);
                                           setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                          console.log('After set, showEmojiPicker should be:', showEmojiPicker === message.id ? null : message.id);
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
                                         title="Weitere Reaktionen"
@@ -2174,7 +2179,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       </button>
                                       
                                       {/* Emoji Picker Dropdown */}
-                                      {showEmojiPicker === message.id && (
+                                      {(() => {
+                                        const shouldShow = showEmojiPicker === message.id;
+                                        console.log('Emoji Picker render check:', {
+                                          showEmojiPicker,
+                                          messageId: message.id,
+                                          shouldShow
+                                        });
+                                        return shouldShow;
+                                      })() && (
                                         <div 
                                           className="emoji-picker-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
                                           onClick={(e) => e.stopPropagation()}
