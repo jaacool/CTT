@@ -103,8 +103,8 @@ const App: React.FC = () => {
   const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [showTimeStatistics, setShowTimeStatistics] = useState(false);
   
-  // Loading State für optimistisches UI
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  // Loading State für optimistisches UI - initial true da MOCK_PROJECTS vorhanden
+  const [isDataLoaded, setIsDataLoaded] = useState(true);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -342,6 +342,29 @@ const App: React.FC = () => {
           setAbsenceRequests(cachedData.absenceRequests);
         }
         
+        // Lade Session-Daten aus Cache
+        if (cachedData.favoriteProjectIds) {
+          setFavoriteProjectIds(cachedData.favoriteProjectIds);
+        }
+        if (cachedData.pinnedTasks) {
+          setPinnedTasks(cachedData.pinnedTasks);
+        }
+        if (cachedData.dashboardNote) {
+          setDashboardNote(cachedData.dashboardNote);
+        }
+        if (cachedData.selectedState) {
+          setSelectedState(cachedData.selectedState as any);
+        }
+        if (cachedData.separateHomeOffice !== undefined) {
+          setSeparateHomeOffice(cachedData.separateHomeOffice);
+        }
+        if (cachedData.showAdminsInDMs !== undefined) {
+          setShowAdminsInDMs(cachedData.showAdminsInDMs);
+        }
+        if (cachedData.maxUploadSize) {
+          setMaxUploadSize(cachedData.maxUploadSize);
+        }
+        
         console.log('✅ Daten aus Cache geladen!');
         setIsDataLoaded(true);
         return; // Fertig, kein Supabase-Load nötig
@@ -378,7 +401,7 @@ const App: React.FC = () => {
         setIsDataLoaded(true);
         
         // Speichere auch in localStorage Cache
-        saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests);
+        saveToLocalStorage(backupData.users, backupData.projects, backupData.timeEntries, backupData.absenceRequests, getSessionData());
         
         // Lade Chat-Daten aus Supabase (NACH Users, um Foreign Key zu erfüllen)
         if (backupData.users.length > 0) {
@@ -455,7 +478,7 @@ const App: React.FC = () => {
         if (data.users.length > 0 || data.projects.length > 0 || data.timeEntries.length > 0) {
           console.log('💾 Speichere in localStorage Cache...');
           try {
-            saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+            saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests, getSessionData());
             console.log('✅ Cache gespeichert');
           } catch (error) {
             console.error('⚠️ Fehler beim Speichern des Cache:', error);
@@ -508,7 +531,7 @@ const App: React.FC = () => {
       // Update localStorage Cache (TimeEntries werden gemergt asynchron gesetzt)
       // Wir speichern hier die vom Server empfangenen Daten; die gemergten Einträge
       // werden beim nächsten Cache-Write mit übernommen.
-      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests);
+      saveToLocalStorage(data.users, data.projects, data.timeEntries, data.absenceRequests, getSessionData());
     }, 3); // 3 Sekunden Intervall
     
     // Cleanup beim Unmount
@@ -1721,7 +1744,7 @@ const App: React.FC = () => {
     setUsers(prev => {
       const updatedUsers = prev.filter(u => u.id !== userId);
       // Update localStorage Cache sofort
-      saveToLocalStorage(updatedUsers, projects, timeEntries, absenceRequests);
+      saveToLocalStorage(updatedUsers, projects, timeEntries, absenceRequests, getSessionData());
       return updatedUsers;
     });
   }, [projects, timeEntries, absenceRequests]);
@@ -1783,6 +1806,17 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  // Helper: Sammle alle Session-Daten für Cache
+  const getSessionData = useCallback(() => ({
+    favoriteProjectIds,
+    pinnedTasks,
+    dashboardNote,
+    selectedState,
+    separateHomeOffice,
+    showAdminsInDMs,
+    maxUploadSize
+  }), [favoriteProjectIds, pinnedTasks, dashboardNote, selectedState, separateHomeOffice, showAdminsInDMs, maxUploadSize]);
 
   // Favoriten Toggle Handler mit localStorage Sync
   const handleToggleFavorite = useCallback((projectId: string) => {
