@@ -107,7 +107,6 @@ const App: React.FC = () => {
   
   // Loading State - initial false, wird auf true gesetzt sobald Daten geladen sind
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [isLoadingFadingOut, setIsLoadingFadingOut] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -237,21 +236,6 @@ const App: React.FC = () => {
       setChatChannels([...initialChannels, ...dmChannels]);
     }
   }, [users, chatChannels.length]);
-
-  // Fade-Out-Animation triggern, wenn Daten geladen sind
-  useEffect(() => {
-    if (isDataLoaded && !isLoadingFadingOut) {
-      // Kurze Verzögerung, damit die Animation smooth durchläuft
-      const timer = setTimeout(() => {
-        setIsLoadingFadingOut(true);
-        // Nach Fade-Out-Animation (0.8s) den Loading Screen komplett entfernen
-        setTimeout(() => {
-          setIsLoadingFadingOut(false);
-        }, 800);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isDataLoaded, isLoadingFadingOut]);
 
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
@@ -2014,27 +1998,19 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen font-sans text-sm relative">
-      {/* Loading Screen - bleibt sichtbar bis Fade-Out abgeschlossen */}
-      {(!isDataLoaded || isLoadingFadingOut) && (
-        <div 
-          className="absolute inset-0 z-50"
-          style={{
-            animation: isLoadingFadingOut ? 'fadeOut 0.8s ease-out forwards' : 'none',
-            pointerEvents: isLoadingFadingOut ? 'none' : 'auto'
-          }}
-        >
-          <LoadingScreen message="Projekte werden geladen..." />
-        </div>
-      )}
-      
-      {/* Main App Content - fade in gleichzeitig */}
+      {/* Loading Screen Overlay - fadet aus wenn Daten geladen */}
       <div 
-        className="flex flex-col h-screen font-sans text-sm"
+        className="absolute inset-0 z-50 transition-opacity duration-1000 ease-out"
         style={{
-          opacity: isDataLoaded ? 1 : 0,
-          transition: 'opacity 0.8s ease-out'
+          opacity: isDataLoaded ? 0 : 1,
+          pointerEvents: isDataLoaded ? 'none' : 'auto'
         }}
       >
+        <LoadingScreen message="Projekte werden geladen..." />
+      </div>
+      
+      {/* Main App Content - wird im Hintergrund gerendert */}
+      <div className="flex flex-col h-screen font-sans text-sm">
       <TopBar
         user={currentUser}
         users={users}
