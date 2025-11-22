@@ -1113,21 +1113,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle reaction
   const handleReaction = (messageId: string, emoji: string) => {
     onReactToMessage(messageId, emoji);
-    setHoveredMessageId(null);
     setShowEmojiPicker(null);
+    // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
   // Handle reply to message
   const handleReplyToMessage = (message: ChatMessage) => {
     setReplyToMessage(message);
-    setHoveredMessageId(null);
+    // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
   // Handle mark as unread (placeholder)
   const handleMarkAsUnread = (messageId: string) => {
     console.log('Mark as unread:', messageId);
     setShowMoreMenu(null);
-    setHoveredMessageId(null);
     // TODO: Implement mark as unread functionality
     alert('Funktion "Als ungelesen markieren" wird noch implementiert.');
   };
@@ -1136,7 +1135,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleStarMessage = (messageId: string) => {
     console.log('Star message:', messageId);
     setShowMoreMenu(null);
-    setHoveredMessageId(null);
     // TODO: Implement star message functionality
     alert('Funktion "Markieren" wird noch implementiert.');
   };
@@ -1146,7 +1144,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     const link = `${window.location.origin}/chat/${currentChannel?.id}/${messageId}`;
     navigator.clipboard.writeText(link);
     setShowMoreMenu(null);
-    setHoveredMessageId(null);
     alert('Link kopiert!');
   };
   
@@ -1154,7 +1151,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handlePinMessage = (messageId: string) => {
     console.log('Pin message:', messageId);
     setShowMoreMenu(null);
-    setHoveredMessageId(null);
     // TODO: Implement pin message functionality
     alert('Funktion "An Pinnwand anheften" wird noch implementiert.');
   };
@@ -2118,7 +2114,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
-                              {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
+                              {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
+                              {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && isOwnMessage && !showThreadView && (
                                 <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
@@ -2320,7 +2317,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 setEditingMessageId(message.id);
                                                 setEditingContent(message.content);
                                                 setShowMoreMenu(null);
-                                                setHoveredMessageId(null);
                                               }}
                                               className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
                                             >
@@ -2336,7 +2332,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 e.stopPropagation();
                                                 setDeleteConfirmMessageId(message.id);
                                                 setShowMoreMenu(null);
-                                                setHoveredMessageId(null);
                                               }}
                                               className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3 text-red-500"
                                             >
@@ -2659,7 +2654,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
-                                  {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
+                                  {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
+                                  {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && !isOwnMessage && !showThreadView && (
                                     <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
