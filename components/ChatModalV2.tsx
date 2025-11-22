@@ -661,6 +661,37 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
             quotedContent = reply.actualContent;
           }
+          
+          // Prüfe ob die Nachricht Anhänge hat (Medien)
+          if (messageToReplyTo.attachments && messageToReplyTo.attachments.length > 0) {
+            const attachment = messageToReplyTo.attachments[0];
+            let mediaType = 'file';
+            let mediaLabel = attachment.name;
+            
+            if (isImageFile(attachment.type)) {
+              mediaType = 'image';
+              mediaLabel = 'Bild';
+            } else if (isVideoFile(attachment.type)) {
+              mediaType = 'video';
+              mediaLabel = 'Video';
+            } else if (isAudioFile(attachment.type)) {
+              if (attachment.name.startsWith('voice-')) {
+                mediaType = 'voice';
+                mediaLabel = 'Sprachnachricht';
+              } else {
+                mediaType = 'audio';
+                mediaLabel = 'Audio';
+              }
+            } else {
+              mediaLabel = attachment.name;
+            }
+            
+            // Wenn die Nachricht nur ein Anhang ist (kein Text), verwende Medien-Format
+            if (!quotedContent.trim()) {
+              quotedContent = `[MEDIA:${mediaType}:${mediaLabel}]`;
+            }
+          }
+          
           content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
         }
         
@@ -1053,6 +1084,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
     if (replyMatch) {
       let replyContent = replyMatch[2];
+      let mediaType: 'image' | 'video' | 'audio' | 'voice' | 'file' | null = null;
+      
+      // Prüfe ob es sich um ein Medien-Zitat handelt
+      if (replyContent.startsWith('[MEDIA:') && replyContent.endsWith(']')) {
+        const mediaMatch = replyContent.match(/^\[MEDIA:(image|video|audio|voice|file):(.+?)\]$/);
+        if (mediaMatch) {
+          mediaType = mediaMatch[1] as 'image' | 'video' | 'audio' | 'voice' | 'file';
+          replyContent = mediaMatch[2]; // Dateiname oder Beschreibung
+        }
+      }
       
       // Wenn das Zitat selbst ein verschachteltes Zitat enthält, extrahiere nur den Text NACH dem verschachtelten Zitat
       const nestedReplyMatch = replyContent.match(/^@.+?: ".+?"\n\n(.+)$/s);
@@ -1064,6 +1105,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         senderName: replyMatch[1],
         replyContent: replyContent,
         actualContent: replyMatch[3],
+        mediaType: mediaType,
       };
     }
     return null;
@@ -1841,9 +1883,33 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         >
                                           <div className="flex items-center justify-between mb-1">
                                             <div className="flex items-center space-x-2">
-                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                              </svg>
+                                              {/* Icon basierend auf Medien-Typ */}
+                                              {reply.mediaType === 'image' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : reply.mediaType === 'video' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : reply.mediaType === 'voice' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                                </svg>
+                                              ) : reply.mediaType === 'audio' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                                </svg>
+                                              ) : reply.mediaType === 'file' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                </svg>
+                                              )}
                                               <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                             </div>
                                             {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
@@ -2224,9 +2290,33 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             >
                                               <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center space-x-2">
-                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                                  </svg>
+                                                  {/* Icon basierend auf Medien-Typ */}
+                                                  {reply.mediaType === 'image' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'video' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'voice' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                                      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                                    </svg>
+                                                  ) : reply.mediaType === 'audio' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'file' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                    </svg>
+                                                  )}
                                                   <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                                 </div>
                                                 {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
