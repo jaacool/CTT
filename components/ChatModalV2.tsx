@@ -2417,12 +2417,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <div 
                         id={`message-${message.id}`}
                         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mt-1.5`}
-                        onContextMenu={(e) => {
-                          if (isOwnMessage && canEditMessage(message.timestamp)) {
-                            e.preventDefault();
-                            setContextMenu({ x: e.clientX, y: e.clientY, messageId: message.id });
-                          }
-                        }}
                       >
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
@@ -2880,11 +2874,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             <span className="text-text-primary">Kopieren</span>
                                           </button>
                                           
-                                          <div className="border-t border-border my-1"></div>
-                                          
                                           {/* Dateien herunterladen (wenn Attachments vorhanden) */}
                                           {message.attachments && message.attachments.length > 0 && (
                                             <>
+                                              <div className="border-t border-border my-1"></div>
                                               {message.attachments.map((attachment, idx) => (
                                                 <button
                                                   key={idx}
@@ -2900,13 +2893,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   <span className="text-text-primary">Herunterladen</span>
                                                 </button>
                                               ))}
-                                              <div className="border-t border-border my-1"></div>
                                             </>
                                           )}
                                           
                                           {/* Bearbeiten (nur eigene Nachrichten) */}
                                           {isOwnMessage && canEditMessage(message.timestamp) && (
-                                            <button
+                                            <>
+                                              <div className="border-t border-border my-1"></div>
+                                              <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 setEditingMessageId(message.id);
@@ -2918,10 +2912,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               <EditIcon className="w-3.5 h-3.5 text-text-secondary" />
                                               <span className="text-text-primary">Nachricht bearbeiten</span>
                                             </button>
-                                          )}
-                                          
-                                          {/* Löschen (nur eigene Nachrichten) */}
-                                          {isOwnMessage && canEditMessage(message.timestamp) && (
+                                            
+                                            {/* Löschen (nur eigene Nachrichten) */}
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
@@ -2933,6 +2925,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               <TrashIcon className="w-3.5 h-3.5" />
                                               <span>Löschen</span>
                                             </button>
+                                            </>
                                           )}
                                         </div>
                                       )}
@@ -3436,11 +3429,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 <span className="text-text-primary">Kopieren</span>
                                               </button>
                                               
-                                              <div className="border-t border-border my-0.5"></div>
-                                              
                                               {/* Dateien herunterladen (wenn Attachments vorhanden) */}
                                               {message.attachments && message.attachments.length > 0 && (
                                                 <>
+                                                  <div className="border-t border-border my-0.5"></div>
                                                   {message.attachments.map((attachment, idx) => (
                                                     <button
                                                       key={idx}
