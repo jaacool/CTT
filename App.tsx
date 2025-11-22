@@ -142,7 +142,9 @@ const App: React.FC = () => {
     isCalculating: isCalculatingAnomalies,
     performanceMetrics: anomalyMetrics,
     clearCache: clearAnomalyCache,
-    forceRecalculate: forceRecalculateAnomalies
+    forceRecalculate: forceRecalculateAnomalies,
+    updateAnomalyStatus: updateAnomalyStatusLocal,
+    updateAnomalyComments: updateAnomalyCommentsLocal
   } = useAnomalyDetection(currentUser, users, timeEntries, absenceRequests, {
     debounceMs: 3000,
     enableCache: true,
@@ -1859,17 +1861,17 @@ const App: React.FC = () => {
       ? AnomalyStatus.Open
       : AnomalyStatus.Resolved;
     
-    // Update in Supabase (Realtime sync will update local state)
+    // Update local state immediately for instant UI feedback
+    updateAnomalyStatusLocal(anomaly.userId, anomaly.date, anomaly.type, nextStatus);
+    
+    // Update in Supabase (Realtime sync will keep other clients in sync)
     const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
     await updateAnomalyStatus(
       anomalyId,
       nextStatus,
       currentUser?.id || ''
     );
-    
-    // Force recalculation to update UI immediately
-    forceRecalculateAnomalies();
-  }, [currentUser, forceRecalculateAnomalies]);
+  }, [currentUser, updateAnomalyStatusLocal]);
   
   const handleMuteAnomaly = useCallback(async (anomaly: Anomaly) => {
     // Toggle Status: OPEN <-> MUTED
@@ -1877,17 +1879,17 @@ const App: React.FC = () => {
       ? AnomalyStatus.Open
       : AnomalyStatus.Muted;
     
-    // Update in Supabase (Realtime sync will update local state)
+    // Update local state immediately for instant UI feedback
+    updateAnomalyStatusLocal(anomaly.userId, anomaly.date, anomaly.type, nextStatus);
+    
+    // Update in Supabase (Realtime sync will keep other clients in sync)
     const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
     await updateAnomalyStatus(
       anomalyId,
       nextStatus,
       currentUser?.id || ''
     );
-    
-    // Force recalculation to update UI immediately
-    forceRecalculateAnomalies();
-  }, [currentUser, forceRecalculateAnomalies]);
+  }, [currentUser, updateAnomalyStatusLocal]);
 
   const handleAddAnomalyComment = useCallback(async (anomaly: Anomaly, message: string) => {
     if (!currentUser) return;
@@ -1904,13 +1906,14 @@ const App: React.FC = () => {
       }
     };
     
-    // Speichere in Supabase (Realtime sync will update local state)
+    // Update local state immediately for instant UI feedback
+    const updatedComments = [...(anomaly.comments || []), newComment];
+    updateAnomalyCommentsLocal(anomaly.userId, anomaly.date, anomaly.type, updatedComments);
+    
+    // Speichere in Supabase (Realtime sync will keep other clients in sync)
     const anomalyId = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
     await addAnomalyComment(anomalyId, newComment);
-    
-    // Force recalculation to update UI immediately
-    forceRecalculateAnomalies();
-  }, [currentUser, forceRecalculateAnomalies]);
+  }, [currentUser, updateAnomalyCommentsLocal]);
 
   const handleSelectAnomaly = useCallback((anomaly: Anomaly) => {
     setTargetAnomaly(anomaly);

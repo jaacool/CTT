@@ -209,6 +209,24 @@ export function useAnomalyDetection(
     calculateAnomalies();
   }, [clearCache, calculateAnomalies]);
 
+  // Update Status einer Anomalie direkt (ohne Neuberechnung)
+  const updateAnomalyStatus = useCallback((userId: string, date: string, type: string, status: AnomalyStatus) => {
+    setAnomalies(prev => prev.map(a => 
+      a.userId === userId && a.date === date && a.type === type
+        ? { ...a, status }
+        : a
+    ));
+  }, []);
+
+  // Update Kommentare einer Anomalie direkt (ohne Neuberechnung)
+  const updateAnomalyComments = useCallback((userId: string, date: string, type: string, comments: any[]) => {
+    setAnomalies(prev => prev.map(a => 
+      a.userId === userId && a.date === date && a.type === type
+        ? { ...a, comments }
+        : a
+    ));
+  }, []);
+
   return {
     anomalies,
     isCalculating,
@@ -216,6 +234,8 @@ export function useAnomalyDetection(
     clearCache,
     invalidateUserCache,
     invalidateDateCache,
-    forceRecalculate
+    forceRecalculate,
+    updateAnomalyStatus,
+    updateAnomalyComments
   };
 }
