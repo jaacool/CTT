@@ -152,17 +152,42 @@ export const ChannelManagement: React.FC<ChannelManagementProps> = ({
               Maximale Dateigröße für Uploads im Chat
             </p>
             <div className="flex items-center space-x-3">
-              <input
-                type="number"
-                min="1"
-                max="500"
-                value={maxUploadSize}
-                onChange={(e) => {
-                  const newSize = parseInt(e.target.value) || 100;
-                  onMaxUploadSizeChange(newSize);
-                }}
-                className="w-32 px-3 py-2 bg-overlay border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-glow-purple"
-              />
+              <div className="flex items-center bg-overlay border border-border rounded-lg overflow-hidden">
+                <button
+                  onClick={() => {
+                    const newSize = Math.max(1, maxUploadSize - 10);
+                    onMaxUploadSizeChange(newSize);
+                  }}
+                  className="px-3 py-2 hover:bg-surface transition-colors text-text-primary"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  </svg>
+                </button>
+                <input
+                  type="text"
+                  value={maxUploadSize}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    const newSize = parseInt(value) || 100;
+                    if (newSize >= 1 && newSize <= 500) {
+                      onMaxUploadSizeChange(newSize);
+                    }
+                  }}
+                  className="w-20 px-3 py-2 bg-overlay text-center text-sm focus:outline-none text-text-primary border-none"
+                />
+                <button
+                  onClick={() => {
+                    const newSize = Math.min(500, maxUploadSize + 10);
+                    onMaxUploadSizeChange(newSize);
+                  }}
+                  className="px-3 py-2 hover:bg-surface transition-colors text-text-primary"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
               <span className="text-sm text-text-secondary font-semibold">MB</span>
             </div>
             <div className="mt-2 flex items-center space-x-2 text-xs text-text-secondary">

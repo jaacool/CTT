@@ -307,6 +307,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
         </button>
       </div>
 
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
       {activeTab === 'users' ? (
         <>
       <div className="flex justify-between items-center mb-4">
@@ -506,6 +508,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ users, roles, timeEn
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
