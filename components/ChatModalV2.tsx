@@ -468,9 +468,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   // Close emoji picker and more menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowEmojiPicker(null);
-      setShowMoreMenu(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if click is on a button or inside a menu/picker
+      const isInsideMenu = target.closest('.emoji-picker-menu') || 
+                          target.closest('.more-options-menu') ||
+                          target.closest('button[title="Weitere Reaktionen"]') ||
+                          target.closest('button[title="Mehr Optionen"]');
+      
+      if (!isInsideMenu) {
+        setShowEmojiPicker(null);
+        setShowMoreMenu(null);
+      }
     };
 
     if (showEmojiPicker || showMoreMenu) {
@@ -2144,7 +2154,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* Emoji Picker Dropdown */}
                                       {showEmojiPicker === message.id && (
                                         <div 
-                                          className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
+                                          className="emoji-picker-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           {/* Search Bar */}
@@ -2224,7 +2234,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* More Options Menu */}
                                       {showMoreMenu === message.id && (
                                         <div 
-                                          className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
+                                          className="more-options-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           {/* Zitat in Antwort */}
@@ -2686,7 +2696,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
                                             <div 
-                                              className="absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
+                                              className="emoji-picker-menu absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               {/* Search Bar */}
@@ -2767,7 +2777,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
                                             <div 
-                                              className="absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
+                                              className="more-options-menu absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[240px]"
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               {/* Zitat in Antwort */}
