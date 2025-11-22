@@ -1219,7 +1219,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden relative">
+      <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden relative" style={{ position: 'relative' }}>
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-10">
@@ -2548,7 +2548,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Message Input */}
             {currentChannel && (
-              <div ref={composerRef} className="p-4 border-t border-transparent bg-transparent">
+              <div ref={composerRef} className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border bg-surface z-20">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
