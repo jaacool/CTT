@@ -2548,7 +2548,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
 
             {/* Message Input */}
             {currentChannel && (
-              <div ref={composerRef} className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border bg-surface z-20">
+              <div ref={composerRef} className="absolute bottom-0 left-0 md:left-64 right-0 p-4 border-t border-border bg-surface/80 backdrop-blur-md z-20">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
