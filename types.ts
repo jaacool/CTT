@@ -258,6 +258,7 @@ export enum AnomalyType {
   EXCESS_WORK_SHOOT = 'EXCESS_WORK_SHOOT', // Über 15h bei Dreh/Produktion
   EXCESS_WORK_REGULAR = 'EXCESS_WORK_REGULAR', // Über 9h ohne Dreh/Produktion
   UNDER_PERFORMANCE = 'UNDER_PERFORMANCE', // Unter 50% des Solls (ohne halben Urlaubstag)
+  FORGOT_TO_STOP = 'FORGOT_TO_STOP', // Zeiteintrag zwischen 0-9 Uhr (wahrscheinlich vergessen zu stoppen)
 }
 
 export enum AnomalyStatus {
