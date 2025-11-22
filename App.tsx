@@ -2149,6 +2149,7 @@ const App: React.FC = () => {
             targetAnomaly={targetAnomaly}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
+            onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
           />
@@ -2167,6 +2168,7 @@ const App: React.FC = () => {
             anomalies={anomalies}
             onUpdateTimeEntry={handleUpdateTimeEntry}
             onBillableChange={handleBillableChange}
+            onToggleTimer={handleToggleTimer}
             onDeleteTimeEntry={handleDeleteTimeEntry}
             onDuplicateTimeEntry={handleDuplicateTimeEntry}
             onResolveAnomaly={handleResolveAnomaly}

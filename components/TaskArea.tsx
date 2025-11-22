@@ -806,6 +806,7 @@ export const TaskArea: React.FC<TaskAreaProps> = (props) => {
                     })}
                     onUpdateEntry={props.onUpdateTimeEntry}
                     onBillableChange={props.onBillableChange}
+                    onStartTimer={props.onToggleTimer}
                     onDeleteEntry={props.onDeleteTimeEntry}
                     onDuplicateEntry={props.onDuplicateTimeEntry}
                     onImportEntries={props.onImportEntries}

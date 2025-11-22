@@ -28,6 +28,7 @@ interface TimeTrackingProps {
   targetAnomaly?: Anomaly | null;
   onUpdateTimeEntry?: (entryId: string, startTime: string, endTime: string) => void;
   onBillableChange?: (taskId: string, billable: boolean) => void;
+  onToggleTimer?: (taskId: string) => void;
   onDeleteTimeEntry?: (entryId: string) => void;
   onDuplicateTimeEntry?: (entry: TimeEntry) => void;
   onEditEntry?: (entry: TimeEntry) => void;
@@ -35,7 +36,7 @@ interface TimeTrackingProps {
 
 type ViewMode = 'overview' | 'day' | 'week';
 
-export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onDeleteTimeEntry, onDuplicateTimeEntry, onEditEntry }) => {
+export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, currentUser, absenceRequests, users, anomalies, targetAnomaly, onUpdateTimeEntry, onBillableChange, onToggleTimer, onDeleteTimeEntry, onDuplicateTimeEntry, onEditEntry }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [selectedUser, setSelectedUser] = useState<User>(currentUser);
   const [overviewPage, setOverviewPage] = useState(0); // PERFORMANCE: Pagination für Übersicht
@@ -972,6 +973,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                                 currentUser={currentUser}
                                 onUpdateEntry={onUpdateTimeEntry}
                                 onBillableChange={onBillableChange}
+                                onStartTimer={onToggleTimer}
                                 onDeleteEntry={onDeleteTimeEntry}
                                 onDuplicateEntry={onDuplicateTimeEntry}
                                 onEditEntry={onEditEntry}
@@ -1311,6 +1313,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     currentUser={currentUser}
                     onUpdateEntry={onUpdateTimeEntry}
                     onBillableChange={onBillableChange}
+                    onStartTimer={onToggleTimer}
                     onDeleteEntry={onDeleteTimeEntry}
                     onDuplicateEntry={onDuplicateTimeEntry}
                     onEditEntry={onEditEntry}
