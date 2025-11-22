@@ -241,7 +241,15 @@ const App: React.FC = () => {
   // Fade-Out-Animation triggern, wenn Daten geladen sind
   useEffect(() => {
     if (isDataLoaded && !isLoadingFadingOut) {
-      setIsLoadingFadingOut(true);
+      // Kurze Verzögerung, damit die Animation smooth durchläuft
+      const timer = setTimeout(() => {
+        setIsLoadingFadingOut(true);
+        // Nach Fade-Out-Animation (0.8s) den Loading Screen komplett entfernen
+        setTimeout(() => {
+          setIsLoadingFadingOut(false);
+        }, 800);
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isDataLoaded, isLoadingFadingOut]);
 
@@ -2006,26 +2014,27 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen font-sans text-sm relative">
-      {/* Loading Screen mit Fade-Out */}
-      {!isDataLoaded && (
-        <div className="absolute inset-0 z-50">
-          <LoadingScreen message="Projekte werden geladen..." />
-        </div>
-      )}
-      
-      {isDataLoaded && isLoadingFadingOut && (
+      {/* Loading Screen - bleibt sichtbar bis Fade-Out abgeschlossen */}
+      {(!isDataLoaded || isLoadingFadingOut) && (
         <div 
-          className="absolute inset-0 z-50 pointer-events-none"
+          className="absolute inset-0 z-50"
           style={{
-            animation: 'fadeOut 0.6s ease-out forwards'
+            animation: isLoadingFadingOut ? 'fadeOut 0.8s ease-out forwards' : 'none',
+            pointerEvents: isLoadingFadingOut ? 'none' : 'auto'
           }}
         >
           <LoadingScreen message="Projekte werden geladen..." />
         </div>
       )}
       
-      {/* Main App Content */}
-      <div className={`flex flex-col h-screen font-sans text-sm ${!isDataLoaded ? 'opacity-0' : ''}`}>
+      {/* Main App Content - fade in gleichzeitig */}
+      <div 
+        className="flex flex-col h-screen font-sans text-sm"
+        style={{
+          opacity: isDataLoaded ? 1 : 0,
+          transition: 'opacity 0.8s ease-out'
+        }}
+      >
       <TopBar
         user={currentUser}
         users={users}
