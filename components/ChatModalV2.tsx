@@ -212,9 +212,9 @@ const VoiceMessagePlayer: React.FC<{ url: string; hasText: boolean }> = ({ url, 
 
   // Generate fake waveform bars ONCE - useMemo verhindert Re-Rendering
   const waveformBars = React.useMemo(() => {
-    return Array.from({ length: 60 }, (_, i) => {
+    return Array.from({ length: 40 }, (_, i) => {
       // Create a more natural waveform pattern
-      const position = i / 60;
+      const position = i / 40;
       const baseHeight = 0.3 + Math.sin(position * Math.PI * 4) * 0.3;
       const noise = Math.random() * 0.4;
       return Math.min(1, baseHeight + noise);
