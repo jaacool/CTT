@@ -1216,7 +1216,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   <>
                     <div className="w-px h-6 bg-border"></div>
                     <button
-                      onClick={() => onSwitchProject('')}
+                      onClick={() => {
+                        onSwitchProject('');
+                        setTimeout(() => {
+                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                        }, 0);
+                      }}
                       className="px-2 py-2 hover:bg-overlay/80 transition-colors"
                       title="Filter zurücksetzen"
                     >
