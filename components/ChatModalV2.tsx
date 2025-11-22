@@ -2138,7 +2138,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                               {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && isOwnMessage && !showThreadView && (
                                 <div 
-                                  className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden"
+                                  className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
                                   onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                   onMouseLeave={handleMessageMouseLeave}
                                 >
@@ -2163,12 +2163,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          console.log('Emoji Picker clicked, current:', showEmojiPicker, 'message:', message.id);
-                                          console.log('hoveredMessageId:', hoveredMessageId);
-                                          console.log('isOwnMessage:', isOwnMessage);
-                                          console.log('showThreadView:', showThreadView);
                                           setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
-                                          console.log('After set, showEmojiPicker should be:', showEmojiPicker === message.id ? null : message.id);
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
                                         title="Weitere Reaktionen"
@@ -2179,8 +2174,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       </button>
                                       
                                       {/* Emoji Picker Dropdown */}
-                                      {/* TEST MODE: ALWAYS SHOW */}
-                                      {true && (
+                                      {showEmojiPicker === message.id && (
                                         <div 
                                           className="emoji-picker-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-80"
                                           onClick={(e) => e.stopPropagation()}
@@ -2688,7 +2682,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
                                   {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && !isOwnMessage && !showThreadView && (
                                     <div 
-                                      className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden"
+                                      className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
                                       onMouseEnter={() => handleMessageMouseEnter(message.id)}
                                       onMouseLeave={handleMessageMouseLeave}
                                     >
@@ -2794,7 +2788,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log('More Menu clicked, current:', showMoreMenu, 'message:', message.id);
                                               setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
