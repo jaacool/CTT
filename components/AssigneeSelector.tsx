@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, UserStatus } from '../types';
 
 interface AssigneeSelectorProps {
     assignees: User[];
@@ -35,8 +35,10 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     };
 
     const filteredUsers = allUsers.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        // Nur aktive User anzeigen
+        user.status !== UserStatus.Inactive &&
+        (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
