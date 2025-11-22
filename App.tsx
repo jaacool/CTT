@@ -2539,6 +2539,7 @@ const App: React.FC = () => {
               // Update den TimeEntry mit neuem Projekt und Task
               handleUpdateTimeEntry(entryToEdit.id, entryToEdit.startTime, entryToEdit.endTime || '', entryToEdit.note, projectId, taskId);
             }}
+            onDelete={handleDeleteTimeEntry}
             onNavigateToTask={(projectId, taskId) => {
               // Finde das Projekt
               const project = projects.find(p => p.id === projectId);

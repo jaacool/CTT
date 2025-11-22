@@ -250,7 +250,15 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
             .map((entry) => (
             <div
               key={entry.id}
-              className="glow-card rounded-lg p-3 sm:p-4 hover:bg-overlay transition-colors"
+              className={`rounded-lg p-3 sm:p-4 transition-all ${
+                selectionMode && selectedEntries.has(entry.id)
+                  ? 'bg-glow-purple/10 border-2 border-glow-purple shadow-lg shadow-glow-purple/20'
+                  : 'glow-card hover:bg-overlay'
+              } ${
+                selectionMode && selectedEntries.has(entry.id) && entries.findIndex(e => e.id === entry.id) > 0 && selectedEntries.has(entries[entries.findIndex(e => e.id === entry.id) - 1]?.id)
+                  ? 'mt-0.5'
+                  : ''
+              }`}
             >
               {editingEntryId === entry.id ? (
                 <div className="space-y-3">

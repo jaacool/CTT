@@ -540,6 +540,7 @@ export const Dashboard: React.FC<DashboardProps> = React.memo(({
           onProjectChange={onProjectChange}
           taskBillable={billableMap.get(selectedTimeEntry.taskId) ?? true}
           onBillableChange={onBillableChange}
+          onDelete={onDeleteTimeEntry}
         />
       )}
 

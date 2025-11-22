@@ -13,9 +13,10 @@ interface TimerMenuProps {
   projects?: Project[];
   onProjectChange?: (projectId: string, taskId: string) => void;
   onNavigateToTask?: (projectId: string, taskId: string) => void;
+  onDelete?: (entryId: string) => void;
 }
 
-export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange, projects = [], onProjectChange, onNavigateToTask }) => {
+export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds, onClose, onUpdate, onStop, anchorRect, taskBillable, onBillableChange, projects = [], onProjectChange, onNavigateToTask, onDelete }) => {
   const [note, setNote] = useState(timeEntry.note || '');
   const isBillable = taskBillable ?? timeEntry.billable ?? true;
   const [startTime, setStartTime] = useState(new Date(timeEntry.startTime).toTimeString().slice(0, 5));
@@ -462,12 +463,26 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
         
         {/* Bottom Actions */}
         <div className="flex items-center justify-between">
-          <button className="text-text-secondary hover:text-text-primary p-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
+          {/* Löschen-Button nur wenn Timer nicht läuft */}
+          {!isRunning && onDelete ? (
+            <button 
+              onClick={() => {
+                if (window.confirm('Möchtest du diesen Zeiteintrag wirklich löschen?')) {
+                  onDelete(timeEntry.id);
+                  onClose();
+                }
+              }}
+              className="text-red-500 hover:text-red-400 p-2 transition-colors"
+              title="Eintrag löschen"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          ) : (
+            <div className="w-10" />
+          )}
           
           <button
             onClick={handleFinish}
