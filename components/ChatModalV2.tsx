@@ -1996,22 +1996,49 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         <div 
                                           className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                           onClick={() => {
+                                            console.log('🔍 Suche Original-Nachricht:', {
+                                              senderName: reply.senderName,
+                                              replyContent: reply.replyContent,
+                                              mediaType: reply.mediaType
+                                            });
+                                            
                                             const originalMsg = messages.find(m => {
                                               if (m.sender.name !== reply.senderName) return false;
                                               
+                                              console.log('📝 Prüfe Nachricht:', {
+                                                id: m.id,
+                                                content: m.content.substring(0, 50),
+                                                hasAttachments: !!m.attachments,
+                                                attachments: m.attachments?.map(a => ({ name: a.name, url: a.url.substring(0, 50) }))
+                                              });
+                                              
                                               // Für Text-Nachrichten
-                                              if (m.content.includes(reply.replyContent)) return true;
+                                              if (m.content.includes(reply.replyContent)) {
+                                                console.log('✅ Text-Match gefunden!');
+                                                return true;
+                                              }
                                               
                                               // Für Medien-Nachrichten (Dateien, Bilder, Audio, etc.)
                                               if (reply.mediaType && m.attachments && m.attachments.length > 0) {
-                                                return m.attachments.some(att => 
-                                                  att.name === reply.replyContent || 
-                                                  att.url.includes(reply.replyContent)
-                                                );
+                                                const match = m.attachments.some(att => {
+                                                  const nameMatch = att.name === reply.replyContent;
+                                                  const urlMatch = att.url.includes(reply.replyContent);
+                                                  console.log('🔎 Attachment-Check:', { 
+                                                    attName: att.name, 
+                                                    replyContent: reply.replyContent,
+                                                    nameMatch, 
+                                                    urlMatch 
+                                                  });
+                                                  return nameMatch || urlMatch;
+                                                });
+                                                if (match) console.log('✅ Medien-Match gefunden!');
+                                                return match;
                                               }
                                               
                                               return false;
                                             });
+                                            
+                                            console.log('🎯 Ergebnis:', originalMsg ? `Gefunden: ${originalMsg.id}` : 'Nicht gefunden');
                                             if (originalMsg) scrollToMessage(originalMsg.id);
                                           }}
                                         >
