@@ -1996,10 +1996,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         <div 
                                           className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                           onClick={() => {
-                                            const originalMsg = messages.find(m => 
-                                              m.sender.name === reply.senderName && 
-                                              m.content.includes(reply.replyContent)
-                                            );
+                                            const originalMsg = messages.find(m => {
+                                              if (m.sender.name !== reply.senderName) return false;
+                                              
+                                              // Für Text-Nachrichten
+                                              if (m.content.includes(reply.replyContent)) return true;
+                                              
+                                              // Für Medien-Nachrichten (Dateien, Bilder, Audio, etc.)
+                                              if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                return m.attachments.some(att => 
+                                                  att.name === reply.replyContent || 
+                                                  att.url.includes(reply.replyContent)
+                                                );
+                                              }
+                                              
+                                              return false;
+                                            });
                                             if (originalMsg) scrollToMessage(originalMsg.id);
                                           }}
                                         >
@@ -2079,7 +2091,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 
                                 {/* Attachments */}
                                 {message.attachments && message.attachments.length > 0 && (
-                                  <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''}`}>
+                                  <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''} ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}>
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx} className="w-full flex justify-center">
                                         {isImageFile(attachment.type) ? (
@@ -2520,10 +2532,22 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                               onClick={() => {
                                                 // Find original message and scroll to it
-                                                const originalMsg = messages.find(m => 
-                                                  m.sender.name === reply.senderName && 
-                                                  m.content.includes(reply.replyContent)
-                                                );
+                                                const originalMsg = messages.find(m => {
+                                                  if (m.sender.name !== reply.senderName) return false;
+                                                  
+                                                  // Für Text-Nachrichten
+                                                  if (m.content.includes(reply.replyContent)) return true;
+                                                  
+                                                  // Für Medien-Nachrichten (Dateien, Bilder, Audio, etc.)
+                                                  if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                    return m.attachments.some(att => 
+                                                      att.name === reply.replyContent || 
+                                                      att.url.includes(reply.replyContent)
+                                                    );
+                                                  }
+                                                  
+                                                  return false;
+                                                });
                                                 if (originalMsg) scrollToMessage(originalMsg.id);
                                               }}
                                             >
@@ -2603,7 +2627,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     
                                     {/* Attachments */}
                                     {message.attachments && message.attachments.length > 0 && (
-                                      <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''}`}>
+                                      <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''} ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}>
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx} className="w-full flex justify-center">
                                             {attachment.url.startsWith('blob:') ? (
