@@ -2004,10 +2004,11 @@ const App: React.FC = () => {
         style={{
           opacity: isDataLoaded ? 0 : 1,
           pointerEvents: isDataLoaded ? 'none' : 'auto',
-          transition: 'opacity 2s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'opacity 2s ease-out',
           willChange: 'opacity',
           backfaceVisibility: 'hidden',
-          transform: 'translateZ(0)'
+          WebkitFontSmoothing: 'antialiased',
+          transform: 'translateZ(0)' // Force GPU layer, verhindert Zittern
         }}
       >
         <LoadingScreen message="Projekte werden geladen..." />

@@ -1378,15 +1378,12 @@ textarea:focus {
   animation: messageHighlightGlow 2.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Upload Loader Animation - Ultra-smooth mit GPU-Beschleunigung */
+/* Upload Loader Animation - Schicke cleane Animation mit Glow */
 .upload-loader {
   width: 65px;
   aspect-ratio: 1;
   position: relative;
   will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
 }
 
 .upload-loader:before,
@@ -1398,14 +1395,14 @@ textarea:focus {
               0 0 20px rgba(168, 85, 247, 0.9),
               0 0 40px rgba(168, 85, 247, 0.7),
               0 0 0px rgba(236, 72, 153, 0.5);
-  animation: uploadLoaderAnimation 3.25s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: uploadLoaderAnimation 4.225s ease-out infinite;
   will-change: inset;
-  transform: translateZ(0);
   backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .upload-loader:after {
-  animation-delay: -1.625s;
+  animation-delay: -2.1125s;
   border-radius: 0;
   box-shadow: 0 0 0 3px inset #EC4899,
               0 0 20px rgba(236, 72, 153, 0.9),

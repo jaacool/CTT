@@ -11,7 +11,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
       style={{ 
         willChange: 'opacity',
         backfaceVisibility: 'hidden',
-        perspective: 1000,
+        WebkitFontSmoothing: 'antialiased',
         transform: 'translateZ(0)'
       }}
     >
@@ -22,12 +22,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: 'translate3d(-50%, -50%, 0) scale(1.2)',
+          transform: 'translate(-50%, -50%) scale(1.2) translateZ(0)',
           marginTop: '-40px',
           willChange: 'transform',
-          backfaceVisibility: 'hidden',
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale'
+          backfaceVisibility: 'hidden'
         }}
       ></div>
       
@@ -38,9 +36,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: 'translate3d(-50%, -50%, 0)',
+          transform: 'translate(-50%, -50%) translateZ(0)',
           marginTop: '80px',
-          animation: 'fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards',
+          animation: 'fadeIn 0.8s ease-out 0.5s forwards',
           willChange: 'opacity',
           backfaceVisibility: 'hidden'
         }}
