@@ -46,21 +46,6 @@ export const MOCK_USER_2: User = {
   }
 };
 
-export const ADMIN_USER: User = {
-  id: 'user-admin',
-  name: 'admin',
-  firstName: 'Admin',
-  lastName: 'User',
-  email: 'admin@example.com',
-  avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026706d',
-  status: UserStatus.Active,
-  role: 'role-1', // Admin
-  gender: Gender.Diverse,
-  position: 'Administrator',
-  birthday: '2000-01-01',
-  password: '12345',
-};
-
 export const MOCK_USERS: User[] = [
   MOCK_USER,
   MOCK_USER_2,
@@ -193,7 +178,7 @@ export const MOCK_ABSENCE_REQUESTS: AbsenceRequest[] = [
     endDate: '2025-11-18',
     halfDay: 'morning',
     status: AbsenceStatus.Approved,
-    approvedBy: ADMIN_USER,
+    approvedBy: MOCK_USER,
     approvedAt: new Date().toISOString(),
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString(),
@@ -205,7 +190,7 @@ export const MOCK_ABSENCE_REQUESTS: AbsenceRequest[] = [
     startDate: '2025-11-25',
     endDate: '2025-11-25',
     status: AbsenceStatus.Approved,
-    approvedBy: ADMIN_USER,
+    approvedBy: MOCK_USER,
     approvedAt: new Date().toISOString(),
     createdAt: new Date(Date.now() - 172800000).toISOString(),
     updatedAt: new Date().toISOString(),

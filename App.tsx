@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Project, Task, TaskStatus, Subtask, User, Activity, TaskList, ProjectStatus, TimeEntry, UserStatus, Role, AbsenceRequest, AbsenceStatus, AbsenceType, ChatChannel, ChatMessage, ChatChannelType, ChatAttachment, Anomaly, AnomalyType, AnomalyRecord, AnomalyStatus, AnomalyComment } from './types';
 import { saveChatChannel, updateChatChannel as supaUpdateChatChannel, deleteChatChannel as supaDeleteChatChannel, saveChatMessage as supaSaveChatMessage, updateChatMessageAttachments as supaUpdateChatMessageAttachments, loadAllChatData } from './utils/supabaseSync';
 import { startChatRealtime } from './utils/chatRealtime';
-import { ADMIN_USER, MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
+import { MOCK_PROJECTS, MOCK_USER, MOCK_USER_2, MOCK_USERS, MOCK_ROLES, MOCK_ABSENCE_REQUESTS } from './constants';
 import { hasPermission } from './utils/permissions';
 import { Sidebar } from './components/Sidebar';
 import { TaskArea } from './components/TaskArea';
@@ -85,14 +85,14 @@ const App: React.FC = () => {
   const [dashboardNote, setDashboardNote] = useState('');
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   
-  // Load last user from localStorage or default to ADMIN_USER
+  // Load last user from localStorage or default to MOCK_USER (Aaron)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const lastUserId = localStorage.getItem('ctt_last_user_id');
     if (lastUserId) {
       const user = MOCK_USERS.find(u => u.id === lastUserId);
       if (user) return user;
     }
-    return ADMIN_USER;
+    return MOCK_USER;
   });
   
   const [showSettings, setShowSettings] = useState(false);
@@ -203,7 +203,7 @@ const App: React.FC = () => {
           description: 'Allgemeiner Channel für alle',
           members: users,
           createdAt: new Date().toISOString(),
-          createdBy: ADMIN_USER,
+          createdBy: MOCK_USER,
           type: ChatChannelType.Group,
           isPrivate: false,
         },
@@ -213,7 +213,7 @@ const App: React.FC = () => {
           description: 'Entwicklungs-Diskussionen',
           members: users.filter(u => u.id === 'user-1' || u.id === 'user-2'),
           createdAt: new Date().toISOString(),
-          createdBy: ADMIN_USER,
+          createdBy: MOCK_USER,
           type: ChatChannelType.Group,
           isPrivate: false,
         },
@@ -230,7 +230,7 @@ const App: React.FC = () => {
             name: `${user1.name} & ${user2.name}`,
             members: [user1, user2],
             createdAt: new Date().toISOString(),
-            createdBy: ADMIN_USER,
+            createdBy: MOCK_USER,
             type: ChatChannelType.Direct,
           });
         }
