@@ -4,6 +4,7 @@ import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, Trash
 import { LinkPreview } from './LinkPreview';
 import { ConfirmModal } from './ConfirmModal';
 import { uploadChatFiles, getFileIcon, isImageFile, isVideoFile, isAudioFile } from '../utils/fileUpload';
+import { supabase } from '../utils/supabaseClient';
 
 interface ChatModalV2Props {
   isOpen: boolean;
@@ -1127,20 +1128,61 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
-  // Handle mark as unread (placeholder)
-  const handleMarkAsUnread = (messageId: string) => {
-    console.log('Mark as unread:', messageId);
-    setShowMoreMenu(null);
-    // TODO: Implement mark as unread functionality
-    alert('Funktion "Als ungelesen markieren" wird noch implementiert.');
+  // Handle mark as unread
+  const handleMarkAsUnread = async (messageId: string) => {
+    try {
+      // Markiere Nachricht als ungelesen in Supabase
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ 
+          read: false,
+          read_at: null 
+        })
+        .eq('id', messageId)
+        .eq('user_id', currentUser.id); // Nur für aktuellen User
+      
+      if (error) throw error;
+      
+      console.log('✅ Nachricht als ungelesen markiert:', messageId);
+      setShowMoreMenu(null);
+    } catch (error) {
+      console.error('❌ Fehler beim Markieren als ungelesen:', error);
+    }
   };
   
-  // Handle star message (placeholder)
-  const handleStarMessage = (messageId: string) => {
-    console.log('Star message:', messageId);
-    setShowMoreMenu(null);
-    // TODO: Implement star message functionality
-    alert('Funktion "Markieren" wird noch implementiert.');
+  // Handle star message
+  const handleStarMessage = async (messageId: string) => {
+    try {
+      const message = messages.find(m => m.id === messageId);
+      if (!message) return;
+      
+      // Prüfe ob Nachricht bereits markiert ist
+      const isStarred = message.starred_by?.includes(currentUser.id);
+      
+      let updatedStarredBy: string[];
+      if (isStarred) {
+        // Entferne Stern
+        updatedStarredBy = (message.starred_by || []).filter(id => id !== currentUser.id);
+      } else {
+        // Füge Stern hinzu
+        updatedStarredBy = [...(message.starred_by || []), currentUser.id];
+      }
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ starred_by: updatedStarredBy })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      console.log(isStarred ? '⭐ Stern entfernt' : '⭐ Nachricht markiert:', messageId);
+      setShowMoreMenu(null);
+      
+      // Trigger refresh (wird durch Realtime-Subscription automatisch aktualisiert)
+    } catch (error) {
+      console.error('❌ Fehler beim Markieren:', error);
+    }
   };
   
   // Handle copy message link
@@ -2021,8 +2063,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           `}>
                             {/* Sender Name (only for group chats and not own messages) */}
                             {!isOwnMessage && channel.type === ChatChannelType.Group && (
-                              <div className="text-xs font-semibold text-glow-purple mb-1">
-                                {message.sender.name}
+                              <div className="text-xs font-semibold text-glow-purple mb-1 flex items-center space-x-1">
+                                <span>{message.sender.name}</span>
+                                {message.starred_by?.includes(currentUser.id) && (
+                                  <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                  </svg>
+                                )}
                               </div>
                             )}
                             
@@ -2803,20 +2850,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                             <span className="text-text-primary">Kopieren</span>
                                           </button>
                                           
-                                          {/* Nachrichtenlink kopieren */}
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleCopyMessageLink(message.id);
-                                            }}
-                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
-                                          >
-                                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                            </svg>
-                                            <span className="text-text-primary">Nachrichtenlink kopieren</span>
-                                          </button>
-                                          
                                           <div className="border-t border-border my-1"></div>
                                           
                                           {/* Bearbeiten (nur eigene Nachrichten) */}
@@ -2900,7 +2933,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <div className="flex items-center space-x-2 mb-1 px-1">
                                 {/* Name nur in Channels */}
                                 {currentChannel?.type !== ChatChannelType.Direct && (
-                                  <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                  <div className="flex items-center space-x-1">
+                                    <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                    {message.starred_by?.includes(currentUser.id) && (
+                                      <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                      </svg>
+                                    )}
+                                  </div>
                                 )}
                                 <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                                 {/* Projekt-Tag */}
