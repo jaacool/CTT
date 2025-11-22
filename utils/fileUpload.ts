@@ -54,6 +54,12 @@ export const uploadChatFile = async (
       .from('chat-attachments')
       .getPublicUrl(filePath);
 
+    console.log('📤 File uploaded successfully:', {
+      fileName: file.name,
+      filePath,
+      publicUrl: urlData.publicUrl
+    });
+
     // Create attachment object
     const attachment: ChatAttachment = {
       id: `${timestamp}_${randomString}`,
