@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CTT Cache Leeren</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0A0A0A;
+            color: #E5E5E5;
+        }
+        button {
+            background: #A855F7;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #9333EA;
+        }
+        .output {
+            background: #141414;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 CTT Cache Manager</h1>
+    
+    <button onclick="checkCache()">🔍 Cache Prüfen</button>
+    <button onclick="clearCache()">🗑️ Cache Leeren</button>
+    <button onclick="window.location.href='index.html'">🔄 Zur App</button>
+    
+    <div class="output" id="output">Klicke auf einen Button...</div>
+    
+    <script>
+        function log(msg) {
+            const output = document.getElementById('output');
+            output.textContent += msg + '\n';
+        }
+        
+        function checkCache() {
+            document.getElementById('output').textContent = '';
+            log('🔍 Prüfe localStorage Cache...\n');
+            
+            const keys = ['ctt_users', 'ctt_projects', 'ctt_timeEntries', 'ctt_absenceRequests', 'ctt_session'];
+            
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (Array.isArray(parsed)) {
+                            log(`✅ ${key}: ${parsed.length} Einträge`);
+                        } else {
+                            log(`✅ ${key}: Objekt mit ${Object.keys(parsed).length} Keys`);
+                        }
+                    } catch (e) {
+                        log(`⚠️ ${key}: ${data.length} Zeichen (nicht JSON)`);
+                    }
+                } else {
+                    log(`❌ ${key}: Nicht vorhanden`);
+                }
+            });
+            
+            log('\n📊 Gesamt localStorage Größe: ' + 
+                Math.round(JSON.stringify(localStorage).length / 1024) + ' KB');
+        }
+        
+        function clearCache() {
+            document.getElementById('output').textContent = '';
+            log('🗑️ Lösche Cache...\n');
+            
+            const keys = ['ctt_users', 'ctt_projects', 'ctt_timeEntries', 'ctt_absenceRequests', 'ctt_session'];
+            
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`✅ ${key} gelöscht`);
+            });
+            
+            log('\n✅ Cache komplett geleert!');
+            log('🔄 Bitte Seite neu laden (zur App gehen)');
+        }
+    </script>
+</body>
+</html>

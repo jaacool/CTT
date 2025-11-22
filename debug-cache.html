@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CTT Cache Debug</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #0A0A0A;
+            color: #00FF00;
+        }
+        h1 { color: #A855F7; }
+        button {
+            background: #A855F7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover { background: #9333EA; }
+        .output {
+            background: #141414;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error { color: #FF0000; }
+        .success { color: #00FF00; }
+        .warning { color: #FFA500; }
+        .info { color: #00FFFF; }
+    </style>
+</head>
+<body>
+    <h1>🔍 CTT Cache Debugger</h1>
+    
+    <div>
+        <button onclick="checkAll()">🔍 Alles Prüfen</button>
+        <button onclick="checkBackup()">📦 Backup Prüfen</button>
+        <button onclick="checkOldCache()">🗂️ Alte Keys Prüfen</button>
+        <button onclick="clearAll()">🗑️ Alles Löschen</button>
+        <button onclick="window.location.href='index.html'">🔄 Zur App</button>
+    </div>
+    
+    <div class="output" id="output">Klicke auf einen Button...</div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script>
+        function log(msg, type = 'info') {
+            const output = document.getElementById('output');
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = msg + '\n';
+            output.appendChild(span);
+        }
+        
+        function clear() {
+            document.getElementById('output').textContent = '';
+        }
+        
+        function checkBackup() {
+            clear();
+            log('📦 Prüfe ctt_backup...', 'info');
+            
+            const backup = localStorage.getItem('ctt_backup');
+            if (!backup) {
+                log('❌ Kein ctt_backup gefunden!', 'error');
+                return;
+            }
+            
+            log(`✅ ctt_backup gefunden: ${(backup.length / 1024).toFixed(2)} KB (Base64)`, 'success');
+            
+            try {
+                // Dekodiere Base64
+                const chunkSize = 8192;
+                const chunks = [];
+                
+                for (let i = 0; i < backup.length; i += chunkSize) {
+                    const chunk = backup.slice(i, i + chunkSize);
+                    const decoded = atob(chunk);
+                    for (let j = 0; j < decoded.length; j++) {
+                        chunks.push(decoded.charCodeAt(j));
+                    }
+                }
+                
+                const compressed = new Uint8Array(chunks);
+                log(`✅ Dekodiert: ${(compressed.length / 1024).toFixed(2)} KB (komprimiert)`, 'success');
+                
+                // Dekomprimiere
+                const decompressed = pako.ungzip(compressed, { to: 'string' });
+                log(`✅ Dekomprimiert: ${(decompressed.length / 1024).toFixed(2)} KB (JSON)`, 'success');
+                
+                // Parse JSON
+                const data = JSON.parse(decompressed);
+                log('\n📊 Daten-Inhalt:', 'info');
+                log(`   Users: ${data.users?.length || 0}`, 'info');
+                log(`   Projects: ${data.projects?.length || 0}`, 'info');
+                log(`   TimeEntries: ${data.timeEntries?.length || 0}`, 'info');
+                log(`   AbsenceRequests: ${data.absenceRequests?.length || 0}`, 'info');
+                log(`   Version: ${data.version}`, 'info');
+                log(`   Timestamp: ${data.timestamp}`, 'info');
+                
+                if (data.favoriteProjectIds) {
+                    log(`   FavoriteProjects: ${data.favoriteProjectIds.length}`, 'info');
+                }
+                if (data.pinnedTasks) {
+                    log(`   PinnedTasks: ${data.pinnedTasks.length}`, 'info');
+                }
+                
+                log('\n✅ Backup ist gültig!', 'success');
+                
+            } catch (error) {
+                log(`\n❌ Fehler beim Dekodieren: ${error.message}`, 'error');
+                log('💡 Cache ist korrupt - sollte gelöscht werden!', 'warning');
+            }
+        }
+        
+        function checkOldCache() {
+            clear();
+            log('🗂️ Prüfe alte Cache-Keys...', 'info');
+            
+            const oldKeys = ['ctt_users', 'ctt_projects', 'ctt_timeEntries', 'ctt_absenceRequests', 'ctt_session'];
+            let found = false;
+            
+            oldKeys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    found = true;
+                    log(`⚠️ ${key}: ${(data.length / 1024).toFixed(2)} KB (VERALTET!)`, 'warning');
+                }
+            });
+            
+            if (!found) {
+                log('✅ Keine alten Keys gefunden', 'success');
+            } else {
+                log('\n💡 Alte Keys sollten gelöscht werden!', 'warning');
+            }
+        }
+        
+        function checkAll() {
+            clear();
+            log('🔍 Vollständige Cache-Prüfung...\n', 'info');
+            
+            // Gesamt-Größe
+            let totalSize = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    totalSize += localStorage.getItem(key).length;
+                }
+            }
+            log(`📊 Gesamt localStorage: ${(totalSize / 1024).toFixed(2)} KB\n`, 'info');
+            
+            // Backup prüfen
+            checkBackup();
+            log('\n---\n', 'info');
+            
+            // Alte Keys prüfen
+            checkOldCache();
+        }
+        
+        function clearAll() {
+            clear();
+            log('🗑️ Lösche alle Cache-Daten...\n', 'warning');
+            
+            // Backup
+            localStorage.removeItem('ctt_backup');
+            log('✅ ctt_backup gelöscht', 'success');
+            
+            // Alte Keys
+            const oldKeys = ['ctt_users', 'ctt_projects', 'ctt_timeEntries', 'ctt_absenceRequests', 'ctt_session'];
+            oldKeys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`✅ ${key} gelöscht`, 'success');
+            });
+            
+            log('\n✅ Alle Daten gelöscht!', 'success');
+            log('🔄 Bitte Seite neu laden (zur App gehen)', 'info');
+        }
+    </script>
+</body>
+</html>

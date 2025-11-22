@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Project, TimeEntry, Task, Subtask, User } from '../types';
 import { formatTime } from './utils';
 import { TimerMenu } from './TimerMenu';
@@ -39,6 +39,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [contextMenuEntry, setContextMenuEntry] = useState<TimeEntry | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{x: number; y: number} | null>(null);
   const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<TimeEntry | null>(null);
+
+  // PERFORMANCE: Erstelle Lookup-Map für billable Status (nur einmal pro projects-Änderung)
+  const billableMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    projects.forEach(proj => {
+      proj.taskLists.forEach(list => {
+        list.tasks.forEach(task => {
+          map.set(task.id, task.billable ?? true);
+          task.subtasks.forEach(subtask => {
+            map.set(subtask.id, subtask.billable ?? task.billable ?? true);
+          });
+        });
+      });
+    });
+    return map;
+  }, [projects]);
+
+  // PERFORMANCE: Erstelle Lookup-Map für Projects (nur einmal pro projects-Änderung)
+  const projectMap = useMemo(() => {
+    const map = new Map<string, Project>();
+    projects.forEach(p => map.set(p.id, p));
+    return map;
+  }, [projects]);
 
   // Finde alle gepinnten Tasks
   const pinnedTasks: (Task | Subtask)[] = [];
@@ -135,24 +158,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {todayEntries.map(entry => {
                 const isActive = activeTimerTaskId === entry.taskId && !entry.endTime;
                 const currentSeconds = taskTimers[entry.taskId] || 0;
-                const project = projects.find(p => p.id === entry.projectId);
+                const project = projectMap.get(entry.projectId);
                 
-                // Finde Task/Subtask für Billable-Status
-                let isBillable = true;
-                projects.forEach(proj => {
-                  proj.taskLists.forEach(list => {
-                    list.tasks.forEach(task => {
-                      if (task.id === entry.taskId) {
-                        isBillable = task.billable ?? true;
-                      }
-                      task.subtasks.forEach(subtask => {
-                        if (subtask.id === entry.taskId) {
-                          isBillable = subtask.billable ?? task.billable ?? true;
-                        }
-                      });
-                    });
-                  });
-                });
+                // PERFORMANCE: O(1) Lookup statt nested loops
+                const isBillable = billableMap.get(entry.taskId) ?? true;
                 
                 return (
                   <div

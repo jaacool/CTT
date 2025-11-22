@@ -289,10 +289,11 @@ export async function addAnomalyComment(
  * Startet Realtime-Synchronisation für Anomalien
  * Gibt Cleanup-Funktion zurück
  */
-export function startAnomalyRealtime(
-  onAnomalyChange: (anomaly: Anomaly) => void,
-  onAnomalyDelete: (anomalyId: string) => void
-): () => void {
+export function startAnomalyRealtime(callbacks: {
+  onAnomalyUpsert?: (anomaly: Anomaly) => void;
+  onAnomalyDelete?: (anomalyId: string) => void;
+  onCommentInsert?: (userId: string, date: string, type: string, comment: AnomalyComment) => void;
+}): () => void {
   if (!isSupabaseAvailable()) {
     console.warn('⚠️ Supabase not available, realtime sync disabled');
     return () => {};
@@ -314,7 +315,9 @@ export function startAnomalyRealtime(
           console.log('🔔 Anomaly change detected:', payload);
 
           if (payload.eventType === 'DELETE') {
-            onAnomalyDelete(payload.old.id);
+            if (callbacks.onAnomalyDelete) {
+              callbacks.onAnomalyDelete(payload.old.id);
+            }
           } else {
             // INSERT oder UPDATE
             const record = payload.new as SupabaseAnomalyRecord;
@@ -332,7 +335,31 @@ export function startAnomalyRealtime(
               anomaly.comments = commentsData.map((c: any) => fromSupabaseComment(c));
             }
 
-            onAnomalyChange(anomaly);
+            if (callbacks.onAnomalyUpsert) {
+              callbacks.onAnomalyUpsert(anomaly);
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'anomaly_comments',
+        },
+        (payload) => {
+          console.log('🔔 Anomaly comment inserted:', payload);
+          const record = payload.new as SupabaseAnomalyComment;
+          const comment = fromSupabaseComment(record);
+          
+          // Parse anomaly_id: userId-date-type
+          const parts = record.anomaly_id.split('-');
+          if (parts.length >= 3 && callbacks.onCommentInsert) {
+            const userId = parts[0];
+            const date = parts[1];
+            const type = parts.slice(2).join('-');
+            callbacks.onCommentInsert(userId, date, type, comment);
           }
         }
       )

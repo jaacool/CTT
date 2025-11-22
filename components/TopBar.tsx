@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Role, AbsenceRequest, UserStatus, Anomaly, AnomalyStatus } from '../types';
+import { User, Role, AbsenceRequest, UserStatus, Anomaly, AnomalyStatus, AbsenceStatus, AbsenceType } from '../types';
 
 interface TopBarProps {
   user: User;
@@ -15,37 +15,85 @@ interface TopBarProps {
   absenceRequests?: AbsenceRequest[];
   anomalies?: Anomaly[];
   onOpenNotifications?: () => void;
+  notificationsReady?: boolean;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, absenceRequests = [], anomalies = [], onOpenNotifications }) => {
+export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, canRedo, onUndo, onRedo, onChangeRole, onChangeUser, onToggleSidebar, absenceRequests = [], anomalies = [], onOpenNotifications, notificationsReady = false }) => {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [cachedNotificationCount, setCachedNotificationCount] = useState<number | null>(null);
 
   const isAdmin = user.role === 'role-1';
   
-  // Berechne Benachrichtigungen für aktuellen User
-  const absenceNotificationCount = absenceRequests.filter(req => {
-    // Admins: Ausstehende Anträge
-    if (isAdmin && req.status === 'PENDING') return true;
-    
-    // Eigene Anträge mit ungelesenen Kommentaren
-    if (req.user.id === user.id && req.comments) {
-      const hasUnreadComments = req.comments.some(c => !c.read && c.user.id !== user.id);
-      return hasUnreadComments || req.status === 'PENDING';
-    }
-    
-    return false;
-  }).length;
+  // ===============================
+  // Zähl-Logik wie im NotificationsModal
+  // ===============================
+  // Relevante Anträge für aktuellen User
+  const relevantRequests = absenceRequests.filter(req => {
+    // Admins sehen alle ausstehenden Anträge
+    if (isAdmin && req.status === AbsenceStatus.Pending) return true;
 
-  // Anomalien zählen (nur eigene oder alle für Admin, NUR offene)
-  const anomalyCount = anomalies.filter(a => 
-    (isAdmin || a.userId === user.id) && 
-    a.status !== AnomalyStatus.Resolved
-  ).length;
-  
-  const totalNotificationCount = absenceNotificationCount + anomalyCount;
+    // Admins sehen alle genehmigten Krankmeldungen (auch gemeldete)
+    if (isAdmin && req.type === AbsenceType.Sick && req.status === AbsenceStatus.Approved) return true;
+
+    // User sehen ihre eigenen Anträge
+    if (req.user.id === user.id) return true;
+
+    return false;
+  });
+
+  // Pending-Anträge wie im Modal (inkl. spezieller Krankmeldungs-Logik)
+  const pendingRequests = relevantRequests.filter(req =>
+    req.status === AbsenceStatus.Pending ||
+    (req.type === AbsenceType.Sick && req.status === AbsenceStatus.Approved && !req.sickLeaveReported)
+  );
+
+  // Aktive Anomalien: nur OPEN, gleiche Filter wie im Modal
+  const activeAnomalies = anomalies.filter(a =>
+    (isAdmin || a.userId === user.id) &&
+    a.status === AnomalyStatus.Open
+  );
+
+  const totalNotificationCount = pendingRequests.length + activeAnomalies.length;
+
+  // Anzeige-Wert: vor erster Berechnung gecachten Wert verwenden, danach Live-Wert
+  const displayNotificationCount = notificationsReady
+    ? totalNotificationCount
+    : (cachedNotificationCount ?? 0);
+
+  // Cache-Handling pro User
+  useEffect(() => {
+    const storageKey = `ctt_last_notification_count_${user.id}`;
+
+    if (!notificationsReady) {
+      // Beim Initial-Render (oder nach User-Wechsel) letzten Wert aus localStorage laden
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = parseInt(saved, 10);
+          if (!Number.isNaN(parsed)) {
+            setCachedNotificationCount(parsed);
+          } else {
+            setCachedNotificationCount(null);
+          }
+        } else {
+          setCachedNotificationCount(null);
+        }
+      } catch (e) {
+        setCachedNotificationCount(null);
+      }
+    } else {
+      // Sobald die neue Zahl berechnet ist, in localStorage persistieren
+      try {
+        localStorage.setItem(storageKey, String(totalNotificationCount));
+      } catch (e) {
+        // Ignorieren, wenn localStorage nicht verfügbar ist
+      }
+      setCachedNotificationCount(totalNotificationCount);
+    }
+  }, [notificationsReady, totalNotificationCount, user.id]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -199,9 +247,9 @@ export const TopBar: React.FC<TopBarProps> = ({ user, users, roles, canUndo, can
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            {totalNotificationCount > 0 && (
+            {displayNotificationCount > 0 && (
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-surface">
-                {totalNotificationCount}
+                {displayNotificationCount}
               </span>
             )}
           </button>

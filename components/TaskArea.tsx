@@ -56,7 +56,7 @@ const ProjectHeader: React.FC<{
     onUpdateProjectMembers: (members: User[]) => void;
     isFavorite?: boolean;
     onToggleFavorite?: (projectId: string) => void;
-}> = ({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers, isFavorite, onToggleFavorite }) => {
+}> = React.memo(({ project, timeEntries, taskTimers, defaultBillable, onToggleDefaultBillable, allUsers, onUpdateProjectMembers, isFavorite, onToggleFavorite }) => {
     
     const allTasks = useMemo(() => project.taskLists.flatMap(list => list.tasks), [project.taskLists]);
     const totalTasks = allTasks.length;
@@ -167,7 +167,16 @@ const ProjectHeader: React.FC<{
             </div>
         </header>
     );
-};
+}, (prevProps, nextProps) => {
+    // Custom comparison für optimales Re-Rendering
+    return (
+        prevProps.project === nextProps.project &&
+        prevProps.defaultBillable === nextProps.defaultBillable &&
+        prevProps.isFavorite === nextProps.isFavorite &&
+        prevProps.timeEntries === nextProps.timeEntries &&
+        prevProps.taskTimers === nextProps.taskTimers
+    );
+});
 
 const TaskStatusControl: React.FC<{
     status: TaskStatus;
@@ -285,7 +294,7 @@ const SubtaskItem: React.FC<{
     onRenameItem: RenameFn;
     allUsers?: User[];
     onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
-}> = ({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateTaskAssignees }) => {
+}> = React.memo(({ subtask, isSelected, onSelect, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, onRenameItem, allUsers, onUpdateTaskAssignees }) => {
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
     const [timerHovered, setTimerHovered] = useState(false);
     
@@ -351,7 +360,7 @@ const SubtaskItem: React.FC<{
             </div>
         </div>
     );
-};
+});
 
 interface TaskItemProps {
     task: Task; 
@@ -370,9 +379,55 @@ interface TaskItemProps {
     onDeleteTask?: (taskId: string) => void;
     allUsers?: User[];
     onUpdateTaskAssignees?: (taskId: string, assignees: User[]) => void;
+    taskTimeMap: Map<string, number>;
+    timeEntries: TimeEntry[];
 }
 
-const TaskItem: React.FC<TaskItemProps> = (props) => {
+function areTaskItemPropsEqual(prevProps: TaskItemProps, nextProps: TaskItemProps) {
+    // 1. Einfache Props und Callbacks Check
+    if (prevProps.task.id !== nextProps.task.id) return false;
+    if (prevProps.task !== nextProps.task) return false; // Task Inhalt geändert
+    if (prevProps.selectedItem !== nextProps.selectedItem) return false;
+    if (prevProps.elapsedSeconds !== nextProps.elapsedSeconds) return false; // Eigene Zeit geändert
+    if (prevProps.isActive !== nextProps.isActive) return false; // Eigener Timer Status
+    if (prevProps.activeTimerTaskId !== nextProps.activeTimerTaskId) return false; // Timer gewechselt
+    if (prevProps.project !== nextProps.project) return false;
+    
+    // 2. Pinned Status
+    const wasPinned = prevProps.pinnedTaskIds?.includes(prevProps.task.id);
+    const isPinned = nextProps.pinnedTaskIds?.includes(nextProps.task.id);
+    if (wasPinned !== isPinned) return false;
+
+    // 3. Subtasks prüfen
+    // Wir müssen wissen, ob sich für IRGENDEINEN Subtask etwas Relevantes geändert hat.
+    // Relevant = Zeit in taskTimeMap geändert ODER Timer aktiv.
+    const activeId = nextProps.activeTimerTaskId;
+    
+    // Check ob sich taskTimeMap Referenz geändert hat (passiert oft)
+    // Wenn ja, müssen wir Werte vergleichen
+    if (prevProps.taskTimeMap !== nextProps.taskTimeMap) {
+        for (const subtask of nextProps.task.subtasks) {
+            // Check 1: Hat sich die gespeicherte Zeit geändert?
+            const prevTime = prevProps.taskTimeMap.get(subtask.id);
+            const nextTime = nextProps.taskTimeMap.get(subtask.id);
+            if (prevTime !== nextTime) return false;
+            
+            // Check 2: Ist dieser Subtask gerade aktiv?
+            // Wenn ja, läuft sein Timer -> taskTimers hat sich geändert -> Re-render nötig
+            if (activeId === subtask.id) return false;
+        }
+    } else if (activeId) {
+        // Map gleich, aber Timer läuft -> Check ob Subtask aktiv
+         for (const subtask of nextProps.task.subtasks) {
+            if (activeId === subtask.id) return false;
+        }
+    }
+
+    // Alles scheint gleich geblieben zu sein für diesen Task und seine Subtasks
+    return true;
+}
+
+const TaskItem: React.FC<TaskItemProps> = React.memo((props) => {
     const { task, selectedItem, onSelectItem, elapsedSeconds, isActive, onToggleTimer, onSetTaskStatus, taskTimers, activeTimerTaskId, onRenameItem, project, onPinTask, pinnedTaskIds, onDeleteTask } = props;
     const isSelected = selectedItem?.id === task.id;
     const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
@@ -453,10 +508,8 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                 </div>
             </div>
             {task.subtasks.map(subtask => {
-                // Summiere alle TimeEntries für diese Unteraufgabe
-                const timeEntriesSum = props.timeEntries
-                    .filter(entry => entry.projectId === project.id && entry.taskId === subtask.id)
-                    .reduce((sum, entry) => sum + entry.duration, 0);
+                // PERFORMANCE: O(1) Lookup statt filter().reduce()
+                const timeEntriesSum = props.taskTimeMap.get(subtask.id) || 0;
                 // Addiere aktuellen Timer falls aktiv
                 const currentTimer = activeTimerTaskId === subtask.id ? (taskTimers[subtask.id] || 0) : 0;
                 const totalSeconds = timeEntriesSum + currentTimer;
@@ -493,12 +546,12 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                 task={task}
                 projects={[project]}
                 timeEntriesCount={props.timeEntries.filter(te => te.projectId === project.id && te.taskId === task.id).length}
-                totalHours={props.timeEntries.filter(te => te.projectId === project.id && te.taskId === task.id).reduce((sum, te) => sum + te.duration, 0) / 3600}
+                totalHours={(props.taskTimeMap.get(task.id) || 0) / 3600}
             />
         )}
     </>
     );
-};
+}, areTaskItemPropsEqual);
 
 const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: string) => void; }> = ({ listId, onAddTask }) => {
     const [isAdding, setIsAdding] = useState(false);
@@ -537,7 +590,7 @@ const AddNewTask: React.FC<{ listId: string; onAddTask: (listId: string, title: 
     );
 };
 
-const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { taskList: ITaskList }> = (props) => {
+const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { taskList: ITaskList }> = React.memo((props) => {
     const { taskList, onRenameItem, project, taskTimers, activeTimerTaskId } = props;
     
     // PERFORMANCE: Berechne summierte Zeit aus TimeEntries für alle Aufgaben in dieser Liste (memoized)
@@ -565,6 +618,18 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
     );
     
     const totalTrackedSeconds = timeEntriesSum + currentTimerSum;
+    
+    // PERFORMANCE: Erstelle Map für schnelle TimeEntry-Lookups pro Task
+    const taskTimeMap = useMemo(() => {
+        const map = new Map<string, number>();
+        props.timeEntries.forEach(entry => {
+            if (entry.projectId === project.id) {
+                const current = map.get(entry.taskId) || 0;
+                map.set(entry.taskId, current + entry.duration);
+            }
+        });
+        return map;
+    }, [props.timeEntries, project.id]);
     
     // Formatiere Zeit im H:MM Format
     const formatListTime = (seconds: number): string => {
@@ -603,10 +668,8 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
                  <AddNewTask listId={taskList.id} onAddTask={props.onAddTask} />
                  {taskList.tasks.length > 0 && <div className="border-t border-overlay my-2"></div>}
                 {taskList.tasks.map(task => {
-                    // Summiere alle TimeEntries für diese Aufgabe
-                    const timeEntriesSum = props.timeEntries
-                        .filter(entry => entry.projectId === props.project.id && entry.taskId === task.id)
-                        .reduce((sum, entry) => sum + entry.duration, 0);
+                    // PERFORMANCE: O(1) Lookup statt filter().reduce()
+                    const timeEntriesSum = taskTimeMap.get(task.id) || 0;
                     // Addiere aktuellen Timer falls aktiv
                     const currentTimer = props.activeTimerTaskId === task.id ? (props.taskTimers[task.id] || 0) : 0;
                     const totalSeconds = timeEntriesSum + currentTimer;
@@ -618,13 +681,23 @@ const TaskList: React.FC<Omit<TaskAreaProps, 'project' | 'onAddNewList'> & { tas
                             elapsedSeconds={totalSeconds}
                             isActive={props.activeTimerTaskId === task.id}
                             {...props}
+                            taskTimeMap={taskTimeMap}
                         />
                     );
                 })}
             </div>
         </div>
     );
-};
+}, (prevProps, nextProps) => {
+    // Custom comparison für TaskList
+    return (
+        prevProps.taskList === nextProps.taskList &&
+        prevProps.activeTimerTaskId === nextProps.activeTimerTaskId &&
+        prevProps.taskTimers === nextProps.taskTimers &&
+        prevProps.timeEntries === nextProps.timeEntries &&
+        prevProps.selectedItem === nextProps.selectedItem
+    );
+});
 
 const AddNewList: React.FC<{ onAddNewList: (title: string) => void }> = ({ onAddNewList }) => {
     const [isAdding, setIsAdding] = useState(false);
