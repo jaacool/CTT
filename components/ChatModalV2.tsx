@@ -350,6 +350,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState<string>('');
+  const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -1174,6 +1176,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         setHoveredMessageId(null);
       }
     }, 300);
+  };
+  
+  // Calculate menu position based on click position in chat window
+  const calculateMenuPosition = (event: React.MouseEvent) => {
+    const chatContainer = event.currentTarget.closest('.overflow-y-auto');
+    if (chatContainer) {
+      const rect = chatContainer.getBoundingClientRect();
+      const clickY = event.clientY;
+      const containerMiddle = rect.top + rect.height / 2;
+      
+      // If click is in bottom half, open menu upwards
+      setMenuPosition(clickY > containerMiddle ? 'top' : 'bottom');
+    }
+  };
+  
+  // Filter emojis based on search query
+  const getFilteredEmojis = () => {
+    const allEmojis = Object.values(emojiCategories).flat();
+    if (!emojiSearchQuery.trim()) {
+      return allEmojis;
+    }
+    // Simple search - could be enhanced with emoji names
+    return allEmojis.filter(emoji => emoji.includes(emojiSearchQuery));
   };
   
   // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
@@ -2163,7 +2188,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          calculateMenuPosition(e);
                                           setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                          setEmojiSearchQuery(''); // Reset search when opening
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
                                         title="Weitere Reaktionen"
@@ -2176,13 +2203,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* Emoji Picker Dropdown */}
                                       {showEmojiPicker === message.id && (
                                         <div 
-                                          className="emoji-picker-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64"
+                                          className={`emoji-picker-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64 ${
+                                            menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                          }`}
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           {/* Search Bar */}
                                           <div className="p-2 border-b border-border">
                                             <input
                                               type="text"
+                                              value={emojiSearchQuery}
+                                              onChange={(e) => setEmojiSearchQuery(e.target.value)}
                                               placeholder="Emoji suchen..."
                                               className="w-full px-2 py-1.5 bg-overlay rounded text-xs focus:outline-none focus:ring-1 focus:ring-glow-purple"
                                             />
@@ -2191,7 +2222,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* Emoji Grid - Alle Kategorien zusammen */}
                                           <div className="p-2 max-h-64 overflow-y-auto">
                                             <div className="grid grid-cols-8 gap-0.5">
-                                              {Object.values(emojiCategories).flat().map((emoji, index) => (
+                                              {getFilteredEmojis().map((emoji, index) => (
                                                 <button
                                                   key={`${emoji}-${index}`}
                                                   onClick={(e) => {
@@ -2205,6 +2236,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </button>
                                               ))}
                                             </div>
+                                            {getFilteredEmojis().length === 0 && (
+                                              <div className="text-center text-text-secondary text-xs py-4">
+                                                Keine Emojis gefunden
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -2226,6 +2262,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          calculateMenuPosition(e);
                                           setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
@@ -2239,7 +2276,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       {/* More Options Menu */}
                                       {showMoreMenu === message.id && (
                                         <div 
-                                          className="more-options-menu absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px]"
+                                          className={`more-options-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px] ${
+                                            menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                          }`}
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           {/* Zitat in Antwort */}
@@ -2690,8 +2729,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log('Emoji Picker clicked, current:', showEmojiPicker, 'message:', message.id);
+                                              calculateMenuPosition(e);
                                               setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                              setEmojiSearchQuery('');
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
                                             title="Weitere Reaktionen"
@@ -2704,13 +2744,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
                                             <div 
-                                              className="emoji-picker-menu absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64"
+                                              className={`emoji-picker-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl z-[1000] w-64 ${
+                                                menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                              }`}
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               {/* Search Bar */}
                                               <div className="p-2 border-b border-border">
                                                 <input
                                                   type="text"
+                                                  value={emojiSearchQuery}
+                                                  onChange={(e) => setEmojiSearchQuery(e.target.value)}
                                                   placeholder="Emoji suchen..."
                                                   className="w-full px-2 py-1.5 bg-overlay rounded text-xs focus:outline-none focus:ring-1 focus:ring-glow-purple"
                                                 />
@@ -2719,7 +2763,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               {/* Emoji Grid - Alle Kategorien zusammen */}
                                               <div className="p-2 max-h-64 overflow-y-auto">
                                                 <div className="grid grid-cols-8 gap-0.5">
-                                                  {Object.values(emojiCategories).flat().map((emoji, index) => (
+                                                  {getFilteredEmojis().map((emoji, index) => (
                                                     <button
                                                       key={`${emoji}-${index}`}
                                                       onClick={(e) => {
@@ -2733,6 +2777,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                     </button>
                                                   ))}
                                                 </div>
+                                                {getFilteredEmojis().length === 0 && (
+                                                  <div className="text-center text-text-secondary text-xs py-4">
+                                                    Keine Emojis gefunden
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
                                           )}
@@ -2754,6 +2803,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              calculateMenuPosition(e);
                                               setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
@@ -2767,7 +2817,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
                                             <div 
-                                              className="more-options-menu absolute top-full left-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px]"
+                                              className={`more-options-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[1000] min-w-[200px] ${
+                                                menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                              }`}
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               {/* Zitat in Antwort */}
