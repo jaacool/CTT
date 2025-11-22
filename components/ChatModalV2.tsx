@@ -1215,6 +1215,26 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     alert('Link kopiert!');
   };
   
+  // Handle download attachment
+  const handleDownloadAttachment = async (attachment: ChatAttachment) => {
+    try {
+      const response = await fetch(attachment.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      console.log('✅ Datei heruntergeladen:', attachment.name);
+    } catch (error) {
+      console.error('❌ Fehler beim Herunterladen:', error);
+      alert('Fehler beim Herunterladen der Datei');
+    }
+  };
+  
   // Handle pin message
   const handlePinMessage = (messageId: string) => {
     console.log('Pin message:', messageId);
@@ -2862,6 +2882,28 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           <div className="border-t border-border my-1"></div>
                                           
+                                          {/* Dateien herunterladen (wenn Attachments vorhanden) */}
+                                          {message.attachments && message.attachments.length > 0 && (
+                                            <>
+                                              {message.attachments.map((attachment, idx) => (
+                                                <button
+                                                  key={idx}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDownloadAttachment(attachment);
+                                                  }}
+                                                  className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                >
+                                                  <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                  </svg>
+                                                  <span className="text-text-primary truncate">{attachment.name}</span>
+                                                </button>
+                                              ))}
+                                              <div className="border-t border-border my-1"></div>
+                                            </>
+                                          )}
+                                          
                                           {/* Bearbeiten (nur eigene Nachrichten) */}
                                           {isOwnMessage && canEditMessage(message.timestamp) && (
                                             <button
@@ -3393,6 +3435,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                 </svg>
                                                 <span className="text-text-primary">Kopieren</span>
                                               </button>
+                                              
+                                              <div className="border-t border-border my-0.5"></div>
+                                              
+                                              {/* Dateien herunterladen (wenn Attachments vorhanden) */}
+                                              {message.attachments && message.attachments.length > 0 && (
+                                                <>
+                                                  {message.attachments.map((attachment, idx) => (
+                                                    <button
+                                                      key={idx}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDownloadAttachment(attachment);
+                                                      }}
+                                                      className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                    >
+                                                      <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                      </svg>
+                                                      <span className="text-text-primary truncate">{attachment.name}</span>
+                                                    </button>
+                                                  ))}
+                                                </>
+                                              )}
                                             </div>
                                           )}
                                         </div>
