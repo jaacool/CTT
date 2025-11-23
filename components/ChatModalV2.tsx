@@ -1193,33 +1193,45 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const handleStarMessage = async (messageId: string) => {
     console.log('🌟 handleStarMessage aufgerufen für:', messageId);
     try {
-      const message = messages.find(m => m.id === messageId);
-      if (!message) {
-        console.error('❌ Nachricht nicht gefunden:', messageId);
+      // 1. Lade aktuelle Nachricht aus Supabase um vollständige Daten zu haben
+      const { data: currentMessage, error: fetchError } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+      
+      if (fetchError || !currentMessage) {
+        console.error('❌ Nachricht nicht in Supabase gefunden:', messageId, fetchError);
         return;
       }
       
-      console.log('📝 Nachricht gefunden:', message);
+      console.log('📝 Nachricht aus Supabase geladen:', currentMessage);
       
-      // Prüfe ob Nachricht bereits markiert ist
-      const isStarred = message.starredBy?.includes(currentUser.id);
-      console.log('⭐ Bereits markiert?', isStarred);
+      // 2. Prüfe ob Nachricht bereits markiert ist
+      const currentStarredBy = currentMessage.starred_by || [];
+      const isStarred = currentStarredBy.includes(currentUser.id);
+      console.log('⭐ Bereits markiert?', isStarred, 'Current starred_by:', currentStarredBy);
       
+      // 3. Aktualisiere starredBy Array
       let updatedStarredBy: string[];
       if (isStarred) {
         // Entferne Stern
-        updatedStarredBy = (message.starredBy || []).filter(id => id !== currentUser.id);
+        updatedStarredBy = currentStarredBy.filter((id: string) => id !== currentUser.id);
       } else {
         // Füge Stern hinzu
-        updatedStarredBy = [...(message.starredBy || []), currentUser.id];
+        updatedStarredBy = [...currentStarredBy, currentUser.id];
       }
       
       console.log('📊 Aktualisierte starredBy:', updatedStarredBy);
       
-      // Update in Supabase - Realtime wird die Änderung automatisch propagieren
-      const updatedData = { ...message, starredBy: updatedStarredBy };
+      // 4. Update data JSON mit neuem starredBy
+      const currentData = currentMessage.data || {};
+      const updatedData = {
+        ...currentData,
+        starredBy: updatedStarredBy
+      };
       
-      console.log('💾 Sende Update an Supabase...');
+      console.log('💾 Sende Update an Supabase...', { data: updatedData, starred_by: updatedStarredBy });
       const { error } = await supabase
         .from('chat_messages')
         .update({ 
