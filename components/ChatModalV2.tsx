@@ -444,17 +444,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // useLayoutEffect runs before browser paint, preventing flash of old scroll position
   useLayoutEffect(() => {
     if (isOpen && currentChannel && !showMediaGallery) {
-      // Scroll container to absolute bottom (not just last message visible)
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      }
-      
-      // Additional scroll after messages are rendered (ensures DOM is ready)
-      setTimeout(() => {
-        if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-      }, 0);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [isOpen, currentChannel?.id, messages.length, showMediaGallery]);
 
