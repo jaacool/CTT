@@ -373,16 +373,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Callback Ref - scrollt SOFORT beim Mount/Update, BEVOR Browser malt
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const setScrollContainerRef = React.useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      // SOFORT beim Mount scrollTop setzen - KEIN Frame-Delay
-      node.scrollTop = node.scrollHeight;
-      scrollContainerRef.current = node;
-    }
-  }, [currentChannel?.id, messages.length]); // Re-create callback bei Channel/Message-Änderung
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -449,12 +440,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // Scroll bei Channel/Message-Änderungen - useLayoutEffect für Updates NACH dem initialen Mount
+  // Scroll to bottom - EINZIGE Scroll-Logik für alle Szenarien
+  // Läuft synchron VOR dem Browser-Paint, verhindert Flash-Frames
   useLayoutEffect(() => {
-    if (isOpen && currentChannel && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
-  }, [isOpen, currentChannel?.id, messages.length]);
+    if (!isOpen || !currentChannel || !scrollContainerRef.current) return;
+    
+    // Scroll SOFORT auf Maximum - kein setTimeout, keine Animation
+    const container = scrollContainerRef.current;
+    container.scrollTop = container.scrollHeight;
+  }, [
+    isOpen,                    // Chat öffnen
+    currentChannel?.id,        // Channel wechseln
+    messages.length,           // Neue Nachricht
+    currentProject?.id,        // Projekt-Filter
+    messageInput,              // Textarea-Höhe ändert sich
+    selectedFiles.length,      // Datei-Vorschau ändert sich
+    replyToMessage             // Reply-Banner ändert sich
+  ]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -534,19 +536,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [previewAttachment]);
 
-  // Scroll bei Projekt-Filter-Änderung
-  useLayoutEffect(() => {
-    if (isOpen && currentChannel && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
-  }, [currentProject?.id, isOpen, currentChannel]);
-
-  // Scroll bei Composer-Höhen-Änderung (messageInput, selectedFiles, replyToMessage)
-  useLayoutEffect(() => {
-    if (isOpen && currentChannel && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
-  }, [messageInput, selectedFiles.length, replyToMessage, isOpen, currentChannel]);
 
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -824,8 +813,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           textareaRef.current.style.height = '44px';
         }
         
-        // Scroll to bottom - wird automatisch durch useLayoutEffect getriggert
-        
         // 3. Upload files in background and update messages with real URLs
         if (filesToUpload.length > 0) {
           uploadChatFiles(filesToUpload, currentChannel.id, (fileIndex, progress) => {
@@ -1061,8 +1048,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       // Reset
       setAudioBlob(null);
       setRecordingTime(0);
-
-      // Scroll to bottom - wird automatisch durch useLayoutEffect getriggert
     } catch (error) {
       console.error('Error sending voice message:', error);
       alert('Fehler beim Senden der Sprachnachricht.');
@@ -1177,7 +1162,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setShowMediaGallery(false);
     
     onSwitchChannel(channelId);
-    // Scroll wird automatisch durch useLayoutEffect getriggert
   };
   
   // Handle star message
@@ -1924,7 +1908,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <button
                       onClick={() => {
                         onSwitchProject('');
-                        // Scroll wird automatisch durch useLayoutEffect getriggert
                       }}
                       className="px-2 py-2 hover:bg-overlay/80 transition-colors"
                       title="Filter zurücksetzen"
@@ -2438,7 +2421,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <button
                       onClick={() => {
                         setShowThreadView(null);
-                        // Scroll wird automatisch durch useLayoutEffect getriggert
                       }}
                       className="p-2 hover:bg-overlay rounded-lg transition-colors"
                       title="Zurück zum Haupt-Chat"
@@ -2485,7 +2467,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   <button
                     onClick={() => {
                       setShowMediaGallery(!showMediaGallery);
-                      // Scroll wird automatisch durch useLayoutEffect getriggert
                     }}
                     className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
                       showMediaGallery
@@ -2511,8 +2492,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               />
             ) : (
             <div 
-              ref={setScrollContainerRef}
+              ref={scrollContainerRef}
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
+              style={{ scrollBehavior: 'auto' }}
               onClick={() => setContextMenu(null)}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
