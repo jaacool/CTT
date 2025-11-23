@@ -3622,8 +3622,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </div>
             )}
 
-            {/* Message Input */}
-            {currentChannel && (
+            {/* Message Input - Hide when Media Gallery is open */}
+            {currentChannel && !showMediaGallery && (
               <div className="p-4 border-t border-transparent bg-transparent">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
