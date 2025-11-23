@@ -778,8 +778,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             }
             
             // Wenn die Nachricht nur ein Anhang ist (kein Text), verwende Medien-Format
+            // Speichere Attachment-ID für eindeutige Identifikation
             if (!quotedContent.trim()) {
-              quotedContent = `[MEDIA:${mediaType}:${mediaLabel}]`;
+              quotedContent = `[MEDIA:${mediaType}:${mediaLabel}:${attachment.id}]`;
             }
           }
           
@@ -1716,13 +1717,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     if (replyMatch) {
       let replyContent = replyMatch[2];
       let mediaType: 'image' | 'video' | 'audio' | 'voice' | 'file' | null = null;
+      let attachmentId: string | null = null;
       
       // Prüfe ob es sich um ein Medien-Zitat handelt
       if (replyContent.startsWith('[MEDIA:') && replyContent.endsWith(']')) {
-        const mediaMatch = replyContent.match(/^\[MEDIA:(image|video|audio|voice|file):(.+?)\]$/);
+        const mediaMatch = replyContent.match(/^\[MEDIA:(image|video|audio|voice|file):(.+?):(.+?)\]$/);
         if (mediaMatch) {
           mediaType = mediaMatch[1] as 'image' | 'video' | 'audio' | 'voice' | 'file';
           replyContent = mediaMatch[2]; // Dateiname oder Beschreibung
+          attachmentId = mediaMatch[3]; // Attachment-ID
         }
       }
       
@@ -1737,6 +1740,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         replyContent: replyContent,
         actualContent: replyMatch[3],
         mediaType: mediaType,
+        attachmentId: attachmentId,
       };
     }
     return null;
@@ -2658,19 +2662,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               
                                               // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
                                               if (reply.mediaType && m.attachments && m.attachments.length > 0) {
-                                                const match = m.attachments.some(att => {
-                                                  // Prüfe nach Medien-Typ
-                                                  if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
-                                                  if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
-                                                  if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
-                                                  if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
-                                                  // Für Dateien: prüfe nach Namen
-                                                  if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
-                                                  return false;
-                                                });
-                                                if (match) {
-                                                  console.log('✅ Medien-Match gefunden!');
-                                                  return true;
+                                                // Wenn attachmentId vorhanden, prüfe exakt nach ID
+                                                if (reply.attachmentId) {
+                                                  const match = m.attachments.some(att => att.id === reply.attachmentId);
+                                                  if (match) {
+                                                    console.log('✅ Medien-Match gefunden (via ID)!');
+                                                    return true;
+                                                  }
+                                                } else {
+                                                  // Fallback für alte Nachrichten ohne ID
+                                                  const match = m.attachments.some(att => {
+                                                    // Prüfe nach Medien-Typ
+                                                    if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                    if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                    if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                    if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                    // Für Dateien: prüfe nach Namen
+                                                    if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                    return false;
+                                                  });
+                                                  if (match) {
+                                                    console.log('✅ Medien-Match gefunden (via Typ)!');
+                                                    return true;
+                                                  }
                                                 }
                                               }
                                               
@@ -3204,17 +3218,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                                   
                                                   // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
                                                   if (reply.mediaType && m.attachments && m.attachments.length > 0) {
-                                                    const match = m.attachments.some(att => {
-                                                      // Prüfe nach Medien-Typ
-                                                      if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
-                                                      if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
-                                                      if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
-                                                      if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
-                                                      // Für Dateien: prüfe nach Namen
-                                                      if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
-                                                      return false;
-                                                    });
-                                                    if (match) return true;
+                                                    // Wenn attachmentId vorhanden, prüfe exakt nach ID
+                                                    if (reply.attachmentId) {
+                                                      const match = m.attachments.some(att => att.id === reply.attachmentId);
+                                                      if (match) return true;
+                                                    } else {
+                                                      // Fallback für alte Nachrichten ohne ID
+                                                      const match = m.attachments.some(att => {
+                                                        // Prüfe nach Medien-Typ
+                                                        if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                        if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                        if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                        if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                        // Für Dateien: prüfe nach Namen
+                                                        if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                        return false;
+                                                      });
+                                                      if (match) return true;
+                                                    }
                                                   }
                                                   
                                                   // Für Text-Nachrichten
