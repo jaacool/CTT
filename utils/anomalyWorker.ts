@@ -88,7 +88,11 @@ export function detectAnomaliesOptimized(
   });
   
   // OPTIMIZATION 2: Pre-Index "Stoppen vergessen" Kandidaten
-  // Nur Einträge die potenziell über Nacht laufen oder laufende Timer
+  // Ein Eintrag ist eine Anomalie wenn:
+  // - Er über Nacht läuft (Start-Datum ≠ End-Datum)
+  // - UND er den Zeitraum 0-6 Uhr überschneidet
+  // - UND die Gesamtdauer ≥ 6h ist
+  // - UND mindestens 6h innerhalb des 0-6 Uhr Fensters liegen
   const nightCandidates = new Map<string, TimeEntry[]>();
   const today = new Date();
   const todayStr = toBerlinISOString(today);
@@ -101,11 +105,21 @@ export function detectAnomaliesOptimized(
     if (!entry.endTime) {
       // Nur wenn Timer vor heute gestartet wurde
       if (startDateStr < todayStr) {
-        // Berechne Dauer seit Start
-        const durationHours = (today.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        // Berechne wie lange der Timer im 0-6 Uhr Fenster von heute läuft
+        const todayMidnight = new Date(today);
+        todayMidnight.setHours(0, 0, 0, 0);
+        const today6AM = new Date(today);
+        today6AM.setHours(6, 0, 0, 0);
         
-        // Nur wenn mindestens 5h läuft
-        if (durationHours >= 5) {
+        // Timer läuft seit gestern, also zählt die Zeit von 0:00 bis jetzt (max 6:00)
+        const effectiveEnd = today < today6AM ? today : today6AM;
+        const hoursInWindow = (effectiveEnd.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60);
+        
+        // Gesamtdauer
+        const totalHours = (today.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        // Nur wenn >= 6h gesamt UND >= 6h im Fenster
+        if (totalHours >= 6 && hoursInWindow >= 6) {
           if (!nightCandidates.has(todayStr)) {
             nightCandidates.set(todayStr, []);
           }
@@ -115,23 +129,43 @@ export function detectAnomaliesOptimized(
       return;
     }
     
-    // FALL 2: Beendeter Eintrag zwischen 0-6 Uhr mit mindestens 5h Dauer
+    // FALL 2: Beendeter Eintrag
     const endTime = new Date(entry.endTime);
     const endDateStr = toBerlinISOString(endTime);
-    const endHour = getBerlinHour(endTime);
     
-    // Prüfe ob Ende zwischen 0:00 und 5:59 Uhr liegt UND über Nacht
-    if (endHour >= 0 && endHour < 6 && startDateStr !== endDateStr) {
-      // Berechne Dauer in Stunden
-      const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      
-      // Nur wenn mindestens 5h Dauer
-      if (durationHours >= 5) {
-        if (!nightCandidates.has(endDateStr)) {
-          nightCandidates.set(endDateStr, []);
-        }
-        nightCandidates.get(endDateStr)!.push(entry);
+    // Muss über Nacht laufen
+    if (startDateStr === endDateStr) return;
+    
+    // Gesamtdauer muss >= 6h sein
+    const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    if (totalHours < 6) return;
+    
+    // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt
+    const endDateMidnight = new Date(endTime);
+    endDateMidnight.setHours(0, 0, 0, 0);
+    const endDate6AM = new Date(endTime);
+    endDate6AM.setHours(6, 0, 0, 0);
+    
+    // Überschneidung mit 0-6 Uhr Fenster berechnen
+    const windowStart = endDateMidnight;
+    const windowEnd = endDate6AM;
+    
+    // Effektiver Start im Fenster (entweder Mitternacht oder tatsächlicher Start)
+    const effectiveStart = startTime > windowStart ? startTime : windowStart;
+    // Effektives Ende im Fenster (entweder 6 Uhr oder tatsächliches Ende)
+    const effectiveEnd = endTime < windowEnd ? endTime : windowEnd;
+    
+    // Wenn kein Overlap, dann skip
+    if (effectiveStart >= effectiveEnd) return;
+    
+    const hoursInWindow = (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60);
+    
+    // Nur wenn >= 6h im Fenster
+    if (hoursInWindow >= 6) {
+      if (!nightCandidates.has(endDateStr)) {
+        nightCandidates.set(endDateStr, []);
       }
+      nightCandidates.get(endDateStr)!.push(entry);
     }
   });
   

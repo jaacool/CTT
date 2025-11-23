@@ -155,46 +155,75 @@ export function detectAnomalies(
           });
       }
 
-      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-6 Uhr mit min. 5h Dauer ODER laufende Timer > 5h) - Gilt für ALLE User inkl. Admins
-      // Prüfe ALLE Einträge des Users (nicht nur dailyEntries die am aktuellen Tag starten)
+      // 5. Stoppen vergessen - Gilt für ALLE User inkl. Admins
+      // Ein Eintrag ist eine Anomalie wenn:
+      // - Er über Nacht läuft (Start-Datum ≠ End-Datum)
+      // - UND er den Zeitraum 0-6 Uhr überschneidet
+      // - UND die Gesamtdauer ≥ 6h ist
+      // - UND mindestens 6h innerhalb des 0-6 Uhr Fensters liegen
       const hasNightEntry = userEntries.some(entry => {
         const startTime = new Date(entry.startTime);
         
         // FALL 1: Laufender Timer (kein endTime)
         if (!entry.endTime) {
-          // Prüfe ob der Timer am Vortag oder früher gestartet wurde
           const startDateStr = toBerlinISOString(startTime);
           const isOldTimer = startDateStr < dateStr;
           
-          // Berechne Dauer seit Start
-          const now = new Date();
-          const durationHours = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          if (!isOldTimer || !isToday) return false;
           
-          // Wenn Timer vor heute gestartet wurde UND heute ist UND mindestens 5h läuft, dann vergessen zu stoppen
-          return isOldTimer && isToday && durationHours >= 5;
+          // Berechne wie lange der Timer im 0-6 Uhr Fenster von heute läuft
+          const now = new Date();
+          const todayMidnight = new Date(now);
+          todayMidnight.setHours(0, 0, 0, 0);
+          const today6AM = new Date(now);
+          today6AM.setHours(6, 0, 0, 0);
+          
+          // Timer läuft seit gestern, also zählt die Zeit von 0:00 bis jetzt (max 6:00)
+          const effectiveEnd = now < today6AM ? now : today6AM;
+          const hoursInWindow = (effectiveEnd.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60);
+          
+          // Gesamtdauer
+          const totalHours = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          
+          return totalHours >= 6 && hoursInWindow >= 6;
         }
         
-        // FALL 2: Beendeter Eintrag zwischen 0-6 Uhr mit mindestens 5h Dauer
+        // FALL 2: Beendeter Eintrag
         const endTime = new Date(entry.endTime);
-        
-        // Prüfe ob der Eintrag am aktuellen Tag zwischen 0-6 Uhr endet (Berlin Zeit)
-        const endDateStr = toBerlinISOString(endTime);
-        if (endDateStr !== dateStr) return false; // Nur Einträge die an diesem Tag enden
-        
-        // Hole Stunde in Berlin Zeit
-        const endHour = getBerlinHour(endTime);
-        
-        // Prüfe ob Ende zwischen 0:00 und 5:59 Uhr liegt
-        const endInNightRange = endHour >= 0 && endHour < 6;
-        
-        // Prüfe ob der Eintrag am Vortag gestartet wurde (über Nacht)
         const startDateStr = toBerlinISOString(startTime);
-        const isOvernight = startDateStr !== endDateStr;
+        const endDateStr = toBerlinISOString(endTime);
         
-        // Berechne Dauer in Stunden
-        const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        // Muss über Nacht laufen
+        if (startDateStr === endDateStr) return false;
         
-        return endInNightRange && isOvernight && durationHours >= 5;
+        // Muss an diesem Tag enden
+        if (endDateStr !== dateStr) return false;
+        
+        // Gesamtdauer muss >= 6h sein
+        const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        if (totalHours < 6) return false;
+        
+        // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt
+        const endDateMidnight = new Date(endTime);
+        endDateMidnight.setHours(0, 0, 0, 0);
+        const endDate6AM = new Date(endTime);
+        endDate6AM.setHours(6, 0, 0, 0);
+        
+        // Überschneidung mit 0-6 Uhr Fenster berechnen
+        const windowStart = endDateMidnight;
+        const windowEnd = endDate6AM;
+        
+        // Effektiver Start im Fenster (entweder Mitternacht oder tatsächlicher Start)
+        const effectiveStart = startTime > windowStart ? startTime : windowStart;
+        // Effektives Ende im Fenster (entweder 6 Uhr oder tatsächliches Ende)
+        const effectiveEnd = endTime < windowEnd ? endTime : windowEnd;
+        
+        // Wenn kein Overlap, dann false
+        if (effectiveStart >= effectiveEnd) return false;
+        
+        const hoursInWindow = (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60);
+        
+        return hoursInWindow >= 6;
       });
       
       if (hasNightEntry) {
