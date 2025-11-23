@@ -456,6 +456,20 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return () => resizeObserver.disconnect();
   }, []);
 
+  // Scroll to bottom bei neuen Nachrichten (nur wenn bereits am Ende)
+  useEffect(() => {
+    if (!scrollContainerRef.current || !isOpen || !currentChannel) return;
+    
+    const container = scrollContainerRef.current;
+    // Prüfe ob User bereits am Ende ist (innerhalb 100px vom Ende)
+    const isNearBottom = container.scrollTop <= 100;
+    
+    if (isNearBottom) {
+      // Scroll to top (wegen flex-col-reverse ist "top" visuell "bottom")
+      container.scrollTop = 0;
+    }
+  }, [messages.length, isOpen, currentChannel?.id]);
+
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
