@@ -246,3 +246,91 @@ export function detectAnomalies(
   
   return anomalies;
 }
+
+/**
+ * Prüft ob eine FORGOT_TO_STOP Anomalie für einen bestimmten TimeEntry noch gültig ist
+ * Wird aufgerufen wenn ein TimeEntry geändert oder gelöscht wird
+ * 
+ * @param timeEntry Der geänderte/gelöschte TimeEntry
+ * @param allTimeEntries Alle TimeEntries des Users (für Kontext)
+ * @returns true wenn die Anomalie noch gültig ist, false wenn sie entfernt werden soll
+ */
+export function shouldKeepForgotToStopAnomaly(
+  timeEntry: TimeEntry,
+  allTimeEntries: TimeEntry[]
+): boolean {
+  // Wenn der Eintrag gelöscht wurde, prüfen wir ob es noch andere Einträge gibt die das Muster erfüllen
+  const startTime = new Date(timeEntry.startTime);
+  const startDateStr = toBerlinISOString(startTime);
+  
+  // Finde alle Einträge des Users die am gleichen Tag STARTEN
+  const userEntries = allTimeEntries.filter(e => {
+    const entryStartTime = new Date(e.startTime);
+    const entryStartDateStr = toBerlinISOString(entryStartTime);
+    return e.user.id === timeEntry.user.id && entryStartDateStr === startDateStr;
+  });
+  
+  // Prüfe ob IRGENDEIN Eintrag an diesem Tag noch das FORGOT_TO_STOP Muster erfüllt
+  const hasAnyForgotToStopEntry = userEntries.some(entry => {
+    const entryStartTime = new Date(entry.startTime);
+    
+    // FALL 1: Laufender Timer (kein endTime)
+    if (!entry.endTime) {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowMidnight = new Date(tomorrow);
+      tomorrowMidnight.setHours(0, 0, 0, 0);
+      const tomorrow6AM = new Date(tomorrow);
+      tomorrow6AM.setHours(6, 0, 0, 0);
+      
+      // Wenn Timer noch nicht bis morgen läuft, keine Anomalie
+      if (now < tomorrowMidnight) return false;
+      
+      // Timer läuft seit heute, also zählt die Zeit von morgen 0:00 bis jetzt (max 6:00)
+      const effectiveEnd = now < tomorrow6AM ? now : tomorrow6AM;
+      const hoursInWindow = (effectiveEnd.getTime() - tomorrowMidnight.getTime()) / (1000 * 60 * 60);
+      
+      // Gesamtdauer
+      const totalHours = (now.getTime() - entryStartTime.getTime()) / (1000 * 60 * 60);
+      
+      return totalHours >= 6 && hoursInWindow >= 6;
+    }
+    
+    // FALL 2: Beendeter Eintrag
+    const endTime = new Date(entry.endTime);
+    const endDateStr = toBerlinISOString(endTime);
+    const entryStartDateStr = toBerlinISOString(entryStartTime);
+    
+    // Muss über Nacht laufen
+    if (entryStartDateStr === endDateStr) return false;
+    
+    // Gesamtdauer muss >= 6h sein
+    const totalHours = (endTime.getTime() - entryStartTime.getTime()) / (1000 * 60 * 60);
+    if (totalHours < 6) return false;
+    
+    // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt (am Folgetag)
+    const endDateMidnight = new Date(endTime);
+    endDateMidnight.setHours(0, 0, 0, 0);
+    const endDate6AM = new Date(endTime);
+    endDate6AM.setHours(6, 0, 0, 0);
+    
+    // Überschneidung mit 0-6 Uhr Fenster berechnen
+    const windowStart = endDateMidnight;
+    const windowEnd = endDate6AM;
+    
+    // Effektiver Start im Fenster (entweder Mitternacht oder tatsächlicher Start)
+    const effectiveStart = entryStartTime > windowStart ? entryStartTime : windowStart;
+    // Effektives Ende im Fenster (entweder 6 Uhr oder tatsächliches Ende)
+    const effectiveEnd = endTime < windowEnd ? endTime : windowEnd;
+    
+    // Wenn kein Overlap, dann false
+    if (effectiveStart >= effectiveEnd) return false;
+    
+    const hoursInWindow = (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60);
+    
+    return hoursInWindow >= 6;
+  });
+  
+  return hasAnyForgotToStopEntry;
+}

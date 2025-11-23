@@ -281,6 +281,40 @@ export async function addAnomalyComment(
   }
 }
 
+/**
+ * Löscht eine Anomalie aus Supabase
+ * Wird verwendet wenn eine Anomalie nicht mehr zutrifft (z.B. nach TimeEntry-Änderung)
+ */
+export async function deleteAnomaly(
+  userId: string,
+  date: string,
+  type: AnomalyType
+): Promise<void> {
+  if (!isSupabaseAvailable()) {
+    console.warn('⚠️ Supabase not available, skipping anomaly delete');
+    return;
+  }
+
+  try {
+    const anomalyId = `${userId}-${date}-${type}`;
+    console.log(`🗑️ Deleting anomaly ${anomalyId}...`);
+
+    const { error } = await supabase!
+      .from('anomalies')
+      .delete()
+      .eq('id', anomalyId);
+
+    if (error) {
+      console.error('❌ Failed to delete anomaly:', error);
+      return;
+    }
+
+    console.log(`✅ Deleted anomaly ${anomalyId}`);
+  } catch (error) {
+    console.error('❌ Failed to delete anomaly:', error);
+  }
+}
+
 // =====================================================
 // REALTIME SYNC
 // =====================================================

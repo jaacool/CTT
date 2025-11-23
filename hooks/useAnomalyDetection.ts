@@ -244,6 +244,13 @@ export function useAnomalyDetection(
     ));
   }, []);
 
+  // Entferne eine Anomalie direkt aus dem State (z.B. nach TimeEntry-Änderung)
+  const removeAnomaly = useCallback((userId: string, date: string, type: string) => {
+    setAnomalies(prev => prev.filter(a => 
+      !(a.userId === userId && a.date === date && a.type === type)
+    ));
+  }, []);
+
   return {
     anomalies,
     isCalculating,
@@ -253,6 +260,7 @@ export function useAnomalyDetection(
     invalidateDateCache,
     forceRecalculate,
     updateAnomalyStatus,
-    updateAnomalyComments
+    updateAnomalyComments,
+    removeAnomaly
   };
 }

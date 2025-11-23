@@ -26,7 +26,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
   const [totalMinutes, setTotalMinutes] = useState(Math.floor(elapsedSeconds / 60));
   const [endTime, setEndTime] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toTimeString().slice(0, 5) : '');
   const [endDate, setEndDate] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-  const [sliderMinutes, setSliderMinutes] = useState(0); // Slider für End Zeit (0-720 min = 0-12h)
+  const [sliderMinutes, setSliderMinutes] = useState(() => Math.min(720, Math.max(0, Math.floor(elapsedSeconds / 60)))); // Slider für End Zeit (0-720 min = 0-12h)
   const isRunning = !timeEntry.endTime;
   
   // Dropdown States
@@ -70,6 +70,14 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   };
+
+  // Slider immer an totalMinutes anpassen, egal wodurch sie geändert werden
+  React.useEffect(() => {
+    setSliderMinutes(prev => {
+      const clamped = Math.min(720, Math.max(0, totalMinutes));
+      return clamped;
+    });
+  }, [totalMinutes]);
 
   const handleTotalTimeChange = (newTotalMinutes: number) => {
     setTotalMinutes(newTotalMinutes);
@@ -438,43 +446,12 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <div className="flex items-baseline flex-1">
-                <input
-                  type="number"
-                  value={Math.floor(totalMinutes / 60)}
-                  onChange={(e) => {
-                    const hours = parseInt(e.target.value) || 0;
-                    const mins = totalMinutes % 60;
-                    handleTotalTimeChange(hours * 60 + mins);
-                  }}
-                  className="bg-transparent text-text-primary text-lg font-bold outline-none w-8 text-right"
-                  min="0"
-                />
-                <span className="text-text-secondary text-sm ml-1 mr-2">h</span>
-                <input
-                  type="number"
-                  value={totalMinutes % 60}
-                  onChange={(e) => {
-                    const hours = Math.floor(totalMinutes / 60);
-                    const mins = Math.min(59, Math.max(0, parseInt(e.target.value) || 0));
-                    handleTotalTimeChange(hours * 60 + mins);
-                  }}
-                  className="bg-transparent text-text-primary text-lg font-bold outline-none w-8 text-right"
-                  min="0"
-                  max="59"
-                />
-                <span className="text-text-secondary text-sm ml-1">min</span>
-              </div>
+              <span className="text-text-primary text-lg font-bold">
+                {Math.floor(totalMinutes / 60)}h{(totalMinutes % 60).toString().padStart(2, '0')}m
+              </span>
             </div>
             {/* Slider für End Zeit (0-12h in 5min Schritten) */}
-            <div className="bg-overlay rounded-xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-text-secondary text-xs">0h</span>
-                <span className="text-text-primary text-xs font-semibold">
-                  {Math.floor(sliderMinutes / 60)}h {sliderMinutes % 60}m
-                </span>
-                <span className="text-text-secondary text-xs">12h</span>
-              </div>
+            <div className="bg-overlay rounded-xl px-4 py-3 flex items-center">
               <input
                 type="range"
                 min="0"
