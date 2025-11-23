@@ -1178,7 +1178,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       newSet.delete(channelId);
       return newSet;
     });
+    
+    // Schließe Media Gallery wenn offen
+    setShowMediaGallery(false);
+    
     onSwitchChannel(channelId);
+    
+    // Scroll zu neuester Nachricht
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }, 0);
   };
   
   // Handle star message
@@ -2489,7 +2498,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   
                   {/* Media Gallery Button */}
                   <button
-                    onClick={() => setShowMediaGallery(!showMediaGallery)}
+                    onClick={() => {
+                      const wasOpen = showMediaGallery;
+                      setShowMediaGallery(!showMediaGallery);
+                      
+                      // Wenn Media Gallery geschlossen wird, scroll zu neuester Nachricht
+                      if (wasOpen) {
+                        setTimeout(() => {
+                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                        }, 0);
+                      }
+                    }}
                     className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
                       showMediaGallery
                         ? 'bg-glow-purple/20 text-glow-purple'
