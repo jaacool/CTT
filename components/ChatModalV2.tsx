@@ -653,11 +653,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // Filter messages: by channel and optionally by project
-  const filteredMessages = messages.filter(msg => {
-    if (msg.channelId !== currentChannel?.id) return false;
-    if (currentProject && msg.projectId !== currentProject.id) return false;
-    return true;
-  });
+  // WICHTIG: Immer chronologisch sortieren (alt → neu)
+  const filteredMessages = messages
+    .filter(msg => {
+      if (msg.channelId !== currentChannel?.id) return false;
+      if (currentProject && msg.projectId !== currentProject.id) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Count unread messages per channel
   const getUnreadCountForChannel = (channelId: string) => {
