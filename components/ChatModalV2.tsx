@@ -1216,7 +1216,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       
       console.log('📊 Aktualisierte starredBy:', updatedStarredBy);
       
-      // Update data JSON und starred_by Spalte
+      // Update in Supabase - Realtime wird die Änderung automatisch propagieren
       const updatedData = { ...message, starredBy: updatedStarredBy };
       
       console.log('💾 Sende Update an Supabase...');
@@ -1234,9 +1234,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       }
       
       console.log(isStarred ? '✅ Stern entfernt' : '✅ Nachricht markiert:', messageId);
-      setShowMoreMenu(null);
       
-      // Trigger refresh (wird durch Realtime-Subscription automatisch aktualisiert)
+      // Manuelles Nachladen der Nachricht um sicherzustellen dass UI aktualisiert wird
+      const { data: updatedMessage } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+      
+      if (updatedMessage) {
+        console.log('🔄 Nachricht neu geladen:', updatedMessage);
+      }
+      
+      setShowMoreMenu(null);
     } catch (error) {
       console.error('❌ Fehler beim Markieren:', error);
     }
