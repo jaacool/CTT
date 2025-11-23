@@ -2428,14 +2428,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             
-            {/* Media Gallery View */}
-            {showMediaGallery && currentChannel ? (
-              <MediaGallery
-                messages={filteredMessages}
-                onClose={() => setShowMediaGallery(false)}
-              />
-            ) : (
-              <>
             {/* Chat Header */}
             {currentChannel && (
               <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
@@ -2511,7 +2503,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               </div>
             )}
 
-            {/* Messages */}
+            {/* Messages or Media Gallery */}
+            {showMediaGallery && currentChannel ? (
+              <MediaGallery
+                messages={filteredMessages}
+                onClose={() => setShowMediaGallery(false)}
+              />
+            ) : (
             <div 
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
@@ -3622,6 +3620,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               <div className="h-4" />
               <div ref={messagesEndRef} />
             </div>
+            )}
 
             {/* Message Input */}
             {currentChannel && (
@@ -3894,8 +3893,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 </div>
               </div>
             )}
-          </>
-          )}
           </div>
         </div>
       </div>
