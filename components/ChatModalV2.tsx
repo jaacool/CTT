@@ -374,9 +374,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -440,8 +442,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // KEINE JavaScript Scroll-Logik mehr nötig!
-  // CSS flex-direction: column-reverse handled das automatisch
+  // Track Composer-Höhe für dynamischen Spacer
+  useEffect(() => {
+    if (!composerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setComposerHeight(entry.contentRect.height);
+      }
+    });
+    
+    resizeObserver.observe(composerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -3586,15 +3599,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 });
               })()}
-              {/* Spacer for hover menu - ensures last message has room for the hover menu */}
-              <div className="h-4" />
+              {/* Dynamischer Spacer: Kompensiert Composer-Höhe bei flex-col-reverse */}
+              <div style={{ height: `${Math.max(32, composerHeight - 80)}px` }} />
               <div ref={messagesEndRef} />
             </div>
             )}
 
             {/* Message Input - Hide when Media Gallery is open */}
             {currentChannel && !showMediaGallery && (
-              <div className="p-4 border-t border-transparent bg-transparent">
+              <div ref={composerRef} className="p-4 border-t border-transparent bg-transparent">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
