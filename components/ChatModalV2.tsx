@@ -1183,6 +1183,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle star message
   const handleStarMessage = async (messageId: string) => {
     console.log('🌟 handleStarMessage aufgerufen für:', messageId);
+    
+    // Prüfe ob es eine temporäre ID ist (beginnt mit 'msg-')
+    if (messageId.startsWith('msg-')) {
+      console.warn('⚠️ Kann temporäre Nachricht nicht markieren. Warte bis Nachricht in Supabase gespeichert ist.');
+      return;
+    }
+    
     try {
       const message = messages.find(m => m.id === messageId);
       if (!message) {
@@ -3029,9 +3036,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleStarMessage(message.id);
+                                              if (!message.id.startsWith('msg-')) {
+                                                handleStarMessage(message.id);
+                                              }
                                             }}
-                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                            disabled={message.id.startsWith('msg-')}
+                                            className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center space-x-2 ${
+                                              message.id.startsWith('msg-') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-overlay'
+                                            }`}
+                                            title={message.id.startsWith('msg-') ? 'Nachricht wird noch gespeichert...' : 'Nachricht markieren'}
                                           >
                                             <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -3601,9 +3614,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  handleStarMessage(message.id);
+                                                  if (!message.id.startsWith('msg-')) {
+                                                    handleStarMessage(message.id);
+                                                  }
                                                 }}
-                                                className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                disabled={message.id.startsWith('msg-')}
+                                                className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center space-x-2 ${
+                                                  message.id.startsWith('msg-') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-overlay'
+                                                }`}
+                                                title={message.id.startsWith('msg-') ? 'Nachricht wird noch gespeichert...' : 'Nachricht markieren'}
                                               >
                                                 <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
