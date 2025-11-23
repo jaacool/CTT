@@ -107,6 +107,7 @@ const App: React.FC = () => {
   
   // Loading State - initial false, wird auf true gesetzt sobald Daten geladen sind
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [shouldStartFade, setShouldStartFade] = useState(false);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>(MOCK_ABSENCE_REQUESTS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotificationRequestId, setSelectedNotificationRequestId] = useState<string | undefined>(undefined);
@@ -237,11 +238,23 @@ const App: React.FC = () => {
     }
   }, [users, chatChannels.length]);
 
+  // Verzögerter Fade-Start, damit Animation smooth durchläuft
+  useEffect(() => {
+    if (isDataLoaded && !shouldStartFade) {
+      // Warte 300ms nach Daten-Laden, bevor Fade startet
+      const timer = setTimeout(() => {
+        setShouldStartFade(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isDataLoaded, shouldStartFade]);
+
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
     const loadFromSupabase = async () => {
       // Setze Loading State
       setIsDataLoaded(false);
+      setShouldStartFade(false);
       
       // Versuche zuerst aus localStorage zu laden (instant!)
       console.log('🔍 Prüfe localStorage Cache...');
@@ -1998,13 +2011,13 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen font-sans text-sm relative">
-      {/* Loading Screen Overlay - fadet aus wenn Daten geladen */}
+      {/* Loading Screen Overlay - fadet aus mit Delay nach Daten-Laden */}
       <div 
         className="absolute inset-0 z-50"
         style={{
-          opacity: isDataLoaded ? 0 : 1,
-          pointerEvents: isDataLoaded ? 'none' : 'auto',
-          transition: 'opacity 2s ease-out',
+          opacity: shouldStartFade ? 0 : 1,
+          pointerEvents: shouldStartFade ? 'none' : 'auto',
+          transition: shouldStartFade ? 'opacity 2s ease-out' : 'none',
           willChange: 'opacity',
           backfaceVisibility: 'hidden',
           WebkitFontSmoothing: 'antialiased',
