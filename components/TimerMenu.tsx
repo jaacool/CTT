@@ -74,15 +74,27 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
   const handleTotalTimeChange = (newTotalMinutes: number) => {
     setTotalMinutes(newTotalMinutes);
     
-    // Berechne neue Startzeit basierend auf der Gesamtzeit
-    const now = new Date();
-    const newStartDate = new Date(now.getTime() - newTotalMinutes * 60 * 1000);
-    const newStartTimeStr = newStartDate.toTimeString().slice(0, 5);
-    setStartTime(newStartTimeStr);
+    if (isRunning) {
+      // Bei laufendem Timer: Berechne neue Startzeit basierend auf jetzt - Gesamtzeit
+      const now = new Date();
+      const newStartDate = new Date(now.getTime() - newTotalMinutes * 60 * 1000);
+      setStartTime(newStartDate.toTimeString().slice(0, 5));
+      setStartDate(newStartDate.toISOString().split('T')[0]);
+    } else {
+      // Bei gestopptem Timer: Berechne neue Endzeit basierend auf Start + Gesamtzeit
+      const [hours, mins] = startTime.split(':').map(Number);
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(hours, mins, 0, 0);
+      const newEndDate = new Date(startDateTime.getTime() + newTotalMinutes * 60 * 1000);
+      setEndTime(newEndDate.toTimeString().slice(0, 5));
+      setEndDate(newEndDate.toISOString().split('T')[0]);
+      setSliderMinutes(newTotalMinutes);
+    }
   };
 
   const handleSliderChange = (minutes: number) => {
     setSliderMinutes(minutes);
+    setTotalMinutes(minutes);
     
     // Berechne End Zeit basierend auf Start Zeit + Slider Wert
     const [hours, mins] = startTime.split(':').map(Number);
@@ -97,18 +109,23 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
   };
 
   const handleFinish = () => {
-    // Berechne neue Startzeit falls Zeit oder Datum geändert wurde
-    if (startTime !== originalStartTime || startDate !== originalStartDate) {
-      const [hours, minutes] = startTime.split(':').map(Number);
-      const newStartDate = new Date(startDate);
-      newStartDate.setHours(hours, minutes, 0, 0);
-      
-      // Update TimeEntry mit neuer Startzeit und Notiz (aber kein endTime - Timer läuft weiter)
-      onUpdate(timeEntry.id, newStartDate.toISOString(), '', note);
-    } else {
-      // Nur Notiz aktualisieren
-      onUpdate(timeEntry.id, timeEntry.startTime, timeEntry.endTime || '', note);
+    // Berechne neue Startzeit
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const newStartDateTime = new Date(startDate);
+    newStartDateTime.setHours(startHours, startMinutes, 0, 0);
+    
+    let newEndTimeISO = '';
+    
+    if (!isRunning && endTime) {
+      // Bei gestopptem Timer: Berechne Endzeit
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      const newEndDateTime = new Date(endDate);
+      newEndDateTime.setHours(endHours, endMinutes, 0, 0);
+      newEndTimeISO = newEndDateTime.toISOString();
     }
+    
+    // Update TimeEntry mit neuen Zeiten und Notiz
+    onUpdate(timeEntry.id, newStartDateTime.toISOString(), newEndTimeISO, note);
     onClose();
   };
 
@@ -366,7 +383,21 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
               <input
                 type="time"
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={(e) => {
+                  setStartTime(e.target.value);
+                  // Aktualisiere Gesamtzeit und Slider wenn Endzeit gesetzt ist
+                  if (!isRunning && endTime) {
+                    const [startHours, startMins] = e.target.value.split(':').map(Number);
+                    const [endHours, endMins] = endTime.split(':').map(Number);
+                    const startDateTime = new Date(startDate);
+                    startDateTime.setHours(startHours, startMins, 0, 0);
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(endHours, endMins, 0, 0);
+                    const diffMinutes = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+                    setTotalMinutes(Math.max(0, diffMinutes));
+                    setSliderMinutes(Math.max(0, diffMinutes));
+                  }
+                }}
                 className="bg-transparent text-text-primary text-lg font-bold outline-none flex-1"
               />
             </div>
@@ -380,7 +411,21 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  // Aktualisiere Gesamtzeit und Slider wenn Endzeit gesetzt ist
+                  if (!isRunning && endTime) {
+                    const [startHours, startMins] = startTime.split(':').map(Number);
+                    const [endHours, endMins] = endTime.split(':').map(Number);
+                    const startDateTime = new Date(e.target.value);
+                    startDateTime.setHours(startHours, startMins, 0, 0);
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(endHours, endMins, 0, 0);
+                    const diffMinutes = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+                    setTotalMinutes(Math.max(0, diffMinutes));
+                    setSliderMinutes(Math.max(0, diffMinutes));
+                  }
+                }}
                 className="bg-transparent text-text-primary text-sm font-semibold outline-none flex-1"
               />
             </div>
@@ -437,7 +482,21 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
               <input
                 type="time"
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                onChange={(e) => {
+                  setEndTime(e.target.value);
+                  // Aktualisiere Gesamtzeit und Slider
+                  if (!isRunning) {
+                    const [startHours, startMins] = startTime.split(':').map(Number);
+                    const [endHours, endMins] = e.target.value.split(':').map(Number);
+                    const startDateTime = new Date(startDate);
+                    startDateTime.setHours(startHours, startMins, 0, 0);
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(endHours, endMins, 0, 0);
+                    const diffMinutes = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+                    setTotalMinutes(Math.max(0, diffMinutes));
+                    setSliderMinutes(Math.max(0, diffMinutes));
+                  }
+                }}
                 disabled={isRunning}
                 className={`bg-transparent text-lg font-bold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
                 placeholder="--:--"
@@ -453,7 +512,21 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  // Aktualisiere Gesamtzeit und Slider
+                  if (!isRunning && endTime) {
+                    const [startHours, startMins] = startTime.split(':').map(Number);
+                    const [endHours, endMins] = endTime.split(':').map(Number);
+                    const startDateTime = new Date(startDate);
+                    startDateTime.setHours(startHours, startMins, 0, 0);
+                    const endDateTime = new Date(e.target.value);
+                    endDateTime.setHours(endHours, endMins, 0, 0);
+                    const diffMinutes = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+                    setTotalMinutes(Math.max(0, diffMinutes));
+                    setSliderMinutes(Math.max(0, diffMinutes));
+                  }
+                }}
                 disabled={isRunning}
                 className={`bg-transparent text-sm font-semibold outline-none flex-1 ${isRunning ? 'text-text-secondary cursor-not-allowed' : 'text-text-primary'}`}
               />
