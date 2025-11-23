@@ -26,6 +26,7 @@ const ANOMALY_LABELS: Record<string, string> = {
   [AnomalyType.EXCESS_WORK_SHOOT]: 'Überlast (Dreh > 15h)',
   [AnomalyType.EXCESS_WORK_REGULAR]: 'Überlast (> 9h)',
   [AnomalyType.UNDER_PERFORMANCE]: 'Unterperformance (< 50%)',
+  [AnomalyType.FORGOT_TO_STOP]: 'Stoppen vergessen',
 };
 
 const getAbsenceTypeIcon = (type: AbsenceType) => {
@@ -328,13 +329,17 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             const key = `${anomaly.userId}-${anomaly.date}-${anomaly.type}`;
                             const hasComments = anomaly.comments && anomaly.comments.length > 0;
                             
+                            const isForgotToStop = anomaly.type === AnomalyType.FORGOT_TO_STOP;
+                            const iconColor = isForgotToStop ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500';
+                            const borderColor = isForgotToStop ? 'red-500' : 'yellow-500';
+                            
                             return (
                               <div
                                 key={key}
                                 className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative ${
                                   selectedAnomaly && `${selectedAnomaly.userId}-${selectedAnomaly.date}-${selectedAnomaly.type}` === key
-                                    ? 'border-yellow-500 bg-yellow-500/10'
-                                    : 'border-border bg-overlay hover:border-yellow-500/50'
+                                    ? `border-${borderColor} bg-${borderColor}/10`
+                                    : `border-border bg-overlay hover:border-${borderColor}/50`
                                 }`}
                                 onClick={() => setSelectedAnomaly(anomaly)}
                               >
@@ -343,7 +348,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                                 )}
                                 
                                 <div className="flex items-start space-x-3">
-                                  <div className="p-2 rounded-lg bg-yellow-500/20 text-yellow-500">
+                                  <div className={`p-2 rounded-lg ${iconColor}`}>
                                     <CircleAlertIcon className="w-5 h-5" />
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -404,8 +409,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                                   key={key}
                                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all relative opacity-75 hover:opacity-100 ${
                                     selectedAnomaly && `${selectedAnomaly.userId}-${selectedAnomaly.date}-${selectedAnomaly.type}` === key
-                                      ? 'border-yellow-500 bg-yellow-500/10'
-                                      : 'border-border bg-overlay hover:border-yellow-500/50'
+                                      ? (anomaly.type === AnomalyType.FORGOT_TO_STOP ? 'border-red-500 bg-red-500/10' : 'border-yellow-500 bg-yellow-500/10')
+                                      : (anomaly.type === AnomalyType.FORGOT_TO_STOP ? 'border-border bg-overlay hover:border-red-500/50' : 'border-border bg-overlay hover:border-yellow-500/50')
                                   }`}
                                   onClick={() => setSelectedAnomaly(anomaly)}
                                 >
@@ -452,7 +457,11 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     {/* Anomaly Details */}
                     <div className="p-4 border-b border-border flex-shrink-0">
                       <div className="flex items-start space-x-3 mb-4">
-                        <div className={`p-3 rounded-lg ${selectedAnomaly.status === AnomalyStatus.Muted ? 'bg-gray-500/20 text-gray-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                        <div className={`p-3 rounded-lg ${
+                          selectedAnomaly.status === AnomalyStatus.Muted 
+                            ? 'bg-gray-500/20 text-gray-400' 
+                            : (selectedAnomaly.type === AnomalyType.FORGOT_TO_STOP ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500')
+                        }`}>
                           <CircleAlertIcon className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
@@ -528,7 +537,11 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                               onMuteAnomaly && onMuteAnomaly(selectedAnomaly);
                               setSelectedAnomaly(null);
                             }}
-                            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 rounded-lg font-semibold transition-all"
+                            className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                              selectedAnomaly.type === AnomalyType.FORGOT_TO_STOP 
+                                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-500' 
+                                : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500'
+                            }`}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M11 5L6 9H2v6h4l5 4V5z"></path>

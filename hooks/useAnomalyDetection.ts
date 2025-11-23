@@ -101,7 +101,8 @@ export function useAnomalyDetection(
       const isAdmin = currentUser.role === 'role-1' || currentUser.role === 'admin';
       
       // WICHTIG:
-      // - Admins bekommen selbst KEINE Anomalien, sehen aber die der aktiven Mitarbeitenden
+      // - Admins bekommen für FORGOT_TO_STOP auch Anomalien (für sich selbst)
+      // - Für andere Anomalien: Admins sehen nur die der aktiven Mitarbeitenden
       // - Inaktive User werden komplett ignoriert
       const usersToCheck = isAdmin
         ? users.filter(u => u.status === UserStatus.Active && u.role !== 'role-1' && u.role !== 'admin')
@@ -119,6 +120,21 @@ export function useAnomalyDetection(
         );
         newAnomalies = [...newAnomalies, ...userAnomalies];
       });
+      
+      // SPECIAL: Admins bekommen auch FORGOT_TO_STOP Anomalien für sich selbst
+      if (isAdmin && currentUser.status === UserStatus.Active) {
+        const adminAnomalies = detectAnomaliesOptimized(
+          currentUser, 
+          timeEntries, 
+          absenceRequests, 
+          startDate, 
+          endDate,
+          enableCache
+        );
+        // Nur FORGOT_TO_STOP Anomalien für Admin hinzufügen
+        const adminForgotToStop = adminAnomalies.filter(a => a.type === 'FORGOT_TO_STOP');
+        newAnomalies = [...newAnomalies, ...adminForgotToStop];
+      }
       
       // Merge mit existierenden Anomalien (Status & Kommentare behalten)
       setAnomalies(prev => {

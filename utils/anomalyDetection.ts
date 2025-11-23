@@ -155,7 +155,7 @@ export function detectAnomalies(
           });
       }
 
-      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-9 Uhr ODER laufende Timer) - Gilt für ALLE User inkl. Admins
+      // 5. Stoppen vergessen (Zeiteinträge zwischen 0-6 Uhr mit min. 5h Dauer ODER laufende Timer > 5h) - Gilt für ALLE User inkl. Admins
       // Prüfe ALLE Einträge des Users (nicht nur dailyEntries die am aktuellen Tag starten)
       const hasNightEntry = userEntries.some(entry => {
         const startTime = new Date(entry.startTime);
@@ -166,28 +166,35 @@ export function detectAnomalies(
           const startDateStr = toBerlinISOString(startTime);
           const isOldTimer = startDateStr < dateStr;
           
-          // Wenn Timer vor heute gestartet wurde UND heute ist, dann vergessen zu stoppen
-          return isOldTimer && isToday;
+          // Berechne Dauer seit Start
+          const now = new Date();
+          const durationHours = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          
+          // Wenn Timer vor heute gestartet wurde UND heute ist UND mindestens 5h läuft, dann vergessen zu stoppen
+          return isOldTimer && isToday && durationHours >= 5;
         }
         
-        // FALL 2: Beendeter Eintrag zwischen 0-9 Uhr
+        // FALL 2: Beendeter Eintrag zwischen 0-6 Uhr mit mindestens 5h Dauer
         const endTime = new Date(entry.endTime);
         
-        // Prüfe ob der Eintrag am aktuellen Tag zwischen 0-9 Uhr endet (Berlin Zeit)
+        // Prüfe ob der Eintrag am aktuellen Tag zwischen 0-6 Uhr endet (Berlin Zeit)
         const endDateStr = toBerlinISOString(endTime);
         if (endDateStr !== dateStr) return false; // Nur Einträge die an diesem Tag enden
         
         // Hole Stunde in Berlin Zeit
         const endHour = getBerlinHour(endTime);
         
-        // Prüfe ob Ende zwischen 0:00 und 8:59 Uhr liegt
-        const endInNightRange = endHour >= 0 && endHour < 9;
+        // Prüfe ob Ende zwischen 0:00 und 5:59 Uhr liegt
+        const endInNightRange = endHour >= 0 && endHour < 6;
         
         // Prüfe ob der Eintrag am Vortag gestartet wurde (über Nacht)
         const startDateStr = toBerlinISOString(startTime);
         const isOvernight = startDateStr !== endDateStr;
         
-        return endInNightRange && isOvernight;
+        // Berechne Dauer in Stunden
+        const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        return endInNightRange && isOvernight && durationHours >= 5;
       });
       
       if (hasNightEntry) {

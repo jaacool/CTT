@@ -378,7 +378,10 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
     if (!anomaly) return null;
     
     const isResolved = anomaly.status === AnomalyStatus.Resolved;
-    const color = isResolved ? '#9CA3AF' : '#EAB308';
+    const isForgotToStop = anomaly.type === 'FORGOT_TO_STOP';
+    // FORGOT_TO_STOP = Rot (#EF4444), andere = Gelb (#EAB308)
+    const baseColor = isForgotToStop ? '#EF4444' : '#EAB308';
+    const color = isResolved ? '#9CA3AF' : baseColor;
     
     const centerX = x + width / 2;
     const centerY = y - 15;

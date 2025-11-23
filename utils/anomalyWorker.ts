@@ -101,25 +101,37 @@ export function detectAnomaliesOptimized(
     if (!entry.endTime) {
       // Nur wenn Timer vor heute gestartet wurde
       if (startDateStr < todayStr) {
-        if (!nightCandidates.has(todayStr)) {
-          nightCandidates.set(todayStr, []);
+        // Berechne Dauer seit Start
+        const durationHours = (today.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        // Nur wenn mindestens 5h läuft
+        if (durationHours >= 5) {
+          if (!nightCandidates.has(todayStr)) {
+            nightCandidates.set(todayStr, []);
+          }
+          nightCandidates.get(todayStr)!.push(entry);
         }
-        nightCandidates.get(todayStr)!.push(entry);
       }
       return;
     }
     
-    // FALL 2: Beendeter Eintrag zwischen 0-9 Uhr
+    // FALL 2: Beendeter Eintrag zwischen 0-6 Uhr mit mindestens 5h Dauer
     const endTime = new Date(entry.endTime);
     const endDateStr = toBerlinISOString(endTime);
     const endHour = getBerlinHour(endTime);
     
-    // Prüfe ob Ende zwischen 0:00 und 8:59 Uhr liegt UND über Nacht
-    if (endHour >= 0 && endHour < 9 && startDateStr !== endDateStr) {
-      if (!nightCandidates.has(endDateStr)) {
-        nightCandidates.set(endDateStr, []);
+    // Prüfe ob Ende zwischen 0:00 und 5:59 Uhr liegt UND über Nacht
+    if (endHour >= 0 && endHour < 6 && startDateStr !== endDateStr) {
+      // Berechne Dauer in Stunden
+      const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      
+      // Nur wenn mindestens 5h Dauer
+      if (durationHours >= 5) {
+        if (!nightCandidates.has(endDateStr)) {
+          nightCandidates.set(endDateStr, []);
+        }
+        nightCandidates.get(endDateStr)!.push(entry);
       }
-      nightCandidates.get(endDateStr)!.push(entry);
     }
   });
   
