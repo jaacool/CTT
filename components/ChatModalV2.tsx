@@ -3,6 +3,7 @@ import { ChatChannel, ChatMessage, Project, User, ChatChannelType, ChatAttachmen
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
 import { ConfirmModal } from './ConfirmModal';
+import { MediaGallery } from './MediaGallery';
 import { uploadChatFiles, getFileIcon, isImageFile, isVideoFile, isAudioFile } from '../utils/fileUpload';
 import { supabase } from '../utils/supabaseClient';
 
@@ -368,6 +369,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [showMediaGallery, setShowMediaGallery] = useState<boolean>(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -2128,9 +2130,29 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             </div>
           </div>
 
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
-            <XIcon className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Media Gallery Button */}
+            {currentChannel && (
+              <button
+                onClick={() => setShowMediaGallery(!showMediaGallery)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showMediaGallery
+                    ? 'bg-glow-purple/20 text-glow-purple'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-overlay'
+                }`}
+                title="Medien-Galerie"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </button>
+            )}
+
+            {/* Close Button */}
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
+              <XIcon className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -2426,6 +2448,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             
+            {/* Media Gallery View */}
+            {showMediaGallery && currentChannel ? (
+              <MediaGallery
+                messages={filteredMessages}
+                onClose={() => setShowMediaGallery(false)}
+              />
+            ) : (
+              <>
             {/* Chat Header */}
             {currentChannel && (
               <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
@@ -3866,6 +3896,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 </div>
               </div>
             )}
+          </>
+          )}
           </div>
         </div>
       </div>
