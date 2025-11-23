@@ -161,26 +161,32 @@ export function detectAnomalies(
       // - UND er den Zeitraum 0-6 Uhr überschneidet
       // - UND die Gesamtdauer ≥ 6h ist
       // - UND mindestens 6h innerhalb des 0-6 Uhr Fensters liegen
-      const hasNightEntry = userEntries.some(entry => {
+      // WICHTIG: Anomalie wird für das START-Datum geloggt (da wurde vergessen zu stoppen)
+      const nightEntry = userEntries.find(entry => {
         const startTime = new Date(entry.startTime);
+        const startDateStr = toBerlinISOString(startTime);
         
         // FALL 1: Laufender Timer (kein endTime)
         if (!entry.endTime) {
-          const startDateStr = toBerlinISOString(startTime);
-          const isOldTimer = startDateStr < dateStr;
+          // Nur wenn Timer an diesem Tag gestartet wurde
+          if (startDateStr !== dateStr) return false;
+          if (!isToday) return false;
           
-          if (!isOldTimer || !isToday) return false;
-          
-          // Berechne wie lange der Timer im 0-6 Uhr Fenster von heute läuft
+          // Berechne wie lange der Timer im 0-6 Uhr Fenster von morgen läuft
           const now = new Date();
-          const todayMidnight = new Date(now);
-          todayMidnight.setHours(0, 0, 0, 0);
-          const today6AM = new Date(now);
-          today6AM.setHours(6, 0, 0, 0);
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowMidnight = new Date(tomorrow);
+          tomorrowMidnight.setHours(0, 0, 0, 0);
+          const tomorrow6AM = new Date(tomorrow);
+          tomorrow6AM.setHours(6, 0, 0, 0);
           
-          // Timer läuft seit gestern, also zählt die Zeit von 0:00 bis jetzt (max 6:00)
-          const effectiveEnd = now < today6AM ? now : today6AM;
-          const hoursInWindow = (effectiveEnd.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60);
+          // Wenn Timer noch nicht bis morgen läuft, keine Anomalie
+          if (now < tomorrowMidnight) return false;
+          
+          // Timer läuft seit heute, also zählt die Zeit von morgen 0:00 bis jetzt (max 6:00)
+          const effectiveEnd = now < tomorrow6AM ? now : tomorrow6AM;
+          const hoursInWindow = (effectiveEnd.getTime() - tomorrowMidnight.getTime()) / (1000 * 60 * 60);
           
           // Gesamtdauer
           const totalHours = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
@@ -190,20 +196,19 @@ export function detectAnomalies(
         
         // FALL 2: Beendeter Eintrag
         const endTime = new Date(entry.endTime);
-        const startDateStr = toBerlinISOString(startTime);
         const endDateStr = toBerlinISOString(endTime);
         
         // Muss über Nacht laufen
         if (startDateStr === endDateStr) return false;
         
-        // Muss an diesem Tag enden
-        if (endDateStr !== dateStr) return false;
+        // Muss an diesem Tag STARTEN (nicht enden!)
+        if (startDateStr !== dateStr) return false;
         
         // Gesamtdauer muss >= 6h sein
         const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
         if (totalHours < 6) return false;
         
-        // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt
+        // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt (am Folgetag)
         const endDateMidnight = new Date(endTime);
         endDateMidnight.setHours(0, 0, 0, 0);
         const endDate6AM = new Date(endTime);
@@ -226,9 +231,9 @@ export function detectAnomalies(
         return hoursInWindow >= 6;
       });
       
-      if (hasNightEntry) {
+      if (nightEntry) {
         anomalies.push({
-          date: dateStr,
+          date: dateStr, // dateStr ist hier das START-Datum
           userId: user.id,
           type: AnomalyType.FORGOT_TO_STOP,
           details: { trackedHours, targetHours: dailyTarget, hasShoot }

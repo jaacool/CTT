@@ -93,6 +93,7 @@ export function detectAnomaliesOptimized(
   // - UND er den Zeitraum 0-6 Uhr überschneidet
   // - UND die Gesamtdauer ≥ 6h ist
   // - UND mindestens 6h innerhalb des 0-6 Uhr Fensters liegen
+  // WICHTIG: Anomalie wird für das START-Datum geloggt (da wurde vergessen zu stoppen)
   const nightCandidates = new Map<string, TimeEntry[]>();
   const today = new Date();
   const todayStr = toBerlinISOString(today);
@@ -103,27 +104,32 @@ export function detectAnomaliesOptimized(
     
     // FALL 1: Laufender Timer (kein endTime)
     if (!entry.endTime) {
-      // Nur wenn Timer vor heute gestartet wurde
-      if (startDateStr < todayStr) {
-        // Berechne wie lange der Timer im 0-6 Uhr Fenster von heute läuft
-        const todayMidnight = new Date(today);
-        todayMidnight.setHours(0, 0, 0, 0);
-        const today6AM = new Date(today);
-        today6AM.setHours(6, 0, 0, 0);
+      // Nur wenn Timer heute gestartet wurde
+      if (startDateStr === todayStr) {
+        // Berechne wie lange der Timer im 0-6 Uhr Fenster von morgen läuft
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowMidnight = new Date(tomorrow);
+        tomorrowMidnight.setHours(0, 0, 0, 0);
+        const tomorrow6AM = new Date(tomorrow);
+        tomorrow6AM.setHours(6, 0, 0, 0);
         
-        // Timer läuft seit gestern, also zählt die Zeit von 0:00 bis jetzt (max 6:00)
-        const effectiveEnd = today < today6AM ? today : today6AM;
-        const hoursInWindow = (effectiveEnd.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60);
+        // Wenn Timer noch nicht bis morgen läuft, keine Anomalie
+        if (today < tomorrowMidnight) return;
+        
+        // Timer läuft seit heute, also zählt die Zeit von morgen 0:00 bis jetzt (max 6:00)
+        const effectiveEnd = today < tomorrow6AM ? today : tomorrow6AM;
+        const hoursInWindow = (effectiveEnd.getTime() - tomorrowMidnight.getTime()) / (1000 * 60 * 60);
         
         // Gesamtdauer
         const totalHours = (today.getTime() - startTime.getTime()) / (1000 * 60 * 60);
         
         // Nur wenn >= 6h gesamt UND >= 6h im Fenster
         if (totalHours >= 6 && hoursInWindow >= 6) {
-          if (!nightCandidates.has(todayStr)) {
-            nightCandidates.set(todayStr, []);
+          if (!nightCandidates.has(startDateStr)) {
+            nightCandidates.set(startDateStr, []);
           }
-          nightCandidates.get(todayStr)!.push(entry);
+          nightCandidates.get(startDateStr)!.push(entry);
         }
       }
       return;
@@ -140,7 +146,7 @@ export function detectAnomaliesOptimized(
     const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
     if (totalHours < 6) return;
     
-    // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt
+    // Berechne wie viel Zeit im 0-6 Uhr Fenster liegt (am Folgetag)
     const endDateMidnight = new Date(endTime);
     endDateMidnight.setHours(0, 0, 0, 0);
     const endDate6AM = new Date(endTime);
@@ -162,10 +168,11 @@ export function detectAnomaliesOptimized(
     
     // Nur wenn >= 6h im Fenster
     if (hoursInWindow >= 6) {
-      if (!nightCandidates.has(endDateStr)) {
-        nightCandidates.set(endDateStr, []);
+      // Speichere unter START-Datum (nicht End-Datum!)
+      if (!nightCandidates.has(startDateStr)) {
+        nightCandidates.set(startDateStr, []);
       }
-      nightCandidates.get(endDateStr)!.push(entry);
+      nightCandidates.get(startDateStr)!.push(entry);
     }
   });
   
