@@ -372,8 +372,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showMediaGallery, setShowMediaGallery] = useState<boolean>(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Callback Ref - scrollt SOFORT beim Mount/Update, BEVOR Browser malt
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const setScrollContainerRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // SOFORT beim Mount scrollTop setzen - KEIN Frame-Delay
+      node.scrollTop = node.scrollHeight;
+      scrollContainerRef.current = node;
+    }
+  }, [currentChannel?.id, messages.length]); // Re-create callback bei Channel/Message-Änderung
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -440,11 +449,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // KRITISCH: Scroll-Position SOFORT setzen - VOR dem Browser Paint
-  // useLayoutEffect läuft SYNCHRON vor dem Rendering, verhindert jegliche sichtbare Scroll-Animation
+  // Scroll bei Channel/Message-Änderungen - useLayoutEffect für Updates NACH dem initialen Mount
   useLayoutEffect(() => {
     if (isOpen && currentChannel && scrollContainerRef.current) {
-      // SOFORT scrollTop setzen - KEINE Timeouts, KEINE Animations, KEINE requestAnimationFrame
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [isOpen, currentChannel?.id, messages.length]);
@@ -2504,7 +2511,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               />
             ) : (
             <div 
-              ref={scrollContainerRef}
+              ref={setScrollContainerRef}
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
