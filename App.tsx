@@ -252,9 +252,8 @@ const App: React.FC = () => {
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
     const loadFromSupabase = async () => {
-      // Setze Loading State
-      setIsDataLoaded(false);
-      setShouldStartFade(false);
+      // NICHT mehr setIsDataLoaded(false) - App rendert sofort!
+      // Loading Screen bleibt als Overlay bis Daten geladen sind
       
       // Versuche zuerst aus localStorage zu laden (instant!)
       console.log('🔍 Prüfe localStorage Cache...');
