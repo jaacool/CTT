@@ -238,17 +238,14 @@ const App: React.FC = () => {
     }
   }, [users, chatChannels.length]);
 
-  // Verzögerter Fade-Start mit requestAnimationFrame für perfektes Timing
+  // Verzögerter Fade-Start, damit Animation smooth durchläuft
   useEffect(() => {
     if (isDataLoaded && !shouldStartFade) {
-      // Warte auf nächsten Frame, dann noch 2 Frames extra für smooth start
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setShouldStartFade(true);
-          });
-        });
-      });
+      // Warte 300ms nach Daten-Laden, bevor Fade startet
+      const timer = setTimeout(() => {
+        setShouldStartFade(true);
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [isDataLoaded, shouldStartFade]);
 
@@ -2026,7 +2023,7 @@ const App: React.FC = () => {
           transform: 'translateZ(0)' // Force GPU layer, verhindert Zittern
         }}
       >
-        <LoadingScreen message="Projekte werden geladen..." />
+        <LoadingScreen message="Projekte werden geladen..." isPaused={shouldStartFade} />
       </div>
       
       {/* Main App Content - wird im Hintergrund gerendert */}

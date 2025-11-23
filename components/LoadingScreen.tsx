@@ -2,9 +2,10 @@ import React from 'react';
 
 interface LoadingScreenProps {
   message?: string;
+  isPaused?: boolean;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...' }) => {
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...', isPaused = false }) => {
   return (
     <div 
       className="fixed inset-0 bg-background" 
@@ -25,7 +26,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten w
           transform: 'translate(-50%, -50%) scale(1.2) translateZ(0)',
           marginTop: '-40px',
           willChange: 'transform',
-          backfaceVisibility: 'hidden'
+          backfaceVisibility: 'hidden',
+          animationPlayState: isPaused ? 'paused' : 'running'
         }}
       ></div>
       
