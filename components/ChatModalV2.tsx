@@ -442,7 +442,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Scroll to bottom when opening chat or switching channels (instant, no animation)
   // useLayoutEffect runs before browser paint, preventing flash of old scroll position
   useLayoutEffect(() => {
-    if (isOpen && currentChannel) {
+    if (isOpen && currentChannel && !showMediaGallery) {
       // Immediate scroll
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
       
@@ -451,7 +451,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
       }, 0);
     }
-  }, [isOpen, currentChannel?.id, messages.length]);
+  }, [isOpen, currentChannel?.id, messages.length, showMediaGallery]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -1183,11 +1183,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setShowMediaGallery(false);
     
     onSwitchChannel(channelId);
-    
-    // Scroll zu neuester Nachricht
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }, 0);
+    // Scroll wird automatisch durch useLayoutEffect getriggert
   };
   
   // Handle star message
@@ -2499,15 +2495,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   {/* Media Gallery Button */}
                   <button
                     onClick={() => {
-                      const wasOpen = showMediaGallery;
                       setShowMediaGallery(!showMediaGallery);
-                      
-                      // Wenn Media Gallery geschlossen wird, scroll zu neuester Nachricht
-                      if (wasOpen) {
-                        setTimeout(() => {
-                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-                        }, 0);
-                      }
+                      // Scroll wird automatisch durch useLayoutEffect getriggert
                     }}
                     className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
                       showMediaGallery
