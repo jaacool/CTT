@@ -238,14 +238,17 @@ const App: React.FC = () => {
     }
   }, [users, chatChannels.length]);
 
-  // Verzögerter Fade-Start, damit Animation smooth durchläuft
+  // Verzögerter Fade-Start mit requestAnimationFrame für perfektes Timing
   useEffect(() => {
     if (isDataLoaded && !shouldStartFade) {
-      // Warte 300ms nach Daten-Laden, bevor Fade startet
-      const timer = setTimeout(() => {
-        setShouldStartFade(true);
-      }, 300);
-      return () => clearTimeout(timer);
+      // Warte auf nächsten Frame, dann noch 2 Frames extra für smooth start
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setShouldStartFade(true);
+          });
+        });
+      });
     }
   }, [isDataLoaded, shouldStartFade]);
 

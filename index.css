@@ -1395,10 +1395,11 @@ textarea:focus {
               0 0 20px rgba(168, 85, 247, 0.9),
               0 0 40px rgba(168, 85, 247, 0.7),
               0 0 0px rgba(236, 72, 153, 0.5);
-  animation: uploadLoaderAnimation 4.225s ease-out infinite;
+  animation: uploadLoaderAnimation 4.225s linear infinite;
   will-change: inset;
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
+  transform: translate3d(0, 0, 0);
 }
 
 .upload-loader:after {
@@ -1411,15 +1412,15 @@ textarea:focus {
 }
 
 @keyframes uploadLoaderAnimation {
-  0%    { inset: 0    35px 35px 0; }
-  12.5% { inset: 0    35px 0    0; }
-  25%   { inset: 35px 35px 0    0; }
-  37.5% { inset: 35px 0    0    0; }
-  50%   { inset: 35px 0    0    35px; }
-  62.5% { inset: 0    0    0    35px; }
-  75%   { inset: 0    0    35px 35px; }
-  87.5% { inset: 0    0    35px 0; }
-  100%  { inset: 0    35px 35px 0; }
+  0%    { inset: 0    35px 35px 0; animation-timing-function: linear; }
+  12.5% { inset: 0    35px 0    0; animation-timing-function: linear; }
+  25%   { inset: 35px 35px 0    0; animation-timing-function: linear; }
+  37.5% { inset: 35px 0    0    0; animation-timing-function: linear; }
+  50%   { inset: 35px 0    0    35px; animation-timing-function: linear; }
+  62.5% { inset: 0    0    0    35px; animation-timing-function: linear; }
+  75%   { inset: 0    0    35px 35px; animation-timing-function: linear; }
+  87.5% { inset: 0    0    35px 0; animation-timing-function: linear; }
+  100%  { inset: 0    35px 35px 0; animation-timing-function: linear; }
 }
 
 /* Fade In Animation für Loading Screen Text */
