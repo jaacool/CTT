@@ -372,11 +372,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showMediaGallery, setShowMediaGallery] = useState<boolean>(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -440,18 +441,52 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // Scroll to bottom when opening chat or switching channels (instant, no animation)
-  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
-  useLayoutEffect(() => {
-    if (isOpen && currentChannel && !showMediaGallery) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      
-      // Additional scroll after DOM update to ensure we're at absolute bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 0);
+  // Zentrale Scroll-Funktion - scrollt zum Ende des Chats
+  const scrollToBottom = React.useCallback((force = false) => {
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
-  }, [isOpen, currentChannel?.id, messages.length, showMediaGallery]);
+
+    const doScroll = () => {
+      if (scrollContainerRef.current) {
+        // Direkt scrollTop setzen - zuverlässiger als scrollIntoView
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+    };
+
+    if (force) {
+      // Immediate scroll
+      doScroll();
+      // Double-check after DOM update
+      requestAnimationFrame(() => {
+        doScroll();
+      });
+    } else {
+      // Debounced scroll
+      scrollTimeoutRef.current = setTimeout(() => {
+        requestAnimationFrame(() => {
+          doScroll();
+        });
+      }, 50);
+    }
+  }, []);
+
+  // Scroll to bottom when opening chat or switching channels
+  useLayoutEffect(() => {
+    if (isOpen && currentChannel) {
+      scrollToBottom(true);
+    }
+  }, [isOpen, currentChannel?.id, scrollToBottom]);
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -531,22 +566,27 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [previewAttachment]);
 
-  // Scroll to bottom when project filter changes (instant, no animation)
-  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
+  // Scroll to bottom when project filter changes
   useLayoutEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [currentProject?.id]);
+    if (currentProject) {
+      scrollToBottom(true);
+    }
+  }, [currentProject?.id, scrollToBottom]);
+
+  // Scroll to bottom when new messages arrive
+  useLayoutEffect(() => {
+    if (isOpen && currentChannel && messages.length > 0) {
+      scrollToBottom(false);
+    }
+  }, [messages.length, isOpen, currentChannel?.id, scrollToBottom]);
 
   // Scroll to bottom when composer height changes (messageInput, selectedFiles, replyToMessage)
   // This ensures the distance from the newest message to the composer stays constant
   useLayoutEffect(() => {
     if (isOpen && currentChannel) {
-      // Use requestAnimationFrame to ensure DOM has updated with new composer height
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      });
+      scrollToBottom(false);
     }
-  }, [messageInput, selectedFiles.length, replyToMessage, isOpen, currentChannel?.id]);
+  }, [messageInput, selectedFiles.length, replyToMessage, isOpen, currentChannel?.id, scrollToBottom]);
 
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -824,10 +864,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           textareaRef.current.style.height = '44px';
         }
         
-        // Scroll to bottom immediately (instant, no animation like channel switch)
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-        }, 50);
+        // Scroll to bottom immediately
+        scrollToBottom(true);
         
         // 3. Upload files in background and update messages with real URLs
         if (filesToUpload.length > 0) {
@@ -1066,9 +1104,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       setRecordingTime(0);
 
       // Scroll to bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 50);
+      scrollToBottom(true);
     } catch (error) {
       console.error('Error sending voice message:', error);
       alert('Fehler beim Senden der Sprachnachricht.');
@@ -1183,7 +1219,9 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     setShowMediaGallery(false);
     
     onSwitchChannel(channelId);
-    // Scroll wird automatisch durch useLayoutEffect getriggert
+    
+    // Scroll zu neuester Nachricht
+    scrollToBottom(true);
   };
   
   // Handle star message
@@ -1930,9 +1968,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <button
                       onClick={() => {
                         onSwitchProject('');
-                        setTimeout(() => {
-                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-                        }, 0);
+                        scrollToBottom(true);
                       }}
                       className="px-2 py-2 hover:bg-overlay/80 transition-colors"
                       title="Filter zurücksetzen"
@@ -2447,9 +2483,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       onClick={() => {
                         setShowThreadView(null);
                         // Scrolle zur neuesten Nachricht (ganz unten)
-                        requestAnimationFrame(() => {
-                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-                        });
+                        scrollToBottom(true);
                       }}
                       className="p-2 hover:bg-overlay rounded-lg transition-colors"
                       title="Zurück zum Haupt-Chat"
@@ -2495,8 +2529,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   {/* Media Gallery Button */}
                   <button
                     onClick={() => {
+                      const wasOpen = showMediaGallery;
                       setShowMediaGallery(!showMediaGallery);
-                      // Scroll wird automatisch durch useLayoutEffect getriggert
+                      
+                      // Wenn Media Gallery geschlossen wird, scroll zu neuester Nachricht
+                      if (wasOpen) {
+                        scrollToBottom(true);
+                      }
                     }}
                     className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
                       showMediaGallery
@@ -2522,7 +2561,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               />
             ) : (
             <div 
-              ref={messagesContainerRef}
+              ref={scrollContainerRef}
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
