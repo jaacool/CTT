@@ -169,17 +169,30 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     req.status === AbsenceStatus.Rejected
   );
 
+  // Sortiere Anomalien nach Priorität (FORGOT_TO_STOP zuerst)
+  const sortByPriority = (a: Anomaly, b: Anomaly) => {
+    // FORGOT_TO_STOP hat höchste Priorität
+    if (a.type === AnomalyType.FORGOT_TO_STOP && b.type !== AnomalyType.FORGOT_TO_STOP) return -1;
+    if (a.type !== AnomalyType.FORGOT_TO_STOP && b.type === AnomalyType.FORGOT_TO_STOP) return 1;
+    // Sonst nach Datum sortieren (neueste zuerst)
+    return b.date.localeCompare(a.date);
+  };
+  
   // Aktive Anomalien (Open)
-  const activeAnomalies = anomalies ? anomalies.filter(a => 
-    (isAdmin || a.userId === currentUser.id) &&
-    a.status === AnomalyStatus.Open
-  ) : [];
+  const activeAnomalies = anomalies ? anomalies
+    .filter(a => 
+      (isAdmin || a.userId === currentUser.id) &&
+      a.status === AnomalyStatus.Open
+    )
+    .sort(sortByPriority) : [];
   
   // Stummgeschaltete Anomalien (Muted)
-  const mutedAnomalies = anomalies ? anomalies.filter(a => 
-    (isAdmin || a.userId === currentUser.id) &&
-    a.status === AnomalyStatus.Muted
-  ) : [];
+  const mutedAnomalies = anomalies ? anomalies
+    .filter(a => 
+      (isAdmin || a.userId === currentUser.id) &&
+      a.status === AnomalyStatus.Muted
+    )
+    .sort(sortByPriority) : [];
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('de-DE', {

@@ -982,6 +982,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                                 onDuplicateEntry={onDuplicateTimeEntry}
                                 onEditEntry={onEditEntry}
                                 activeTimerTaskId={activeTimerTaskId}
+                                anomalies={anomalies}
                               />
                             )}
                           </div>
@@ -1323,6 +1324,7 @@ export const TimeTracking: React.FC<TimeTrackingProps> = ({ timeEntries, current
                     onDuplicateEntry={onDuplicateTimeEntry}
                     onEditEntry={onEditEntry}
                     activeTimerTaskId={activeTimerTaskId}
+                    anomalies={anomalies}
                   />
                 </div>
               )}

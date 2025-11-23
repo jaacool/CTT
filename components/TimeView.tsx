@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Project, TimeEntry, User } from '../types';
+import { Project, TimeEntry, User, Anomaly, AnomalyType } from '../types';
 import { formatTime } from './utils';
 
 interface TimeViewProps {
@@ -14,9 +14,10 @@ interface TimeViewProps {
   onEditEntry?: (entry: TimeEntry) => void;
   activeTimerTaskId?: string | null;
   projects?: Project[];
+  anomalies?: Anomaly[];
 }
 
-export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry, activeTimerTaskId, projects = [] }) => {
+export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, currentUser, onUpdateEntry, onBillableChange, onStartTimer, onDeleteEntry, onDuplicateEntry, onEditEntry, activeTimerTaskId, projects = [], anomalies = [] }) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
@@ -432,7 +433,18 @@ export const TimeView: React.FC<TimeViewProps> = ({ project, timeEntries, curren
                       groupPosition === 'middle' ? 'rounded-none border-y-0 my-0' :
                       'rounded-b-lg border-t-0 mt-0 mb-1'
                     }`
-                  : 'glow-card hover:bg-overlay rounded-lg'
+                  : (() => {
+                      // Prüfe ob dieser Eintrag eine FORGOT_TO_STOP Anomalie hat
+                      const entryStartDate = new Date(entry.startTime).toISOString().split('T')[0];
+                      const hasForgotToStopAnomaly = anomalies.some(a => 
+                        a.type === AnomalyType.FORGOT_TO_STOP && 
+                        a.userId === entry.user.id && 
+                        a.date === entryStartDate
+                      );
+                      return hasForgotToStopAnomaly 
+                        ? 'glow-card hover:bg-overlay rounded-lg border-2 border-red-500 shadow-lg shadow-red-500/20' 
+                        : 'glow-card hover:bg-overlay rounded-lg';
+                    })()
               }`}
             >
               {editingEntryId === entry.id ? (
