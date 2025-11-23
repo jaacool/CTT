@@ -240,6 +240,7 @@ export interface ChatMessage {
   edited?: boolean;
   editedAt?: string; // ISO timestamp
   readBy: string[]; // User IDs die die Nachricht gelesen haben
+  starredBy?: string[]; // User IDs die die Nachricht markiert haben
   reactions?: { [emoji: string]: string[] }; // { "👍": ["user1", "user2"], "❤️": ["user3"] }
   replyTo?: {
     messageId: string;

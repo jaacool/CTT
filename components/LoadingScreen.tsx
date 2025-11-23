@@ -1,68 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 interface LoadingScreenProps {
   message?: string;
+  isPaused?: boolean;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...' }) => {
-  const [loadingSteps, setLoadingSteps] = useState<string[]>([]);
-  
-  useEffect(() => {
-    // Simuliere Lade-Schritte für besseres Feedback
-    const steps = [
-      'Cache wird geprüft...',
-      'Daten werden geladen...',
-      'Fast fertig...'
-    ];
-    
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      if (currentStep < steps.length) {
-        setLoadingSteps(prev => [...prev, steps[currentStep]]);
-        currentStep++;
-      }
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Daten werden geladen...', isPaused = false }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[400px] space-y-6">
-      {/* Logo/Icon */}
-      <div className="text-6xl mb-4">📊</div>
+    <div 
+      className="fixed inset-0 bg-background" 
+      style={{ 
+        willChange: 'opacity',
+        backfaceVisibility: 'hidden',
+        WebkitFontSmoothing: 'antialiased',
+        transform: 'translateZ(0)'
+      }}
+    >
+      {/* Upload Loader Animation - absolut zentriert */}
+      <div 
+        className="upload-loader" 
+        style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) scale(1.2) translateZ(0)',
+          marginTop: '-40px',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
+          animationPlayState: isPaused ? 'paused' : 'running'
+        }}
+      ></div>
       
-      {/* Spinner */}
-      <div className="relative w-20 h-20">
-        <div className="absolute inset-0 border-4 border-overlay rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-glow-purple border-t-transparent rounded-full animate-spin"></div>
-        {/* Inner spinner */}
-        <div className="absolute inset-2 border-4 border-glow-cyan border-b-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
-      </div>
-      
-      {/* Message */}
-      <div className="text-center space-y-3">
-        <p className="text-text-primary font-bold text-lg">{message}</p>
-        <p className="text-text-secondary text-sm">Einen Moment bitte...</p>
-        
-        {/* Loading Steps */}
-        <div className="mt-4 space-y-1 min-h-[60px]">
-          {loadingSteps.map((step, index) => (
-            <div 
-              key={index} 
-              className="text-text-secondary text-xs animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              ✓ {step}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Pulsing dots */}
-      <div className="flex space-x-2">
-        <div className="w-3 h-3 bg-glow-purple rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-        <div className="w-3 h-3 bg-glow-cyan rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-        <div className="w-3 h-3 bg-glow-magenta rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+      {/* Message - absolut positioniert unter der Animation */}
+      <div 
+        className="text-center opacity-0"
+        style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) translateZ(0)',
+          marginTop: '80px',
+          animation: 'fadeIn 0.8s ease-out 0.5s forwards',
+          willChange: 'opacity',
+          backfaceVisibility: 'hidden'
+        }}
+      >
+        <p className="text-text-primary font-medium text-base tracking-wide whitespace-nowrap">{message}</p>
       </div>
     </div>
   );

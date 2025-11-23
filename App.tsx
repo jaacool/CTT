@@ -237,11 +237,12 @@ const App: React.FC = () => {
     }
   }, [users, chatChannels.length]);
 
+
   // Load from localStorage/Supabase beim App-Start
   useEffect(() => {
     const loadFromSupabase = async () => {
-      // Setze Loading State
-      setIsDataLoaded(false);
+      // NICHT mehr setIsDataLoaded(false) - App rendert sofort!
+      // Loading Screen bleibt als Overlay bis Daten geladen sind
       
       // Versuche zuerst aus localStorage zu laden (instant!)
       console.log('🔍 Prüfe localStorage Cache...');
@@ -1996,17 +1997,17 @@ const App: React.FC = () => {
     return <LoginScreen users={users} onLogin={setCurrentUser} />;
   }
 
-  // Zeige Lade-Animation während Daten geladen werden
-  if (!isDataLoaded) {
-    return (
-      <div className="flex flex-col h-screen font-sans text-sm bg-background">
-        <LoadingScreen message="Projekte werden geladen..." />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-screen font-sans text-sm">
+    <div className="flex flex-col h-screen font-sans text-sm relative">
+      {/* Loading Screen Overlay - verschwindet sofort wenn Daten geladen */}
+      {!isDataLoaded && (
+        <div className="absolute inset-0 z-50">
+          <LoadingScreen message="Projekte werden geladen..." />
+        </div>
+      )}
+      
+      {/* Main App Content - wird im Hintergrund gerendert */}
+      <div className="flex flex-col h-screen font-sans text-sm">
       <TopBar
         user={currentUser}
         users={users}
@@ -2711,6 +2712,7 @@ const App: React.FC = () => {
           onStartTracking={handleStartTimeTracking}
         />
       )}
+      </div>
       </div>
     </div>
   );

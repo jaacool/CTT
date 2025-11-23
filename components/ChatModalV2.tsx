@@ -3,7 +3,9 @@ import { ChatChannel, ChatMessage, Project, User, ChatChannelType, ChatAttachmen
 import { XIcon, SendIcon, HashIcon, FolderIcon, ChevronDownIcon, EditIcon, TrashIcon, MicIcon } from './Icons';
 import { LinkPreview } from './LinkPreview';
 import { ConfirmModal } from './ConfirmModal';
+import { MediaGallery } from './MediaGallery';
 import { uploadChatFiles, getFileIcon, isImageFile, isVideoFile, isAudioFile } from '../utils/fileUpload';
+import { supabase } from '../utils/supabaseClient';
 
 interface ChatModalV2Props {
   isOpen: boolean;
@@ -338,6 +340,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [messageInput, setMessageInput] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [channelSearchQuery, setChannelSearchQuery] = useState('');
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -345,14 +348,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [editingContent, setEditingContent] = useState('');
   const [deleteConfirmMessageId, setDeleteConfirmMessageId] = useState<string | null>(null);
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);
-  const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState<string>('');
+  const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
   const [showThreadView, setShowThreadView] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [channelContextMenu, setChannelContextMenu] = useState<{ x: number; y: number; channelId: string } | null>(null);
+  const [manuallyUnreadChannels, setManuallyUnreadChannels] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
   const [maxUploadSize, setMaxUploadSize] = useState<number>(maxUploadSizeProp); // MB
@@ -363,11 +369,17 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [showMediaGallery, setShowMediaGallery] = useState<boolean>(false);
+  const [showStarredOnly, setShowStarredOnly] = useState<boolean>(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -386,25 +398,78 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Quick reaction emojis
   const quickReactions = ['👍', '❤️', '😊', '🎉', '🔥'];
   
-  // All emojis for picker
-  const allEmojis = [
-    '👍', '❤️', '😊', '🎉', '🔥', '😂', '😍', '🤔', '👏', '🙏',
-    '💯', '✨', '🚀', '💪', '👌', '🎯', '💡', '⭐', '🌟', '💖'
-  ];
+  // All emojis for picker - organized by categories
+  const emojiCategories = {
+    'Häufig genutzt': ['👍', '❤️', '😊', '🎉'],
+    'Smileys & Emotionen': [
+      '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', 
+      '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+      '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪',
+      '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨',
+      '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
+      '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕',
+      '🤢', '🤮', '🤧', '🥵', '🥶', '😵', '🤯', '🤠',
+      '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️',
+      '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨',
+      '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞'
+    ],
+    'Gesten & Körper': [
+      '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
+      '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+      '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜',
+      '👏', '🙌', '👐', '🤲', '🤝', '🙏', '💪', '🦾'
+    ],
+    'Herzen': [
+      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+      '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+      '💘', '💝', '💟'
+    ],
+    'Objekte': [
+      '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉',
+      '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱',
+      '🎯', '🎮', '🎲', '🎰', '🎳', '🎸', '🎹', '🎺',
+      '🎻', '🥁', '🎤', '🎧', '🎬', '🎨', '🎭', '🎪',
+      '💡', '🔦', '🕯️', '💰', '💵', '💴', '💶', '💷',
+      '⏰', '⏱️', '⏲️', '🕐', '📱', '💻', '⌨️', '🖥️',
+      '🖨️', '🖱️', '🖲️', '📷', '📹', '🎥', '📞', '☎️'
+    ],
+    'Symbole': [
+      '✨', '⭐', '🌟', '💫', '✅', '❌', '⚠️', '🚀',
+      '🔥', '💯', '💢', '💥', '💦', '💨', '🌈', '☀️',
+      '⛅', '☁️', '⚡', '❄️', '🔔', '🔕', '🎵', '🎶',
+      '♻️', '⚡', '🔋', '🔌', '💡', '🔦', '🕯️'
+    ]
+  };
+  
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // Scroll to bottom when opening chat or switching channels (instant, no animation)
-  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
-  useLayoutEffect(() => {
-    if (isOpen && currentChannel) {
-      // Immediate scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      
-      // Additional scroll after messages are rendered (ensures DOM is ready)
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 0);
+  // Track Composer-Höhe für dynamischen Spacer
+  useEffect(() => {
+    if (!composerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setComposerHeight(entry.contentRect.height);
+      }
+    });
+    
+    resizeObserver.observe(composerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Scroll to bottom bei neuen Nachrichten (nur wenn bereits am Ende)
+  useEffect(() => {
+    if (!scrollContainerRef.current || !isOpen || !currentChannel) return;
+    
+    const container = scrollContainerRef.current;
+    // Prüfe ob User bereits am Ende ist (innerhalb 100px vom Ende)
+    const isNearBottom = container.scrollTop <= 100;
+    
+    if (isNearBottom) {
+      // Scroll to top (wegen flex-col-reverse ist "top" visuell "bottom")
+      container.scrollTop = 0;
     }
-  }, [isOpen, currentChannel?.id, messages.length]);
+  }, [messages.length, isOpen, currentChannel?.id]);
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -429,12 +494,23 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   // Close emoji picker and more menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowEmojiPicker(null);
-      setShowMoreMenu(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if click is inside any menu or hover menu
+      const isInsideEmojiPicker = target.closest('.emoji-picker-menu');
+      const isInsideMoreMenu = target.closest('.more-options-menu');
+      const isInsideHoverMenu = target.closest('.message-hover-menu');
+      
+      if (!isInsideEmojiPicker && !isInsideMoreMenu && !isInsideHoverMenu) {
+        // Klick außerhalb aller Menüs - schließe alles
+        setShowEmojiPicker(null);
+        setShowMoreMenu(null);
+        setHoveredMessageId(null);
+      }
     };
 
-    if (showEmojiPicker || showMoreMenu) {
+    if (showEmojiPicker || showMoreMenu || hoveredMessageId) {
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 0);
@@ -443,7 +519,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker, showMoreMenu]);
+  }, [showEmojiPicker, showMoreMenu, hoveredMessageId]);
 
   // Close context menu on escape or scroll
   useEffect(() => {
@@ -473,11 +549,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     }
   }, [previewAttachment]);
 
-  // Scroll to bottom when project filter changes (instant, no animation)
-  // useLayoutEffect runs before browser paint, preventing flash of old scroll position
-  useLayoutEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [currentProject?.id]);
 
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -564,25 +635,48 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     return partner?.name.toLowerCase().includes(channelSearchQuery.toLowerCase());
   });
 
-  // Filter projects by search
+  // Filter and sort projects by search
   const filteredProjects = projects
-    .filter(p => !projectSearchQuery || p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()))
-    .sort((a, b) => {
-      // Active projects first
-      if (a.status === 'AKTIV' && b.status !== 'AKTIV') return -1;
-      if (a.status !== 'AKTIV' && b.status === 'AKTIV') return 1;
-      return a.name.localeCompare(b.name);
-    });
+    .filter(p => !projectSearchQuery || p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()));
+  
+  // Gruppiere Projekte nach Status und Favoriten
+  const favoriteProjectIds = currentUser.favoriteProjects || [];
+  
+  const favoriteProjects = filteredProjects
+    .filter(p => favoriteProjectIds.includes(p.id) && p.status !== 'ARCHIVIERT')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  
+  const activeProjects = filteredProjects
+    .filter(p => !favoriteProjectIds.includes(p.id) && p.status === 'AKTIV')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  
+  const archivedProjects = filteredProjects
+    .filter(p => p.status === 'ARCHIVIERT')
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Filter messages: by channel and optionally by project
-  const filteredMessages = messages.filter(msg => {
-    if (msg.channelId !== currentChannel?.id) return false;
-    if (currentProject && msg.projectId !== currentProject.id) return false;
-    return true;
-  });
+  // WICHTIG: Immer chronologisch sortieren (alt → neu)
+  const filteredMessages = messages
+    .filter(msg => {
+      if (msg.channelId !== currentChannel?.id) return false;
+      if (currentProject && msg.projectId !== currentProject.id) return false;
+      // Filter für markierte Nachrichten
+      if (showStarredOnly && (!msg.starredBy || !msg.starredBy.includes(currentUser.id))) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Count unread messages per channel
   const getUnreadCountForChannel = (channelId: string) => {
+    // Wenn Channel manuell als ungelesen markiert wurde, zähle alle Nachrichten als ungelesen
+    if (manuallyUnreadChannels.has(channelId)) {
+      return messages.filter(msg =>
+        msg.channelId === channelId &&
+        msg.sender.id !== currentUser.id
+      ).length;
+    }
+    
+    // Normale Unread-Logik
     return messages.filter(msg =>
       msg.channelId === channelId &&
       msg.sender.id !== currentUser.id &&
@@ -661,6 +755,38 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             // Wenn die Nachricht selbst eine Antwort ist, zitiere nur den actualContent
             quotedContent = reply.actualContent;
           }
+          
+          // Prüfe ob die Nachricht Anhänge hat (Medien)
+          if (messageToReplyTo.attachments && messageToReplyTo.attachments.length > 0) {
+            const attachment = messageToReplyTo.attachments[0];
+            let mediaType = 'file';
+            let mediaLabel = attachment.name;
+            
+            if (isImageFile(attachment.type)) {
+              mediaType = 'image';
+              mediaLabel = 'Bild';
+            } else if (isVideoFile(attachment.type)) {
+              mediaType = 'video';
+              mediaLabel = 'Video';
+            } else if (isAudioFile(attachment.type)) {
+              if (attachment.name.startsWith('voice-')) {
+                mediaType = 'voice';
+                mediaLabel = 'Sprachnachricht';
+              } else {
+                mediaType = 'audio';
+                mediaLabel = 'Audio';
+              }
+            } else {
+              mediaLabel = attachment.name;
+            }
+            
+            // Wenn die Nachricht nur ein Anhang ist (kein Text), verwende Medien-Format
+            // Speichere Attachment-ID für eindeutige Identifikation
+            if (!quotedContent.trim()) {
+              quotedContent = `[MEDIA:${mediaType}:${mediaLabel}:${attachment.id}]`;
+            }
+          }
+          
           content = `@${messageToReplyTo.sender.name}: "${quotedContent}"\n\n${content}`;
         }
         
@@ -677,7 +803,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         const fileMessageMap = new Map<string, string>();
         if (filesToUpload.length > 0) {
           filesToUpload.forEach((file, idx) => {
-            const messageId = `msg-${Date.now()}-${idx}`;
+            const messageId = generateUUID(); // Echte UUID statt temporärer ID
             fileMessageMap.set(file.name, messageId);
             
             const placeholderAttachment: ChatAttachment = {
@@ -702,11 +828,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         if (textareaRef.current) {
           textareaRef.current.style.height = '44px';
         }
-        
-        // Scroll to bottom immediately (instant, no animation like channel switch)
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-        }, 50);
         
         // 3. Upload files in background and update messages with real URLs
         if (filesToUpload.length > 0) {
@@ -943,11 +1064,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       // Reset
       setAudioBlob(null);
       setRecordingTime(0);
-
-      // Scroll to bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 50);
     } catch (error) {
       console.error('Error sending voice message:', error);
       alert('Fehler beim Senden der Sprachnachricht.');
@@ -1022,30 +1138,624 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // Handle reaction
   const handleReaction = (messageId: string, emoji: string) => {
     onReactToMessage(messageId, emoji);
-    setHoveredMessageId(null);
     setShowEmojiPicker(null);
+    // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
   // Handle reply to message
   const handleReplyToMessage = (message: ChatMessage) => {
     setReplyToMessage(message);
-    setHoveredMessageId(null);
+    // Hover-Menü bleibt offen, wird nur durch onMouseLeave geschlossen
   };
   
-  // Handle mark as unread (placeholder)
-  const handleMarkAsUnread = (messageId: string) => {
-    console.log('Mark as unread:', messageId);
-    setShowMoreMenu(null);
-    setHoveredMessageId(null);
-    // TODO: Implement mark as unread functionality
+  // Handle mark channel as unread
+  const handleMarkChannelAsUnread = (channelId: string) => {
+    setManuallyUnreadChannels(prev => new Set(prev).add(channelId));
+    setChannelContextMenu(null);
+    console.log('✅ Channel als ungelesen markiert:', channelId);
   };
   
-  // Handle star message (placeholder)
-  const handleStarMessage = (messageId: string) => {
-    console.log('Star message:', messageId);
+  // Handle channel context menu
+  const handleChannelContextMenu = (e: React.MouseEvent, channelId: string) => {
+    e.preventDefault();
+    setChannelContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      channelId
+    });
+  };
+  
+  // Wrapper für onSwitchChannel - entfernt "ungelesen"-Markierung beim Wechsel
+  const handleSwitchChannel = (channelId: string) => {
+    // Entferne Channel aus manuell-ungelesen-Liste
+    setManuallyUnreadChannels(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(channelId);
+      return newSet;
+    });
+    
+    // Schließe Media Gallery wenn offen
+    setShowMediaGallery(false);
+    
+    onSwitchChannel(channelId);
+  };
+  
+  // Generate UUID v4
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // Handle star message
+  const handleStarMessage = async (messageId: string) => {
+    console.log('🌟 handleStarMessage aufgerufen für:', messageId);
+    try {
+      // 1. Lade aktuelle Nachricht aus Supabase um vollständige Daten zu haben
+      const { data: currentMessage, error: fetchError } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+      
+      if (fetchError || !currentMessage) {
+        console.error('❌ Nachricht nicht in Supabase gefunden:', messageId, fetchError);
+        return;
+      }
+      
+      console.log('📝 Nachricht aus Supabase geladen:', currentMessage);
+      
+      // 2. Prüfe ob Nachricht bereits markiert ist
+      const currentStarredBy = currentMessage.starred_by || [];
+      const isStarred = currentStarredBy.includes(currentUser.id);
+      console.log('⭐ Bereits markiert?', isStarred, 'Current starred_by:', currentStarredBy);
+      
+      // 3. Aktualisiere starredBy Array
+      let updatedStarredBy: string[];
+      if (isStarred) {
+        // Entferne Stern
+        updatedStarredBy = currentStarredBy.filter((id: string) => id !== currentUser.id);
+      } else {
+        // Füge Stern hinzu
+        updatedStarredBy = [...currentStarredBy, currentUser.id];
+      }
+      
+      console.log('📊 Aktualisierte starredBy:', updatedStarredBy);
+      
+      // 4. Update data JSON mit neuem starredBy
+      const currentData = currentMessage.data || {};
+      const updatedData = {
+        ...currentData,
+        starredBy: updatedStarredBy
+      };
+      
+      console.log('💾 Sende Update an Supabase...', { data: updatedData, starred_by: updatedStarredBy });
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ 
+          data: updatedData,
+          starred_by: updatedStarredBy 
+        })
+        .eq('id', messageId);
+      
+      if (error) {
+        console.error('❌ Supabase Error:', error);
+        throw error;
+      }
+      
+      console.log(isStarred ? '✅ Stern entfernt' : '✅ Nachricht markiert:', messageId);
+      
+      // Manuelles Nachladen der Nachricht um sicherzustellen dass UI aktualisiert wird
+      const { data: updatedMessage } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+      
+      if (updatedMessage) {
+        console.log('🔄 Nachricht neu geladen:', updatedMessage);
+      }
+      
+      setShowMoreMenu(null);
+    } catch (error) {
+      console.error('❌ Fehler beim Markieren:', error);
+    }
+  };
+  
+  // Handle copy message link
+  const handleCopyMessageLink = (messageId: string) => {
+    const link = `${window.location.origin}/chat/${currentChannel?.id}/${messageId}`;
+    navigator.clipboard.writeText(link);
     setShowMoreMenu(null);
-    setHoveredMessageId(null);
-    // TODO: Implement star message functionality
+    alert('Link kopiert!');
+  };
+  
+  // Handle download attachment
+  const handleDownloadAttachment = async (attachment: ChatAttachment) => {
+    try {
+      const response = await fetch(attachment.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      console.log('✅ Datei heruntergeladen:', attachment.name);
+    } catch (error) {
+      console.error('❌ Fehler beim Herunterladen:', error);
+      alert('Fehler beim Herunterladen der Datei');
+    }
+  };
+  
+  // Handle pin message
+  const handlePinMessage = (messageId: string) => {
+    console.log('Pin message:', messageId);
+    setShowMoreMenu(null);
+    // TODO: Implement pin message functionality
+    alert('Funktion "An Pinnwand anheften" wird noch implementiert.');
+  };
+  
+  // Handle mouse enter on message - cancel any pending timeout
+  const handleMessageMouseEnter = (messageId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredMessageId(messageId);
+  };
+  
+  // Handle mouse leave on message - delay before closing
+  const handleMessageMouseLeave = () => {
+    // Delay 300ms before closing to allow moving to menu
+    hoverTimeoutRef.current = setTimeout(() => {
+      // Don't close if a submenu is open
+      if (!showEmojiPicker && !showMoreMenu) {
+        setHoveredMessageId(null);
+      }
+    }, 300);
+  };
+  
+  // Calculate menu position based on click position in chat window
+  const calculateMenuPosition = (event: React.MouseEvent) => {
+    const chatContainer = event.currentTarget.closest('.overflow-y-auto');
+    if (chatContainer) {
+      const rect = chatContainer.getBoundingClientRect();
+      const clickY = event.clientY;
+      const containerMiddle = rect.top + rect.height / 2;
+      
+      // If click is in bottom half, open menu upwards
+      setMenuPosition(clickY > containerMiddle ? 'top' : 'bottom');
+    }
+  };
+  
+  // Emoji name mapping for search
+  const emojiNames: { [key: string]: string } = {
+    '😀': 'grinning lachen freude',
+    '😃': 'smile lächeln freude',
+    '😄': 'lachen freude happy',
+    '😁': 'grinsen freude',
+    '😆': 'lachen freude',
+    '😅': 'schweiß lachen',
+    '🤣': 'lachen tränen',
+    '😂': 'tränen lachen',
+    '🙂': 'lächeln smile',
+    '🙃': 'umgedreht',
+    '😉': 'zwinkern',
+    '😊': 'lächeln glücklich',
+    '😇': 'engel heilig',
+    '🥰': 'liebe herzen',
+    '😍': 'liebe herzen augen',
+    '🤩': 'sterne augen wow',
+    '😘': 'kuss',
+    '😗': 'kuss',
+    '😚': 'kuss',
+    '😙': 'kuss',
+    '🥲': 'träne lächeln',
+    '😋': 'lecker',
+    '😛': 'zunge',
+    '😜': 'zwinkern zunge',
+    '🤪': 'verrückt',
+    '😝': 'zunge',
+    '🤑': 'geld dollar',
+    '🤗': 'umarmung',
+    '🤭': 'hand mund',
+    '🤫': 'leise psst',
+    '🤔': 'denken nachdenken',
+    '🤐': 'schweigen',
+    '🤨': 'skeptisch',
+    '😐': 'neutral',
+    '😑': 'expressionslos',
+    '😶': 'stumm',
+    '😏': 'smirk',
+    '😒': 'unzufrieden',
+    '🙄': 'augenrollen',
+    '😬': 'grimasse',
+    '🤥': 'lüge pinocchio',
+    '😌': 'erleichtert',
+    '😔': 'nachdenklich traurig',
+    '😪': 'müde schlafen',
+    '🤤': 'sabbern',
+    '😴': 'schlafen',
+    '😷': 'maske krank',
+    '🤒': 'krank fieber',
+    '🤕': 'verletzt',
+    '🤢': 'übel',
+    '🤮': 'kotzen',
+    '🤧': 'niesen',
+    '🥵': 'heiß schwitzen',
+    '🥶': 'kalt frieren',
+    '😵': 'schwindelig',
+    '🤯': 'mind blown',
+    '🤠': 'cowboy',
+    '🥳': 'party feier',
+    '🥸': 'verkleidung',
+    '😎': 'cool sonnenbrille',
+    '🤓': 'nerd brille',
+    '🧐': 'monokel',
+    '😕': 'verwirrt',
+    '😟': 'besorgt',
+    '🙁': 'traurig',
+    '😮': 'überrascht',
+    '😯': 'überrascht',
+    '😲': 'schock',
+    '😳': 'verlegen',
+    '🥺': 'bitte flehen',
+    '😦': 'besorgt',
+    '😧': 'angst',
+    '😨': 'angst',
+    '😰': 'angst schweiß',
+    '😥': 'traurig schweiß',
+    '😢': 'weinen tränen',
+    '😭': 'weinen laut',
+    '😱': 'schrei angst',
+    '😖': 'verzweifelt',
+    '😣': 'angestrengt',
+    '😞': 'enttäuscht',
+    '😓': 'schweiß',
+    '😩': 'müde erschöpft',
+    '😫': 'müde erschöpft',
+    '🥱': 'gähnen müde',
+    '😤': 'triumph',
+    '😡': 'wütend',
+    '😠': 'wütend',
+    '🤬': 'fluchen',
+    '👍': 'daumen hoch gut',
+    '👎': 'daumen runter schlecht',
+    '👏': 'klatschen applaus',
+    '🙌': 'hände hoch feier',
+    '👐': 'offene hände',
+    '🤲': 'hände',
+    '🤝': 'händedruck',
+    '🙏': 'beten danke',
+    '✌️': 'peace victory',
+    '🤞': 'finger gekreuzt glück',
+    '🤟': 'liebe hand',
+    '🤘': 'rock',
+    '🤙': 'call me',
+    '👌': 'ok perfekt',
+    '🤌': 'italienisch',
+    '🤏': 'klein wenig',
+    '👈': 'links zeigen',
+    '👉': 'rechts zeigen',
+    '👆': 'oben zeigen',
+    '👇': 'unten zeigen',
+    '☝️': 'finger hoch',
+    '✋': 'hand stop',
+    '🤚': 'hand',
+    '🖐️': 'hand offen',
+    '🖖': 'vulkan spock',
+    '👋': 'winken hallo tschüss',
+    '🤛': 'faust links',
+    '🤜': 'faust rechts',
+    '✊': 'faust',
+    '👊': 'faust bump',
+    '💪': 'muskel stark',
+    '🦾': 'arm roboter',
+    '🦿': 'bein roboter',
+    '🦵': 'bein',
+    '🦶': 'fuß',
+    '👂': 'ohr',
+    '🦻': 'hörgerät',
+    '👃': 'nase',
+    '🧠': 'gehirn',
+    '🫀': 'herz organ',
+    '🫁': 'lunge',
+    '🦷': 'zahn',
+    '🦴': 'knochen',
+    '👀': 'augen schauen',
+    '👁️': 'auge',
+    '👅': 'zunge',
+    '👄': 'lippen mund',
+    '💋': 'kuss lippen',
+    '🩸': 'blut',
+    '❤️': 'herz liebe rot',
+    '🧡': 'herz orange',
+    '💛': 'herz gelb',
+    '💚': 'herz grün',
+    '💙': 'herz blau',
+    '💜': 'herz lila',
+    '🖤': 'herz schwarz',
+    '🤍': 'herz weiß',
+    '🤎': 'herz braun',
+    '💔': 'herz gebrochen',
+    '❣️': 'herz ausrufezeichen',
+    '💕': 'herzen zwei',
+    '💞': 'herzen',
+    '💓': 'herz schlagen',
+    '💗': 'herz wachsen',
+    '💖': 'herz funkeln',
+    '💘': 'herz pfeil',
+    '💝': 'herz geschenk',
+    '💟': 'herz dekoration',
+    '☮️': 'peace frieden',
+    '✝️': 'kreuz',
+    '☪️': 'islam',
+    '🕉️': 'om',
+    '☸️': 'dharma',
+    '✡️': 'david stern',
+    '🔯': 'stern',
+    '🕎': 'menora',
+    '☯️': 'yin yang',
+    '☦️': 'kreuz orthodox',
+    '🛐': 'beten',
+    '⛎': 'sternzeichen',
+    '♈': 'widder',
+    '♉': 'stier',
+    '♊': 'zwillinge',
+    '♋': 'krebs',
+    '♌': 'löwe',
+    '♍': 'jungfrau',
+    '♎': 'waage',
+    '♏': 'skorpion',
+    '♐': 'schütze',
+    '♑': 'steinbock',
+    '♒': 'wassermann',
+    '♓': 'fische',
+    '🔀': 'shuffle',
+    '🔁': 'repeat',
+    '🔂': 'repeat one',
+    '▶️': 'play',
+    '⏩': 'forward',
+    '⏭️': 'next',
+    '⏯️': 'play pause',
+    '◀️': 'reverse',
+    '⏪': 'rewind',
+    '⏮️': 'previous',
+    '🔼': 'up',
+    '⏫': 'up double',
+    '🔽': 'down',
+    '⏬': 'down double',
+    '⏸️': 'pause',
+    '⏹️': 'stop',
+    '⏺️': 'record',
+    '⏏️': 'eject',
+    '🎦': 'kino film',
+    '🔅': 'hell dimmen',
+    '🔆': 'hell',
+    '📶': 'signal',
+    '📳': 'vibration',
+    '📴': 'handy aus',
+    '♀️': 'weiblich',
+    '♂️': 'männlich',
+    '⚧️': 'transgender',
+    '✖️': 'mal kreuz',
+    '➕': 'plus',
+    '➖': 'minus',
+    '➗': 'geteilt',
+    '♾️': 'unendlich',
+    '‼️': 'ausrufezeichen doppelt',
+    '⁉️': 'frage ausrufezeichen',
+    '❓': 'frage',
+    '❔': 'frage weiß',
+    '❕': 'ausrufezeichen weiß',
+    '❗': 'ausrufezeichen',
+    '〰️': 'welle',
+    '💱': 'währung',
+    '💲': 'dollar',
+    '⚕️': 'medizin',
+    '♻️': 'recycling',
+    '⚜️': 'fleur de lis',
+    '🔱': 'dreizack',
+    '📛': 'name schild',
+    '🔰': 'anfänger',
+    '⭕': 'kreis rot',
+    '✅': 'check haken grün',
+    '☑️': 'check box',
+    '✔️': 'check haken',
+    '❌': 'kreuz rot',
+    '❎': 'kreuz grün',
+    '➰': 'schleife',
+    '➿': 'doppel schleife',
+    '〽️': 'part alternation',
+    '✳️': 'stern acht',
+    '✴️': 'stern acht schwarz',
+    '❇️': 'funkeln',
+    '©️': 'copyright',
+    '®️': 'registered',
+    '™️': 'trademark',
+    '🔟': 'zehn',
+    '🔠': 'großbuchstaben',
+    '🔡': 'kleinbuchstaben',
+    '🔢': 'zahlen',
+    '🔣': 'symbole',
+    '🔤': 'abc',
+    '🅰️': 'a blut',
+    '🆎': 'ab blut',
+    '🅱️': 'b blut',
+    '🆑': 'cl',
+    '🆒': 'cool',
+    '🆓': 'free kostenlos',
+    'ℹ️': 'info',
+    '🆔': 'id',
+    'Ⓜ️': 'm metro',
+    '🆕': 'new neu',
+    '🆖': 'ng',
+    '🅾️': 'o blut',
+    '🆗': 'ok',
+    '🅿️': 'p parken',
+    '🆘': 'sos hilfe',
+    '🆙': 'up',
+    '🆚': 'vs versus',
+    '🈁': 'japanisch hier',
+    '🈂️': 'japanisch service',
+    '🈷️': 'japanisch monat',
+    '🈶': 'japanisch haben',
+    '🈯': 'japanisch reserviert',
+    '🉐': 'japanisch schnäppchen',
+    '🈹': 'japanisch rabatt',
+    '🈚': 'japanisch kostenlos',
+    '🈲': 'japanisch verboten',
+    '🉑': 'japanisch akzeptabel',
+    '🈸': 'japanisch anwendung',
+    '🈴': 'japanisch zusammen',
+    '🈳': 'japanisch frei',
+    '㊗️': 'japanisch glückwunsch',
+    '㊙️': 'japanisch geheim',
+    '🈺': 'japanisch offen',
+    '🈵': 'japanisch voll',
+    '🔴': 'kreis rot',
+    '🟠': 'kreis orange',
+    '🟡': 'kreis gelb',
+    '🟢': 'kreis grün',
+    '🔵': 'kreis blau',
+    '🟣': 'kreis lila',
+    '🟤': 'kreis braun',
+    '⚫': 'kreis schwarz',
+    '⚪': 'kreis weiß',
+    '🟥': 'quadrat rot',
+    '🟧': 'quadrat orange',
+    '🟨': 'quadrat gelb',
+    '🟩': 'quadrat grün',
+    '🟦': 'quadrat blau',
+    '🟪': 'quadrat lila',
+    '🟫': 'quadrat braun',
+    '⬛': 'quadrat schwarz',
+    '⬜': 'quadrat weiß',
+    '🔶': 'raute orange',
+    '🔷': 'raute blau',
+    '🔸': 'raute klein orange',
+    '🔹': 'raute klein blau',
+    '🔺': 'dreieck rot oben',
+    '🔻': 'dreieck rot unten',
+    '💠': 'diamant',
+    '🔘': 'radio button',
+    '🔳': 'quadrat weiß button',
+    '🔲': 'quadrat schwarz button',
+    '🏁': 'flagge kariert',
+    '🚩': 'flagge rot',
+    '🎌': 'flaggen gekreuzt',
+    '🏴': 'flagge schwarz',
+    '🏳️': 'flagge weiß',
+    '🏳️‍🌈': 'regenbogen pride',
+    '🏳️‍⚧️': 'transgender flagge',
+    '🏴‍☠️': 'pirat flagge',
+    '🔥': 'feuer flamme',
+    '💧': 'tropfen wasser',
+    '🌊': 'welle meer',
+    '🎃': 'kürbis halloween',
+    '🎄': 'weihnachtsbaum',
+    '🎆': 'feuerwerk',
+    '🎇': 'wunderkerze',
+    '🧨': 'feuerwerkskörper',
+    '✨': 'funkeln sterne',
+    '🎈': 'ballon',
+    '🎉': 'party konfetti',
+    '🎊': 'konfetti ball',
+    '🎋': 'tanabata baum',
+    '🎍': 'bambus dekoration',
+    '🎎': 'puppen',
+    '🎏': 'karpfen fahne',
+    '🎐': 'windspiel',
+    '🎑': 'mond zeremonie',
+    '🧧': 'roter umschlag',
+    '🎀': 'schleife',
+    '🎁': 'geschenk',
+    '🎗️': 'erinnerung band',
+    '🎟️': 'ticket',
+    '🎫': 'ticket',
+    '🎖️': 'medaille militär',
+    '🏆': 'pokal trophy',
+    '🏅': 'medaille',
+    '🥇': 'gold medaille',
+    '🥈': 'silber medaille',
+    '🥉': 'bronze medaille',
+    '⚽': 'fußball',
+    '⚾': 'baseball',
+    '🥎': 'softball',
+    '🏀': 'basketball',
+    '🏐': 'volleyball',
+    '🏈': 'american football',
+    '🏉': 'rugby',
+    '🎾': 'tennis',
+    '🥏': 'frisbee',
+    '🎳': 'bowling',
+    '🏏': 'cricket',
+    '🏑': 'hockey',
+    '🏒': 'eishockey',
+    '🥍': 'lacrosse',
+    '🏓': 'tischtennis ping pong',
+    '🏸': 'badminton',
+    '🥊': 'boxen',
+    '🥋': 'kampfsport',
+    '🥅': 'tor',
+    '⛳': 'golf',
+    '⛸️': 'schlittschuh',
+    '🎣': 'angeln',
+    '🤿': 'tauchen',
+    '🎽': 'laufshirt',
+    '🎿': 'ski',
+    '🛷': 'schlitten',
+    '🥌': 'curling',
+    '🎯': 'ziel dartscheibe',
+    '🪀': 'jojo',
+    '🪁': 'drachen',
+    '🎱': 'billard 8',
+    '🔮': 'kristallkugel',
+    '🪄': 'zauberstab',
+    '🧿': 'nazar amulett',
+    '🎮': 'controller gaming',
+    '🕹️': 'joystick',
+    '🎰': 'spielautomat',
+    '🎲': 'würfel',
+    '🧩': 'puzzle',
+    '🧸': 'teddy bär',
+    '🪅': 'pinata',
+    '🪆': 'matroschka',
+    '♠️': 'pik',
+    '♥️': 'herz karte',
+    '♦️': 'karo',
+    '♣️': 'kreuz karte',
+    '♟️': 'schach bauer',
+    '🃏': 'joker karte',
+    '🀄': 'mahjong',
+    '🎴': 'blumen karten',
+    '🎭': 'theater masken',
+    '🖼️': 'bild rahmen',
+    '🎨': 'palette kunst',
+    '🧵': 'faden',
+    '🪡': 'nadel',
+    '🧶': 'wolle',
+    '🪢': 'knoten'
+  };
+
+  // Filter emojis based on search query
+  const getFilteredEmojis = () => {
+    const allEmojis = Object.values(emojiCategories).flat();
+    if (!emojiSearchQuery.trim()) {
+      return allEmojis;
+    }
+    
+    const query = emojiSearchQuery.toLowerCase();
+    return allEmojis.filter(emoji => {
+      // Suche in Emoji-Namen
+      const names = emojiNames[emoji] || '';
+      return names.toLowerCase().includes(query);
+    });
   };
   
   // Parse reply from message content - nur die DIREKTE Nachricht extrahieren
@@ -1053,6 +1763,18 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
     const replyMatch = content.match(/^@(.+?): "(.+?)"\n\n(.+)$/s);
     if (replyMatch) {
       let replyContent = replyMatch[2];
+      let mediaType: 'image' | 'video' | 'audio' | 'voice' | 'file' | null = null;
+      let attachmentId: string | null = null;
+      
+      // Prüfe ob es sich um ein Medien-Zitat handelt
+      if (replyContent.startsWith('[MEDIA:') && replyContent.endsWith(']')) {
+        const mediaMatch = replyContent.match(/^\[MEDIA:(image|video|audio|voice|file):(.+?):(.+?)\]$/);
+        if (mediaMatch) {
+          mediaType = mediaMatch[1] as 'image' | 'video' | 'audio' | 'voice' | 'file';
+          replyContent = mediaMatch[2]; // Dateiname oder Beschreibung
+          attachmentId = mediaMatch[3]; // Attachment-ID
+        }
+      }
       
       // Wenn das Zitat selbst ein verschachteltes Zitat enthält, extrahiere nur den Text NACH dem verschachtelten Zitat
       const nestedReplyMatch = replyContent.match(/^@.+?: ".+?"\n\n(.+)$/s);
@@ -1064,6 +1786,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
         senderName: replyMatch[1],
         replyContent: replyContent,
         actualContent: replyMatch[3],
+        mediaType: mediaType,
+        attachmentId: attachmentId,
       };
     }
     return null;
@@ -1180,12 +1904,24 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   // Scroll to message with glow effect
   const scrollToMessage = (messageId: string) => {
+    console.log('📜 scrollToMessage aufgerufen:', messageId);
     const messageElement = document.getElementById(`message-${messageId}`);
+    console.log('🎯 Element gefunden:', messageElement ? 'JA' : 'NEIN', messageElement);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+      console.log('✅ Scroll durchgeführt');
       // Add glow effect
       setHighlightedMessageId(messageId);
-      setTimeout(() => setHighlightedMessageId(null), 2000);
+      console.log('✨ Glow-Effekt aktiviert für:', messageId);
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+        console.log('💤 Glow-Effekt deaktiviert');
+      }, 2000);
+    } else {
+      console.error('❌ Element nicht gefunden! ID:', `message-${messageId}`);
+      console.log('📋 Alle message-* IDs im DOM:', 
+        Array.from(document.querySelectorAll('[id^="message-"]')).map(el => el.id)
+      );
     }
   };
 
@@ -1196,7 +1932,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
       <div className="bg-surface rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden relative">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-10">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/95 backdrop-blur relative z-[9999]">
           <div className="flex items-center space-x-4">
             {/* Mobile Menu Toggle */}
             <button
@@ -1235,9 +1971,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                     <button
                       onClick={() => {
                         onSwitchProject('');
-                        setTimeout(() => {
-                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-                        }, 0);
                       }}
                       className="px-2 py-2 hover:bg-overlay/80 transition-colors"
                       title="Filter zurücksetzen"
@@ -1251,7 +1984,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               </div>
 
             {showProjectDropdown && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[1000] overflow-hidden">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-surface border border-border rounded-lg shadow-2xl z-[2000] overflow-hidden">
                 {/* Suchfeld */}
                 <div className="p-3 border-b border-border">
                   <input
@@ -1291,44 +2024,151 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       Keine Projekte gefunden
                     </div>
                   ) : (
-                    filteredProjects.map(project => {
-                      // Prüfe ob icon ein Farbcode ist (wie in Sidebar)
-                      const isColorCode = project.icon?.startsWith('#');
+                    <>
+                      {/* Favorisierte Projekte */}
+                      {favoriteProjects.length > 0 && (
+                        <>
+                          <div className="px-3 py-2 text-[0.65rem] text-text-secondary/60 font-semibold uppercase tracking-wider">
+                            Favoriten
+                          </div>
+                          {favoriteProjects.map(project => {
+                            const isColorCode = project.icon?.startsWith('#');
+                            return (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  onSwitchProject(project.id);
+                                  setShowProjectDropdown(false);
+                                  setProjectSearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between space-x-3 p-3 text-left transition-colors ${
+                                  currentProject?.id === project.id 
+                                    ? 'bg-glow-purple/20 text-text-primary' 
+                                    : 'hover:bg-overlay text-text-secondary'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                  {isColorCode ? (
+                                    <div 
+                                      className="w-5 h-5 rounded flex-shrink-0" 
+                                      style={{ backgroundColor: project.icon }}
+                                    />
+                                  ) : (
+                                    <span className="text-xl flex-shrink-0">{project.icon}</span>
+                                  )}
+                                  <span className="text-sm font-semibold truncate">{project.name}</span>
+                                </div>
+                                <svg className="w-3.5 h-3.5 text-yellow-400 fill-current flex-shrink-0" viewBox="0 0 24 24">
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              </button>
+                            );
+                          })}
+                          {(activeProjects.length > 0 || archivedProjects.length > 0) && (
+                            <div className="border-t border-border/30 my-1"></div>
+                          )}
+                        </>
+                      )}
                       
-                      return (
-                        <button
-                          key={project.id}
-                          onClick={() => {
-                            onSwitchProject(project.id);
-                            setShowProjectDropdown(false);
-                            setProjectSearchQuery('');
-                          }}
-                          className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
-                            currentProject?.id === project.id 
-                              ? 'bg-glow-purple/20 text-text-primary' 
-                              : 'hover:bg-overlay text-text-secondary'
-                          }`}
-                        >
-                          {/* Icon-Rendering GENAU wie in Sidebar */}
-                          {isColorCode ? (
-                            <div 
-                              className="w-5 h-5 rounded-md flex-shrink-0" 
-                              style={{ backgroundColor: project.icon }}
-                            />
-                          ) : (
-                            <span className="text-xl flex-shrink-0">{project.icon}</span>
+                      {/* Aktive Projekte */}
+                      {activeProjects.length > 0 && (
+                        <div className="px-3 py-2 text-[0.65rem] text-text-secondary/60 font-semibold uppercase tracking-wider">
+                          Projekte
+                        </div>
+                      )}
+                      {activeProjects.map(project => {
+                        const isColorCode = project.icon?.startsWith('#');
+                        return (
+                          <button
+                            key={project.id}
+                            onClick={() => {
+                              onSwitchProject(project.id);
+                              setShowProjectDropdown(false);
+                              setProjectSearchQuery('');
+                            }}
+                            className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                              currentProject?.id === project.id 
+                                ? 'bg-glow-purple/20 text-text-primary' 
+                                : 'hover:bg-overlay text-text-secondary'
+                            }`}
+                          >
+                            {isColorCode ? (
+                              <div 
+                                className="w-5 h-5 rounded flex-shrink-0" 
+                                style={{ backgroundColor: project.icon }}
+                              />
+                            ) : (
+                              <span className="text-xl flex-shrink-0">{project.icon}</span>
+                            )}
+                            <span className="text-sm font-semibold truncate">{project.name}</span>
+                          </button>
+                        );
+                      })}
+                      
+                      {/* Archivierte Projekte */}
+                      {archivedProjects.length > 0 && (
+                        <>
+                          {(favoriteProjects.length > 0 || activeProjects.length > 0) && (
+                            <div className="border-t border-border/30 my-1"></div>
                           )}
                           
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{project.name}</div>
-                            {project.status === 'AKTIV' && (
-                              <div className="text-xs text-glow-purple">Aktiv</div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })
-                  
+                          {/* Toggle für archivierte Projekte (nur wenn nicht gesucht wird) */}
+                          {!projectSearchQuery && (
+                            <button
+                              onClick={() => setShowArchivedProjects(!showArchivedProjects)}
+                              className="w-full flex items-center justify-between p-3 text-left transition-colors hover:bg-overlay text-text-secondary"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                </svg>
+                                <span className="text-sm">Archivierte Projekte ({archivedProjects.length})</span>
+                              </div>
+                              <svg 
+                                className={`w-4 h-4 transition-transform ${showArchivedProjects ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {/* Archivierte Projekte Liste (ausgeklappt oder bei Suche immer sichtbar) */}
+                          {(showArchivedProjects || projectSearchQuery) && archivedProjects.map(project => {
+                            const isColorCode = project.icon?.startsWith('#');
+                            return (
+                              <button
+                                key={project.id}
+                                onClick={() => {
+                                  onSwitchProject(project.id);
+                                  setShowProjectDropdown(false);
+                                  setProjectSearchQuery('');
+                                }}
+                                className={`w-full flex items-center space-x-3 p-3 text-left transition-colors ${
+                                  currentProject?.id === project.id 
+                                    ? 'bg-glow-purple/20 text-text-primary' 
+                                    : 'hover:bg-overlay text-text-secondary'
+                                }`}
+                              >
+                                {isColorCode ? (
+                                  <div 
+                                    className="w-5 h-5 rounded flex-shrink-0 opacity-50" 
+                                    style={{ backgroundColor: project.icon }}
+                                  />
+                                ) : (
+                                  <span className="text-xl flex-shrink-0 opacity-50">{project.icon}</span>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-semibold truncate opacity-60">{project.name}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1387,7 +2227,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <button
                         key={message.id}
                         onClick={() => {
-                          onSwitchChannel(channel.id);
+                          handleSwitchChannel(channel.id);
                           setShowSidebar(false);
                           setChannelSearchQuery('');
                           // Highlight the message after switching
@@ -1429,8 +2269,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                           `}>
                             {/* Sender Name (only for group chats and not own messages) */}
                             {!isOwnMessage && channel.type === ChatChannelType.Group && (
-                              <div className="text-xs font-semibold text-glow-purple mb-1">
-                                {message.sender.name}
+                              <div className="text-xs font-semibold text-glow-purple mb-1 flex items-center space-x-1">
+                                <span>{message.sender.name}</span>
+                                {message.starredBy?.includes(currentUser.id) && (
+                                  <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                  </svg>
+                                )}
                               </div>
                             )}
                             
@@ -1480,22 +2325,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   return (
                     <button
                       key={channel.id}
-                      draggable
-                      onDragStart={() => setDraggedChannelId(channel.id)}
-                      onDragEnd={() => setDraggedChannelId(null)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        // TODO: Implement channel reordering
-                        console.log('Dropped', draggedChannelId, 'onto', channel.id);
-                      }}
                       onClick={() => {
-                        onSwitchChannel(channel.id);
+                        handleSwitchChannel(channel.id);
                         setShowSidebar(false);
                       }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors cursor-move ${
+                      onContextMenu={(e) => handleChannelContextMenu(e, channel.id)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                         currentChannel?.id === channel.id ? 'glow-button' : 'hover-glow'
-                      } ${draggedChannelId === channel.id ? 'opacity-50' : ''}`}
+                      }`}
                     >
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         <HashIcon className="w-4 h-4 flex-shrink-0" />
@@ -1598,12 +2435,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                         onClick={() => {
                           // DM-Channel sollte bereits existieren (wird automatisch in App.tsx erstellt)
                           if (existingDM) {
-                            onSwitchChannel(existingDM.id);
+                            handleSwitchChannel(existingDM.id);
                             setShowSidebar(false);
                           } else {
                             console.warn(`⚠️ Kein DM-Channel gefunden für User ${user.name}`);
                           }
                         }}
+                        onContextMenu={(e) => existingDM && handleChannelContextMenu(e, existingDM.id)}
                         className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                           currentChannel?.id === existingDM?.id ? 'glow-button' : 'hover-glow'
                         }`}
@@ -1639,16 +2477,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             {/* Chat Header */}
             {currentChannel && (
               <div className="p-4 border-b border-border bg-surface/80 backdrop-blur-sm">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
                   {/* Zurück-Button im Thread-Modus */}
                   {showThreadView && (
                     <button
                       onClick={() => {
                         setShowThreadView(null);
-                        // Scrolle zur neuesten Nachricht (ganz unten)
-                        requestAnimationFrame(() => {
-                          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-                        });
                       }}
                       className="p-2 hover:bg-overlay rounded-lg transition-colors"
                       title="Zurück zum Haupt-Chat"
@@ -1689,13 +2524,61 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       </div>
                     </>
                   )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    {/* Starred Messages Filter Button */}
+                    <button
+                      onClick={() => {
+                        setShowStarredOnly(!showStarredOnly);
+                        setShowMediaGallery(false);
+                      }}
+                      className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
+                        showStarredOnly
+                          ? 'bg-glow-purple/20 text-glow-purple'
+                          : 'text-text-secondary hover:text-glow-purple hover:bg-overlay'
+                      }`}
+                      title="Markierte Nachrichten"
+                    >
+                      <svg className="w-4 h-4" fill={showStarredOnly ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      <span className="text-xs font-medium">Markiert</span>
+                    </button>
+
+                    {/* Media Gallery Button */}
+                    <button
+                      onClick={() => {
+                        setShowMediaGallery(!showMediaGallery);
+                        setShowStarredOnly(false);
+                      }}
+                      className={`group flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
+                        showMediaGallery
+                          ? 'bg-glow-purple/20 text-glow-purple'
+                          : 'text-text-secondary hover:text-glow-purple hover:bg-overlay'
+                      }`}
+                      title="Medien-Galerie"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs font-medium">Medien</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Messages */}
+            {/* Messages or Media Gallery */}
+            {showMediaGallery && currentChannel ? (
+              <MediaGallery
+                messages={filteredMessages}
+                onClose={() => setShowMediaGallery(false)}
+              />
+            ) : (
             <div 
-              className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto overflow-x-visible p-4 pb-8 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30 flex flex-col-reverse"
               onClick={() => setContextMenu(null)}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
@@ -1713,9 +2596,12 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 }
                 
-                return messagesToShow.map((message, index) => {
+                // flex-col-reverse kehrt die VISUELLE Reihenfolge um
+                // Daher Array umkehren: [neu, alt] -> mit flex-col-reverse -> [alt, neu] visuell
+                const reversedMessages = [...messagesToShow].reverse();
+                return reversedMessages.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
-                  const prevMessage = index > 0 ? messagesToShow[index - 1] : null;
+                  const prevMessage = index > 0 ? reversedMessages[index - 1] : null;
                   // Show avatar/timestamp if sender changed OR project changed
                   const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id || prevMessage.projectId !== message.projectId;
                   const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
@@ -1734,12 +2620,6 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                       <div 
                         id={`message-${message.id}`}
                         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mt-1.5`}
-                        onContextMenu={(e) => {
-                          if (isOwnMessage && canEditMessage(message.timestamp)) {
-                            e.preventDefault();
-                            setContextMenu({ x: e.clientX, y: e.clientY, messageId: message.id });
-                          }
-                        }}
                       >
                       {/* Eigene Nachrichten: kein Avatar, kein Username */}
                       {isOwnMessage ? (
@@ -1793,9 +2673,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             <>
                               {/* Wrapper für Bubble und Hover-Menü */}
                               <div 
+                                id={`message-${message.id}`}
                                 className="relative transition-all duration-500"
-                                onMouseEnter={() => setHoveredMessageId(message.id)}
-                                onMouseLeave={() => setHoveredMessageId(null)}
+                                onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                onMouseLeave={handleMessageMouseLeave}
                               >
                                 {/* Message Content Bubble */}
                                 <div className={`rounded-2xl text-sm break-words bg-transparent text-text-primary rounded-br-md border border-transparent overflow-hidden ${
@@ -1832,18 +2713,92 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                         <div 
                                           className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                           onClick={() => {
-                                            const originalMsg = messages.find(m => 
-                                              m.sender.name === reply.senderName && 
-                                              m.content.includes(reply.replyContent)
-                                            );
+                                            console.log('🔍 Suche Original-Nachricht:', {
+                                              senderName: reply.senderName,
+                                              replyContent: reply.replyContent,
+                                              mediaType: reply.mediaType
+                                            });
+                                            
+                                            const originalMsg = messages.find(m => {
+                                              if (m.sender.name !== reply.senderName) return false;
+                                              
+                                              console.log('📝 Prüfe Nachricht:', {
+                                                id: m.id,
+                                                content: m.content.substring(0, 50),
+                                                hasAttachments: !!m.attachments,
+                                                attachments: m.attachments?.map(a => ({ name: a.name, type: a.type }))
+                                              });
+                                              
+                                              // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
+                                              if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                // Wenn attachmentId vorhanden, prüfe exakt nach ID
+                                                if (reply.attachmentId) {
+                                                  const match = m.attachments.some(att => att.id === reply.attachmentId);
+                                                  if (match) {
+                                                    console.log('✅ Medien-Match gefunden (via ID)!');
+                                                    return true;
+                                                  }
+                                                } else {
+                                                  // Fallback für alte Nachrichten ohne ID
+                                                  const match = m.attachments.some(att => {
+                                                    // Prüfe nach Medien-Typ
+                                                    if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                    if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                    if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                    if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                    // Für Dateien: prüfe nach Namen
+                                                    if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                    return false;
+                                                  });
+                                                  if (match) {
+                                                    console.log('✅ Medien-Match gefunden (via Typ)!');
+                                                    return true;
+                                                  }
+                                                }
+                                              }
+                                              
+                                              // Für Text-Nachrichten
+                                              if (m.content.includes(reply.replyContent)) {
+                                                console.log('✅ Text-Match gefunden!');
+                                                return true;
+                                              }
+                                              
+                                              return false;
+                                            });
+                                            
+                                            console.log('🎯 Ergebnis:', originalMsg ? `Gefunden: ${originalMsg.id}` : 'Nicht gefunden');
                                             if (originalMsg) scrollToMessage(originalMsg.id);
                                           }}
                                         >
                                           <div className="flex items-center justify-between mb-1">
                                             <div className="flex items-center space-x-2">
-                                              <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                              </svg>
+                                              {/* Icon basierend auf Medien-Typ */}
+                                              {reply.mediaType === 'image' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : reply.mediaType === 'video' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : reply.mediaType === 'voice' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                                </svg>
+                                              ) : reply.mediaType === 'audio' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                                </svg>
+                                              ) : reply.mediaType === 'file' ? (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                              ) : (
+                                                <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                </svg>
+                                              )}
                                               <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                             </div>
                                             {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
@@ -1891,7 +2846,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 
                                 {/* Attachments */}
                                 {message.attachments && message.attachments.length > 0 && (
-                                  <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''}`}>
+                                  <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''} ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}>
                                     {message.attachments.map((attachment, idx) => (
                                       <div key={idx} className="w-full flex justify-center">
                                         {isImageFile(attachment.type) ? (
@@ -1972,8 +2927,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               
                               {/* Emoji Reaction Bar für eigene Nachrichten - rechts unten an der Bubble (Overlay) */}
                               {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
-                              {hoveredMessageId === message.id && isOwnMessage && !showThreadView && (
-                                <div className="absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                              {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
+                              {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && isOwnMessage && !showThreadView && (
+                                <div 
+                                  className="message-hover-menu absolute -bottom-8 right-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
+                                  onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                  onMouseLeave={handleMessageMouseLeave}
+                                >
                                   {/* Quick Reactions */}
                                   <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                     {quickReactions.map((emoji) => (
@@ -1995,7 +2955,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          calculateMenuPosition(e);
+                                          // Schließe More Menu wenn Emoji Picker geöffnet wird
+                                          if (showEmojiPicker !== message.id) {
+                                            setShowMoreMenu(null);
+                                          }
                                           setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                          setEmojiSearchQuery(''); // Reset search when opening
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
                                         title="Weitere Reaktionen"
@@ -2007,22 +2973,45 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       
                                       {/* Emoji Picker Dropdown */}
                                       {showEmojiPicker === message.id && (
-                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
-                                          <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
-                                          <div className="grid grid-cols-5 gap-2">
-                                            {allEmojis.map((emoji) => (
-                                              <button
-                                                key={emoji}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleReaction(message.id, emoji);
-                                                }}
-                                                className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
-                                                title={`Mit ${emoji} reagieren`}
-                                              >
-                                                {emoji}
-                                              </button>
-                                            ))}
+                                        <div 
+                                          className={`emoji-picker-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl z-[500] w-64 ${
+                                            menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                          }`}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {/* Search Bar */}
+                                          <div className="p-2 border-b border-border">
+                                            <input
+                                              type="text"
+                                              value={emojiSearchQuery}
+                                              onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                                              placeholder="Emoji suchen..."
+                                              className="w-full px-2 py-1.5 bg-overlay rounded text-xs focus:outline-none focus:ring-1 focus:ring-glow-purple"
+                                            />
+                                          </div>
+                                          
+                                          {/* Emoji Grid - Alle Kategorien zusammen */}
+                                          <div className="p-2 max-h-64 overflow-y-auto">
+                                            <div className="grid grid-cols-8 gap-0.5">
+                                              {getFilteredEmojis().map((emoji, index) => (
+                                                <button
+                                                  key={`${emoji}-${index}`}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleReaction(message.id, emoji);
+                                                  }}
+                                                  className="text-lg hover:bg-overlay rounded p-1 transition-all hover:scale-110"
+                                                  title={`Mit ${emoji} reagieren`}
+                                                >
+                                                  {emoji}
+                                                </button>
+                                              ))}
+                                            </div>
+                                            {getFilteredEmojis().length === 0 && (
+                                              <div className="text-center text-text-secondary text-xs py-4">
+                                                Keine Emojis gefunden
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -2044,6 +3033,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          calculateMenuPosition(e);
+                                          // Schließe Emoji Picker wenn More Menu geöffnet wird
+                                          if (showMoreMenu !== message.id) {
+                                            setShowEmojiPicker(null);
+                                          }
                                           setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                         }}
                                         className="p-1 hover:bg-overlay rounded transition-colors"
@@ -2056,31 +3050,96 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                       
                                       {/* More Options Menu */}
                                       {showMoreMenu === message.id && (
-                                        <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleMarkAsUnread(message.id);
-                                            }}
-                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
-                                          >
-                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                            <span className="text-text-primary">Als ungelesen markieren</span>
-                                          </button>
+                                        <div 
+                                          className={`more-options-menu absolute right-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[500] min-w-[200px] ${
+                                            menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                          }`}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {/* Markieren */}
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleStarMessage(message.id);
                                             }}
-                                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
                                           >
-                                            <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                             </svg>
                                             <span className="text-text-primary">Markieren</span>
                                           </button>
+                                          
+                                          <div className="border-t border-border my-1"></div>
+                                          
+                                          {/* Kopieren */}
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigator.clipboard.writeText(message.content);
+                                              setShowMoreMenu(null);
+                                            }}
+                                            className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                          >
+                                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="text-text-primary">Kopieren</span>
+                                          </button>
+                                          
+                                          {/* Dateien herunterladen (wenn Attachments vorhanden) */}
+                                          {message.attachments && message.attachments.length > 0 && (
+                                            <>
+                                              <div className="border-t border-border my-1"></div>
+                                              {message.attachments.map((attachment, idx) => (
+                                                <button
+                                                  key={idx}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDownloadAttachment(attachment);
+                                                  }}
+                                                  className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                >
+                                                  <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                  </svg>
+                                                  <span className="text-text-primary">Herunterladen</span>
+                                                </button>
+                                              ))}
+                                            </>
+                                          )}
+                                          
+                                          {/* Bearbeiten (nur eigene Nachrichten) */}
+                                          {isOwnMessage && canEditMessage(message.timestamp) && (
+                                            <>
+                                              <div className="border-t border-border my-1"></div>
+                                              <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingMessageId(message.id);
+                                                setEditingContent(message.content);
+                                                setShowMoreMenu(null);
+                                              }}
+                                              className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                            >
+                                              <EditIcon className="w-3.5 h-3.5 text-text-secondary" />
+                                              <span className="text-text-primary">Nachricht bearbeiten</span>
+                                            </button>
+                                            
+                                            {/* Löschen (nur eigene Nachrichten) */}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirmMessageId(message.id);
+                                                setShowMoreMenu(null);
+                                              }}
+                                              className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2 text-red-500"
+                                            >
+                                              <TrashIcon className="w-3.5 h-3.5" />
+                                              <span>Löschen</span>
+                                            </button>
+                                            </>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -2090,9 +3149,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                             </div>
 
                             {/* Reactions Display für eigene Nachrichten */}
-                            {message.reactions && Object.keys(message.reactions).length > 0 && (
+                            {((message.reactions && Object.keys(message.reactions).length > 0) || 
+                              (message.starredBy && message.starredBy.includes(currentUser.id))) && (
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                                {/* Stern-Markierung */}
+                                {message.starredBy && message.starredBy.includes(currentUser.id) && (
+                                  <div className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-overlay/50 text-xs">
+                                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                  </div>
+                                )}
+                                {/* Reaktionen */}
+                                {message.reactions && Object.entries(message.reactions).map(([emoji, userIds]) => (
                                   <button
                                     key={emoji}
                                     onClick={() => handleReaction(message.id, emoji)}
@@ -2132,7 +3201,14 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <div className="flex items-center space-x-2 mb-1 px-1">
                                 {/* Name nur in Channels */}
                                 {currentChannel?.type !== ChatChannelType.Direct && (
-                                  <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                  <div className="flex items-center space-x-1">
+                                    <span className="font-semibold text-xs text-text-primary">{message.sender.name}</span>
+                                    {message.starredBy?.includes(currentUser.id) && (
+                                      <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                      </svg>
+                                    )}
+                                  </div>
                                 )}
                                 <span className="text-[10px] text-text-secondary">{formatTimestamp(message.timestamp)}</span>
                                 {/* Projekt-Tag */}
@@ -2180,9 +3256,10 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                               <>
                                 {/* Wrapper für Bubble und Emoji-Bar */}
                                 <div 
+                                  id={`message-${message.id}`}
                                   className="relative transition-all duration-500"
-                                  onMouseEnter={() => setHoveredMessageId(message.id)}
-                                  onMouseLeave={() => setHoveredMessageId(null)}
+                                  onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                  onMouseLeave={handleMessageMouseLeave}
                                 >
                                   {/* Message Content Bubble */}
                                   <div className={`rounded-2xl text-sm break-words bg-overlay text-text-primary rounded-bl-md overflow-hidden ${
@@ -2215,18 +3292,68 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                               className="-mx-4 -mt-2.5 mb-2 px-4 pt-2.5 pb-2.5 bg-glow-purple/10 rounded-t-2xl cursor-pointer hover:bg-glow-purple/15 transition-all"
                                               onClick={() => {
                                                 // Find original message and scroll to it
-                                                const originalMsg = messages.find(m => 
-                                                  m.sender.name === reply.senderName && 
-                                                  m.content.includes(reply.replyContent)
-                                                );
+                                                const originalMsg = messages.find(m => {
+                                                  if (m.sender.name !== reply.senderName) return false;
+                                                  
+                                                  // Für Medien-Nachrichten - prüfe zuerst ob es ein Medien-Zitat ist
+                                                  if (reply.mediaType && m.attachments && m.attachments.length > 0) {
+                                                    // Wenn attachmentId vorhanden, prüfe exakt nach ID
+                                                    if (reply.attachmentId) {
+                                                      const match = m.attachments.some(att => att.id === reply.attachmentId);
+                                                      if (match) return true;
+                                                    } else {
+                                                      // Fallback für alte Nachrichten ohne ID
+                                                      const match = m.attachments.some(att => {
+                                                        // Prüfe nach Medien-Typ
+                                                        if (reply.mediaType === 'image' && isImageFile(att.type)) return true;
+                                                        if (reply.mediaType === 'video' && isVideoFile(att.type)) return true;
+                                                        if (reply.mediaType === 'voice' && att.name.startsWith('voice-')) return true;
+                                                        if (reply.mediaType === 'audio' && isAudioFile(att.type) && !att.name.startsWith('voice-')) return true;
+                                                        // Für Dateien: prüfe nach Namen
+                                                        if (reply.mediaType === 'file' && att.name === reply.replyContent) return true;
+                                                        return false;
+                                                      });
+                                                      if (match) return true;
+                                                    }
+                                                  }
+                                                  
+                                                  // Für Text-Nachrichten
+                                                  if (m.content.includes(reply.replyContent)) return true;
+                                                  
+                                                  return false;
+                                                });
                                                 if (originalMsg) scrollToMessage(originalMsg.id);
                                               }}
                                             >
                                               <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center space-x-2">
-                                                  <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                                                  </svg>
+                                                  {/* Icon basierend auf Medien-Typ */}
+                                                  {reply.mediaType === 'image' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'video' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'voice' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                                      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                                                    </svg>
+                                                  ) : reply.mediaType === 'audio' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                                    </svg>
+                                                  ) : reply.mediaType === 'file' ? (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
+                                                  ) : (
+                                                    <svg className="w-3.5 h-3.5 text-glow-purple" fill="currentColor" viewBox="0 0 24 24">
+                                                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                                                    </svg>
+                                                  )}
                                                   <span className="text-xs text-glow-purple font-semibold">{reply.senderName}</span>
                                                 </div>
                                                 {/* Thread View Button - nur anzeigen wenn mehr als 1 Reply (also > 2 Nachrichten) */}
@@ -2274,7 +3401,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                     
                                     {/* Attachments */}
                                     {message.attachments && message.attachments.length > 0 && (
-                                      <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''}`}>
+                                      <div className={`space-y-2 flex flex-col items-center ${message.content.trim() ? 'mt-2' : ''} ${highlightedMessageId === message.id ? 'glow-pulse' : ''}`}>
                                         {message.attachments.map((attachment, idx) => (
                                           <div key={idx} className="w-full flex justify-center">
                                             {attachment.url.startsWith('blob:') ? (
@@ -2372,8 +3499,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                   
                                   {/* Emoji Reaction Bar - rechts unten an der Bubble (Overlay) */}
                                   {/* Im Thread-Modus: Kein Hover-Menü anzeigen */}
-                                  {hoveredMessageId === message.id && !isOwnMessage && !showThreadView && (
-                                    <div className="absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100] overflow-hidden">
+                                  {/* Zeige Menü wenn gehovered ODER wenn ein Untermenü offen ist */}
+                                  {(hoveredMessageId === message.id || showEmojiPicker === message.id || showMoreMenu === message.id) && !isOwnMessage && !showThreadView && (
+                                    <div 
+                                      className="message-hover-menu absolute -bottom-8 left-0 flex items-center bg-surface border border-border rounded-lg shadow-lg z-[100]"
+                                      onMouseEnter={() => handleMessageMouseEnter(message.id)}
+                                      onMouseLeave={handleMessageMouseLeave}
+                                    >
                                       {/* Quick Reactions */}
                                       <div className="flex items-center space-x-1 px-2 py-1 border-r border-border">
                                         {quickReactions.map((emoji) => (
@@ -2395,8 +3527,13 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log('Emoji Picker clicked, current:', showEmojiPicker, 'message:', message.id);
+                                              calculateMenuPosition(e);
+                                              // Schließe More Menu wenn Emoji Picker geöffnet wird
+                                              if (showEmojiPicker !== message.id) {
+                                                setShowMoreMenu(null);
+                                              }
                                               setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id);
+                                              setEmojiSearchQuery('');
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
                                             title="Weitere Reaktionen"
@@ -2408,22 +3545,45 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* Emoji Picker Dropdown */}
                                           {showEmojiPicker === message.id && (
-                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl p-3 z-[1000] w-64">
-                                              <div className="text-xs text-text-secondary mb-2 font-semibold">Reaktion auswählen</div>
-                                              <div className="grid grid-cols-5 gap-2">
-                                                {allEmojis.map((emoji) => (
-                                                  <button
-                                                    key={emoji}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleReaction(message.id, emoji);
-                                                    }}
-                                                    className="text-2xl hover:bg-overlay rounded p-2 transition-all hover:scale-110"
-                                                    title={`Mit ${emoji} reagieren`}
-                                                  >
-                                                    {emoji}
-                                                  </button>
-                                                ))}
+                                            <div 
+                                              className={`emoji-picker-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl z-[500] w-64 ${
+                                                menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                              }`}
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {/* Search Bar */}
+                                              <div className="p-2 border-b border-border">
+                                                <input
+                                                  type="text"
+                                                  value={emojiSearchQuery}
+                                                  onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                                                  placeholder="Emoji suchen..."
+                                                  className="w-full px-2 py-1.5 bg-overlay rounded text-xs focus:outline-none focus:ring-1 focus:ring-glow-purple"
+                                                />
+                                              </div>
+                                              
+                                              {/* Emoji Grid - Alle Kategorien zusammen */}
+                                              <div className="p-2 max-h-64 overflow-y-auto">
+                                                <div className="grid grid-cols-8 gap-0.5">
+                                                  {getFilteredEmojis().map((emoji, index) => (
+                                                    <button
+                                                      key={`${emoji}-${index}`}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleReaction(message.id, emoji);
+                                                      }}
+                                                      className="text-lg hover:bg-overlay rounded p-1 transition-all hover:scale-110"
+                                                      title={`Mit ${emoji} reagieren`}
+                                                    >
+                                                      {emoji}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                                {getFilteredEmojis().length === 0 && (
+                                                  <div className="text-center text-text-secondary text-xs py-4">
+                                                    Keine Emojis gefunden
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
                                           )}
@@ -2445,7 +3605,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log('More Menu clicked, current:', showMoreMenu, 'message:', message.id);
+                                              calculateMenuPosition(e);
+                                              // Schließe Emoji Picker wenn More Menu geöffnet wird
+                                              if (showMoreMenu !== message.id) {
+                                                setShowEmojiPicker(null);
+                                              }
                                               setShowMoreMenu(showMoreMenu === message.id ? null : message.id);
                                             }}
                                             className="p-1 hover:bg-overlay rounded transition-colors"
@@ -2458,31 +3622,64 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                           
                                           {/* More Options Menu */}
                                           {showMoreMenu === message.id && (
-                                            <div className="absolute top-full right-0 mt-2 bg-surface border border-border rounded-lg shadow-2xl py-1 z-[1000] min-w-[220px]">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleMarkAsUnread(message.id);
-                                                }}
-                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
-                                              >
-                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                </svg>
-                                                <span className="text-text-primary">Als ungelesen markieren</span>
-                                              </button>
+                                            <div 
+                                              className={`more-options-menu absolute left-0 bg-surface border border-border rounded-lg shadow-2xl py-0.5 z-[500] min-w-[200px] ${
+                                                menuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                              }`}
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {/* Markieren */}
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleStarMessage(message.id);
                                                 }}
-                                                className="w-full px-4 py-2.5 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-3"
+                                                className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
                                               >
-                                                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                                 </svg>
                                                 <span className="text-text-primary">Markieren</span>
                                               </button>
+                                              
+                                              <div className="border-t border-border my-0.5"></div>
+                                              
+                                              {/* Kopieren */}
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigator.clipboard.writeText(message.content);
+                                                  setShowMoreMenu(null);
+                                                }}
+                                                className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                              >
+                                                <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                <span className="text-text-primary">Kopieren</span>
+                                              </button>
+                                              
+                                              {/* Dateien herunterladen (wenn Attachments vorhanden) */}
+                                              {message.attachments && message.attachments.length > 0 && (
+                                                <>
+                                                  <div className="border-t border-border my-0.5"></div>
+                                                  {message.attachments.map((attachment, idx) => (
+                                                    <button
+                                                      key={idx}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDownloadAttachment(attachment);
+                                                      }}
+                                                      className="w-full px-3 py-1.5 text-left text-xs hover:bg-overlay transition-colors flex items-center space-x-2"
+                                                    >
+                                                      <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                      </svg>
+                                                      <span className="text-text-primary">Herunterladen</span>
+                                                    </button>
+                                                  ))}
+                                                </>
+                                              )}
                                             </div>
                                           )}
                                         </div>
@@ -2492,9 +3689,19 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                                 </div>
 
                                 {/* Reactions Display */}
-                                {message.reactions && Object.keys(message.reactions).length > 0 && (
+                                {((message.reactions && Object.keys(message.reactions).length > 0) || 
+                                  (message.starredBy && message.starredBy.includes(currentUser.id))) && (
                                   <div className="flex flex-wrap gap-1 mt-1">
-                                    {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                                    {/* Stern-Markierung */}
+                                    {message.starredBy && message.starredBy.includes(currentUser.id) && (
+                                      <div className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-overlay/50 text-xs">
+                                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                    {/* Reaktionen */}
+                                    {message.reactions && Object.entries(message.reactions).map(([emoji, userIds]) => (
                                       <button
                                         key={emoji}
                                         onClick={() => handleReaction(message.id, emoji)}
@@ -2516,14 +3723,15 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 });
               })()}
-              {/* Spacer for hover menu - ensures last message has room for the hover menu */}
-              <div className="h-4" />
+              {/* Dynamischer Spacer: Kompensiert Composer-Höhe bei flex-col-reverse */}
+              <div style={{ height: `${Math.max(32, composerHeight - 80)}px` }} />
               <div ref={messagesEndRef} />
             </div>
+            )}
 
-            {/* Message Input */}
-            {currentChannel && (
-              <div className="p-4 border-t border-transparent bg-transparent">
+            {/* Message Input - Hide when Media Gallery is open */}
+            {currentChannel && !showMediaGallery && (
+              <div ref={composerRef} className="p-4 border-t border-transparent bg-transparent">
                 {/* Reply To Message Preview */}
                 {replyToMessage && (
                   <div className="mb-2 p-2 bg-overlay rounded-lg flex items-center justify-between">
@@ -3012,6 +4220,37 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
           onCancel={() => setShowDeleteAllConfirm(false)}
           isDangerous={true}
         />
+      )}
+      
+      {/* Channel Context Menu */}
+      {channelContextMenu && (
+        <>
+          {/* Backdrop zum Schließen */}
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => setChannelContextMenu(null)}
+          />
+          
+          {/* Context Menu */}
+          <div
+            className="fixed bg-surface border border-border rounded-lg shadow-2xl py-1 z-[9999] min-w-[200px]"
+            style={{
+              left: `${channelContextMenu.x}px`,
+              top: `${channelContextMenu.y}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => handleMarkChannelAsUnread(channelContextMenu.channelId)}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-overlay transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-text-primary">Als ungelesen markieren</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

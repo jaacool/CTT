@@ -1383,6 +1383,7 @@ textarea:focus {
   width: 65px;
   aspect-ratio: 1;
   position: relative;
+  will-change: transform;
 }
 
 .upload-loader:before,
@@ -1394,11 +1395,14 @@ textarea:focus {
               0 0 20px rgba(168, 85, 247, 0.9),
               0 0 40px rgba(168, 85, 247, 0.7),
               0 0 0px rgba(236, 72, 153, 0.5);
-  animation: uploadLoaderAnimation 2.5s infinite;
+  animation: uploadLoaderAnimation 4.225s ease-out infinite;
+  will-change: inset;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .upload-loader:after {
-  animation-delay: -1.25s;
+  animation-delay: -2.1125s;
   border-radius: 0;
   box-shadow: 0 0 0 3px inset #EC4899,
               0 0 20px rgba(236, 72, 153, 0.9),
@@ -1416,4 +1420,24 @@ textarea:focus {
   75%   { inset: 0    0    35px 35px; }
   87.5% { inset: 0    0    35px 0; }
   100%  { inset: 0    35px 35px 0; }
+}
+
+/* Fade In Animation für Loading Screen Text */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade Out Animation für Loading Screen */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
