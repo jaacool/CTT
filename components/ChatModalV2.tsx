@@ -2497,10 +2497,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                 }
                 
                 // flex-col-reverse kehrt die VISUELLE Reihenfolge um
-                // Array bleibt chronologisch (alt -> neu), wird aber von unten nach oben gerendert
-                return messagesToShow.map((message, index) => {
+                // Daher Array umkehren: [neu, alt] -> mit flex-col-reverse -> [alt, neu] visuell
+                const reversedMessages = [...messagesToShow].reverse();
+                return reversedMessages.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
-                  const prevMessage = index > 0 ? messagesToShow[index - 1] : null;
+                  const prevMessage = index > 0 ? reversedMessages[index - 1] : null;
                   // Show avatar/timestamp if sender changed OR project changed
                   const showAvatar = !prevMessage || prevMessage.sender.id !== message.sender.id || prevMessage.projectId !== message.projectId;
                   const showDaySeparator = prevMessage && isDifferentDay(prevMessage.timestamp, message.timestamp);
