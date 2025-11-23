@@ -120,7 +120,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ messages, onClose })
   ];
 
   return (
-    <div className="relative flex flex-col h-full bg-background">
+    <div className="relative flex flex-col h-full bg-surface">
       {/* Tabs - Minimal design, text only */}
       <div className="flex border-b border-border/50 bg-surface/50 backdrop-blur-sm px-4 gap-1">
         {tabs.map(tab => (
