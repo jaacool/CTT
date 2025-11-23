@@ -433,17 +433,34 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
           
           <div>
             <label className="text-text-secondary text-sm mb-2 block">Gesamtzeit</label>
-            <div className="flex items-center space-x-3 bg-overlay rounded-xl px-4 py-3 mb-2">
+            <div className="flex items-center space-x-2 bg-overlay rounded-xl px-4 py-3 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
               <input
                 type="number"
-                value={totalMinutes}
-                onChange={(e) => handleTotalTimeChange(parseInt(e.target.value) || 0)}
-                className="bg-transparent text-text-primary text-lg font-bold outline-none flex-1 w-16"
+                value={Math.floor(totalMinutes / 60)}
+                onChange={(e) => {
+                  const hours = parseInt(e.target.value) || 0;
+                  const mins = totalMinutes % 60;
+                  handleTotalTimeChange(hours * 60 + mins);
+                }}
+                className="bg-transparent text-text-primary text-lg font-bold outline-none w-12 text-right"
                 min="0"
+              />
+              <span className="text-text-secondary text-sm">h</span>
+              <input
+                type="number"
+                value={totalMinutes % 60}
+                onChange={(e) => {
+                  const hours = Math.floor(totalMinutes / 60);
+                  const mins = Math.min(59, Math.max(0, parseInt(e.target.value) || 0));
+                  handleTotalTimeChange(hours * 60 + mins);
+                }}
+                className="bg-transparent text-text-primary text-lg font-bold outline-none w-12 text-right"
+                min="0"
+                max="59"
               />
               <span className="text-text-secondary text-sm">min</span>
             </div>
