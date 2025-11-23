@@ -2578,7 +2578,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             ) : (
             <div 
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30 flex flex-col-reverse"
+              className="flex-1 overflow-y-auto overflow-x-visible p-4 pb-8 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30 flex flex-col-reverse"
               onClick={() => setContextMenu(null)}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
@@ -3723,8 +3723,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 });
               })()}
-              {/* Dynamischer Spacer: 33px für Hover-Menü */}
-              <div style={{ height: '33px' }} />
+              {/* Dynamischer Spacer: Kompensiert Composer-Höhe bei flex-col-reverse */}
+              <div style={{ height: `${Math.max(32, composerHeight - 80)}px` }} />
               <div ref={messagesEndRef} />
             </div>
             )}
