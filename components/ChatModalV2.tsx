@@ -440,23 +440,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('Häufig genutzt');
 
-  // Scroll to bottom - EINZIGE Scroll-Logik für alle Szenarien
-  // Läuft synchron VOR dem Browser-Paint, verhindert Flash-Frames
-  useLayoutEffect(() => {
-    if (!isOpen || !currentChannel || !scrollContainerRef.current) return;
-    
-    // Scroll SOFORT auf Maximum - kein setTimeout, keine Animation
-    const container = scrollContainerRef.current;
-    container.scrollTop = container.scrollHeight;
-  }, [
-    isOpen,                    // Chat öffnen
-    currentChannel?.id,        // Channel wechseln
-    messages.length,           // Neue Nachricht
-    currentProject?.id,        // Projekt-Filter
-    messageInput,              // Textarea-Höhe ändert sich
-    selectedFiles.length,      // Datei-Vorschau ändert sich
-    replyToMessage             // Reply-Banner ändert sich
-  ]);
+  // KEINE JavaScript Scroll-Logik mehr nötig!
+  // CSS flex-direction: column-reverse handled das automatisch
 
   // Click outside to close dropdown - PROFESSIONELL
   useEffect(() => {
@@ -2493,8 +2478,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
             ) : (
             <div 
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
-              style={{ scrollBehavior: 'auto' }}
+              className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30 flex flex-col-reverse"
               onClick={() => setContextMenu(null)}
             >
               {/* Im Thread-Modus: Zeige nur Thread-Nachrichten, sonst alle Nachrichten */}
@@ -2512,6 +2496,8 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
                   );
                 }
                 
+                // flex-col-reverse kehrt die VISUELLE Reihenfolge um
+                // Array bleibt chronologisch (alt -> neu), wird aber von unten nach oben gerendert
                 return messagesToShow.map((message, index) => {
                   const isOwnMessage = message.sender.id === currentUser.id;
                   const prevMessage = index > 0 ? messagesToShow[index - 1] : null;
