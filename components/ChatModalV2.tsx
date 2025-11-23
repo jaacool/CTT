@@ -372,6 +372,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   const [showMediaGallery, setShowMediaGallery] = useState<boolean>(false);
   const previewImageRef = useRef<HTMLImageElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -443,12 +444,16 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   // useLayoutEffect runs before browser paint, preventing flash of old scroll position
   useLayoutEffect(() => {
     if (isOpen && currentChannel && !showMediaGallery) {
-      // Immediate scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      // Scroll container to absolute bottom (not just last message visible)
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
       
       // Additional scroll after messages are rendered (ensures DOM is ready)
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
       }, 0);
     }
   }, [isOpen, currentChannel?.id, messages.length, showMediaGallery]);
@@ -2522,6 +2527,7 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
               />
             ) : (
             <div 
+              ref={messagesContainerRef}
               className="flex-1 overflow-y-auto overflow-x-visible p-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
               onClick={() => setContextMenu(null)}
             >
