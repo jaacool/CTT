@@ -241,10 +241,10 @@ const App: React.FC = () => {
   // Verzögerter Fade-Start, damit Animation smooth durchläuft
   useEffect(() => {
     if (isDataLoaded && !shouldStartFade) {
-      // Warte 300ms nach Daten-Laden, bevor Fade startet
+      // Warte 150ms nach Daten-Laden, bevor Fade startet (schneller wegen Flackern)
       const timer = setTimeout(() => {
         setShouldStartFade(true);
-      }, 300);
+      }, 150);
       return () => clearTimeout(timer);
     }
   }, [isDataLoaded, shouldStartFade]);
@@ -2016,7 +2016,7 @@ const App: React.FC = () => {
         style={{
           opacity: shouldStartFade ? 0 : 1,
           pointerEvents: shouldStartFade ? 'none' : 'auto',
-          transition: shouldStartFade ? 'opacity 2s ease-out' : 'none',
+          transition: shouldStartFade ? 'opacity 0.8s ease-out' : 'none',
           willChange: 'opacity',
           backfaceVisibility: 'hidden',
           WebkitFontSmoothing: 'antialiased',
