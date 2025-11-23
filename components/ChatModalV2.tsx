@@ -445,6 +445,11 @@ export const ChatModalV2: React.FC<ChatModalV2Props> = ({
   useLayoutEffect(() => {
     if (isOpen && currentChannel && !showMediaGallery) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      
+      // Additional scroll after DOM update to ensure we're at absolute bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 0);
     }
   }, [isOpen, currentChannel?.id, messages.length, showMediaGallery]);
 
