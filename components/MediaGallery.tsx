@@ -77,80 +77,28 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ messages, onClose })
     setPreviewZoom(newZoom);
   };
 
-  const tabs: Array<{ key: MediaCategory; label: string; count: number; icon: JSX.Element }> = [
-    {
-      key: 'images',
-      label: 'Bilder',
-      count: mediaData.images.length,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      key: 'videos',
-      label: 'Videos',
-      count: mediaData.videos.length,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      key: 'files',
-      label: 'Dateien',
-      count: mediaData.files.length,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      key: 'links',
-      label: 'Links',
-      count: mediaData.links.length,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-        </svg>
-      )
-    }
+  const tabs: Array<{ key: MediaCategory; label: string }> = [
+    { key: 'images', label: 'Bilder' },
+    { key: 'videos', label: 'Videos' },
+    { key: 'files', label: 'Dateien' },
+    { key: 'links', label: 'Links' }
   ];
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Tabs - Moved to top, cleaner design */}
-      <div className="flex border-b border-border/50 bg-surface/50 backdrop-blur-sm px-4">
+      {/* Tabs - Minimal design, text only */}
+      <div className="flex border-b border-border/50 bg-surface/50 backdrop-blur-sm px-4 gap-1">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`group relative flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all ${
+            className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.key
                 ? 'text-glow-purple'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <div className={`transition-all ${activeTab === tab.key ? 'scale-110' : 'group-hover:scale-105'}`}>
-              {tab.icon}
-            </div>
-            <span className="hidden sm:inline">{tab.label}</span>
-            {tab.count > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold transition-all ${
-                activeTab === tab.key
-                  ? 'bg-glow-purple/20 text-glow-purple'
-                  : 'bg-overlay text-text-secondary group-hover:bg-overlay/80'
-              }`}>
-                {tab.count}
-              </span>
-            )}
-            {/* Active indicator */}
-            {activeTab === tab.key && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-glow-purple to-glow-pink" />
-            )}
+            {tab.label}
           </button>
         ))}
       </div>
