@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TimeEntry, Project, Task, Subtask } from '../types';
 
 interface TimerMenuProps {
@@ -26,8 +26,13 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
   const [totalMinutes, setTotalMinutes] = useState(Math.floor(elapsedSeconds / 60));
   const [endTime, setEndTime] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toTimeString().slice(0, 5) : '');
   const [endDate, setEndDate] = useState(timeEntry.endTime ? new Date(timeEntry.endTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-  const [sliderMinutes, setSliderMinutes] = useState(0); // Slider für End Zeit (0-720 min = 0-12h)
+  const [sliderMinutes, setSliderMinutes] = useState(Math.floor(elapsedSeconds / 60)); // Slider für End Zeit (0-720 min = 0-12h)
   const isRunning = !timeEntry.endTime;
+  
+  // Synchronisiere Slider mit totalMinutes
+  useEffect(() => {
+    setSliderMinutes(totalMinutes);
+  }, [totalMinutes]);
   
   // Dropdown States
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
@@ -68,7 +73,7 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+    return `${hours}h ${minutes}m`;
   };
 
   const handleTotalTimeChange = (newTotalMinutes: number) => {
@@ -438,43 +443,15 @@ export const TimerMenu: React.FC<TimerMenuProps> = ({ timeEntry, elapsedSeconds,
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <div className="flex items-baseline flex-1">
-                <input
-                  type="number"
-                  value={Math.floor(totalMinutes / 60)}
-                  onChange={(e) => {
-                    const hours = parseInt(e.target.value) || 0;
-                    const mins = totalMinutes % 60;
-                    handleTotalTimeChange(hours * 60 + mins);
-                  }}
-                  className="bg-transparent text-text-primary text-lg font-bold outline-none w-8 text-right"
-                  min="0"
-                />
-                <span className="text-text-secondary text-sm ml-1 mr-2">h</span>
-                <input
-                  type="number"
-                  value={totalMinutes % 60}
-                  onChange={(e) => {
-                    const hours = Math.floor(totalMinutes / 60);
-                    const mins = Math.min(59, Math.max(0, parseInt(e.target.value) || 0));
-                    handleTotalTimeChange(hours * 60 + mins);
-                  }}
-                  className="bg-transparent text-text-primary text-lg font-bold outline-none w-8 text-right"
-                  min="0"
-                  max="59"
-                />
-                <span className="text-text-secondary text-sm ml-1">min</span>
-              </div>
+              <input
+                type="text"
+                readOnly
+                value={`${Math.floor(totalMinutes / 60)}h ${String(totalMinutes % 60).padStart(2, '0')}m`}
+                className="bg-transparent text-text-primary text-lg font-bold outline-none flex-1"
+              />
             </div>
-            {/* Slider für End Zeit (0-12h in 5min Schritten) */}
-            <div className="bg-overlay rounded-xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-text-secondary text-xs">0h</span>
-                <span className="text-text-primary text-xs font-semibold">
-                  {Math.floor(sliderMinutes / 60)}h {sliderMinutes % 60}m
-                </span>
-                <span className="text-text-secondary text-xs">12h</span>
-              </div>
+            {/* Slider für Gesamtzeit (ohne zusätzliche Labels, damit der Container zu den Datum-Kacheln passt) */}
+            <div className="flex items-center bg-overlay rounded-xl px-4" style={{ paddingTop: '1.125rem', paddingBottom: '1.125rem' }}>
               <input
                 type="range"
                 min="0"
