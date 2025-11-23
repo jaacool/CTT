@@ -183,6 +183,42 @@ const App: React.FC = () => {
     }
   }, [anomalies, notificationsReady]);
 
+  // ⚡ AUTO-REMOVE FORGOT_TO_STOP ANOMALY
+  // Prüfe bei TimeEntry-Änderungen ob FORGOT_TO_STOP Anomalien noch gültig sind
+  useEffect(() => {
+    if (timeEntries.length === 0 || anomalies.length === 0) return;
+
+    // Finde alle FORGOT_TO_STOP Anomalien
+    const forgotToStopAnomalies = anomalies.filter(a => a.type === AnomalyType.FORGOT_TO_STOP);
+    
+    forgotToStopAnomalies.forEach(anomaly => {
+      // Finde alle TimeEntries für diesen User an diesem Tag
+      const userEntries = timeEntries.filter(e => {
+        const entryStartDate = new Date(e.startTime).toISOString().split('T')[0];
+        return e.user.id === anomaly.userId && entryStartDate === anomaly.date;
+      });
+
+      // Wenn keine Einträge mehr existieren, entferne Anomalie
+      if (userEntries.length === 0) {
+        deleteAnomaly(anomaly.userId, anomaly.date, AnomalyType.FORGOT_TO_STOP);
+        removeAnomalyLocal(anomaly.userId, anomaly.date, AnomalyType.FORGOT_TO_STOP);
+        console.log('✅ FORGOT_TO_STOP Anomalie automatisch entfernt (keine Einträge mehr)');
+        return;
+      }
+
+      // Prüfe ob noch ein Eintrag das Muster erfüllt
+      const hasValidEntry = userEntries.some(entry => {
+        return shouldKeepForgotToStopAnomaly(entry, timeEntries);
+      });
+
+      if (!hasValidEntry) {
+        deleteAnomaly(anomaly.userId, anomaly.date, AnomalyType.FORGOT_TO_STOP);
+        removeAnomalyLocal(anomaly.userId, anomaly.date, AnomalyType.FORGOT_TO_STOP);
+        console.log('✅ FORGOT_TO_STOP Anomalie automatisch entfernt nach TimeEntry-Änderung');
+      }
+    });
+  }, [timeEntries, anomalies, removeAnomalyLocal]);
+
   // Berechne ungelesene Nachrichten (Gesamt-Badge)
   const unreadMessagesCount = useMemo(() => {
     if (!currentUser) return 0;
@@ -1472,88 +1508,62 @@ const App: React.FC = () => {
   const isAdmin = currentUser?.role === 'role-1';
 
   const handleUpdateTimeEntry = useCallback((entryId: string, startTime: string, endTime: string, note?: string, projectId?: string, taskId?: string) => {
-    setTimeEntries(prev => {
-      const updatedEntries = prev.map(entry => {
-        if (entry.id === entryId) {
-          const start = new Date(startTime);
-          
-          // Finde Projekt- und Task-Namen wenn IDs übergeben wurden
-          let projectName = entry.projectName;
-          let taskTitle = entry.taskTitle;
-          let actualProjectId = entry.projectId;
-          let actualTaskId = entry.taskId;
-          
-          if (projectId && taskId) {
-            const project = projects.find(p => p.id === projectId);
-            if (project) {
-              projectName = project.name;
-              actualProjectId = projectId;
-              actualTaskId = taskId;
-              
-              // Finde Task oder Subtask
-              for (const list of project.taskLists) {
-                const task = list.tasks.find(t => t.id === taskId);
-                if (task) {
-                  taskTitle = task.title;
+    setTimeEntries(prev => prev.map(entry => {
+      if (entry.id === entryId) {
+        const start = new Date(startTime);
+        
+        // Finde Projekt- und Task-Namen wenn IDs übergeben wurden
+        let projectName = entry.projectName;
+        let taskTitle = entry.taskTitle;
+        let actualProjectId = entry.projectId;
+        let actualTaskId = entry.taskId;
+        
+        if (projectId && taskId) {
+          const project = projects.find(p => p.id === projectId);
+          if (project) {
+            projectName = project.name;
+            actualProjectId = projectId;
+            actualTaskId = taskId;
+            
+            // Finde Task oder Subtask
+            for (const list of project.taskLists) {
+              const task = list.tasks.find(t => t.id === taskId);
+              if (task) {
+                taskTitle = task.title;
+                break;
+              }
+              for (const task of list.tasks) {
+                const subtask = task.subtasks.find(st => st.id === taskId);
+                if (subtask) {
+                  taskTitle = `${task.title} → ${subtask.title}`;
                   break;
-                }
-                for (const task of list.tasks) {
-                  const subtask = task.subtasks.find(st => st.id === taskId);
-                  if (subtask) {
-                    taskTitle = `${task.title} → ${subtask.title}`;
-                    break;
-                  }
                 }
               }
             }
           }
-          
-          // Wenn endTime leer ist, Timer läuft weiter - berechne duration bis jetzt
-          if (!endTime) {
-            const now = new Date();
-            const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
-            // Update taskTimers mit neuer duration
-            setTaskTimers(prev => ({ ...prev, [actualTaskId]: duration }));
-            const updatedEntry = { ...entry, startTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
-            saveTimeEntry(updatedEntry); // Auto-Save
-            return updatedEntry;
-          }
-          
-          // Ansonsten normale Berechnung mit endTime
-          const end = new Date(endTime);
-          const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
-          const updatedEntry = { ...entry, startTime, endTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
+        }
+        
+        // Wenn endTime leer ist, Timer läuft weiter - berechne duration bis jetzt
+        if (!endTime) {
+          const now = new Date();
+          const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
+          // Update taskTimers mit neuer duration
+          setTaskTimers(prev => ({ ...prev, [actualTaskId]: duration }));
+          const updatedEntry = { ...entry, startTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
           saveTimeEntry(updatedEntry); // Auto-Save
-          
-          // ⚡ AUTO-REMOVE FORGOT_TO_STOP ANOMALY
-          // Prüfe ob für diesen Eintrag eine FORGOT_TO_STOP Anomalie existiert
-          const entryStartDate = new Date(updatedEntry.startTime).toISOString().split('T')[0];
-          const existingAnomaly = anomalies.find(
-            a => a.userId === updatedEntry.user.id && 
-                 a.date === entryStartDate && 
-                 a.type === AnomalyType.FORGOT_TO_STOP
-          );
-          
-          if (existingAnomaly) {
-            // Prüfe ob die Anomalie noch gültig ist nach der Änderung
-            const shouldKeep = shouldKeepForgotToStopAnomaly(updatedEntry, updatedEntries);
-            if (!shouldKeep) {
-              // Anomalie ist nicht mehr gültig → Aus Supabase löschen
-              deleteAnomaly(updatedEntry.user.id, entryStartDate, AnomalyType.FORGOT_TO_STOP);
-              // Aus lokalem State entfernen (wird auch via Realtime entfernt)
-              removeAnomalyLocal(updatedEntry.user.id, entryStartDate, AnomalyType.FORGOT_TO_STOP);
-              console.log('✅ FORGOT_TO_STOP Anomalie automatisch entfernt nach TimeEntry-Änderung');
-            }
-          }
-          
           return updatedEntry;
         }
-        return entry;
-      });
-      
-      return updatedEntries;
-    });
-  }, [projects, anomalies, removeAnomalyLocal]);
+        
+        // Ansonsten normale Berechnung mit endTime
+        const end = new Date(endTime);
+        const duration = Math.floor((end.getTime() - start.getTime()) / 1000);
+        const updatedEntry = { ...entry, startTime, endTime, duration, note, projectId: actualProjectId, projectName, taskId: actualTaskId, taskTitle };
+        saveTimeEntry(updatedEntry); // Auto-Save
+        return updatedEntry;
+      }
+      return entry;
+    }));
+  }, [projects]);
 
   const handleDeleteTimeEntry = useCallback((entryId: string) => {
     // Stoppe aktiven Timer falls dieser Eintrag gerade läuft
@@ -1562,35 +1572,9 @@ const App: React.FC = () => {
       setActiveTimeEntryId(null);
     }
     
-    // ⚡ AUTO-REMOVE FORGOT_TO_STOP ANOMALY
-    // Finde den zu löschenden Eintrag
-    const entryToDelete = timeEntries.find(e => e.id === entryId);
-    if (entryToDelete) {
-      const entryStartDate = new Date(entryToDelete.startTime).toISOString().split('T')[0];
-      const existingAnomaly = anomalies.find(
-        a => a.userId === entryToDelete.user.id && 
-             a.date === entryStartDate && 
-             a.type === AnomalyType.FORGOT_TO_STOP
-      );
-      
-      if (existingAnomaly) {
-        // Prüfe ob nach dem Löschen noch andere Einträge das Muster erfüllen
-        const remainingEntries = timeEntries.filter(e => e.id !== entryId);
-        const shouldKeep = shouldKeepForgotToStopAnomaly(entryToDelete, remainingEntries);
-        
-        if (!shouldKeep) {
-          // Anomalie ist nicht mehr gültig → Aus Supabase löschen
-          deleteAnomaly(entryToDelete.user.id, entryStartDate, AnomalyType.FORGOT_TO_STOP);
-          // Aus lokalem State entfernen (wird auch via Realtime entfernt)
-          removeAnomalyLocal(entryToDelete.user.id, entryStartDate, AnomalyType.FORGOT_TO_STOP);
-          console.log('✅ FORGOT_TO_STOP Anomalie automatisch entfernt nach TimeEntry-Löschung');
-        }
-      }
-    }
-    
     deleteTimeEntry(entryId); // Auto-Delete from Supabase
     setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
-  }, [activeTimeEntryId, timeEntries, anomalies, removeAnomalyLocal]);
+  }, [activeTimeEntryId]);
 
   const handleEditTimeEntry = useCallback((entry: TimeEntry) => {
     setEditingTimeEntry(entry);
